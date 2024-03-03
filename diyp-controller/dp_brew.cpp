@@ -29,6 +29,12 @@ void BrewProcess::init()
   NEXT(idle);
 }
 
+void BrewProcess::sleep_state()
+{
+  STATE(BREW_SLEEP);
+  statusLed.color(ColorLed::BLACK);
+}
+
 
 void BrewProcess::idle()
 {

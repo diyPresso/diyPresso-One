@@ -21,6 +21,8 @@ class Display
         void logo();
         void show(const char *screen, char *args[]);
         bool button_pressed();
+        bool button_long_pressed();
+        int button_pressed_time();
         bool encoder_changed();
         long encoder_value();
         void custom_chars(const unsigned char *chars);

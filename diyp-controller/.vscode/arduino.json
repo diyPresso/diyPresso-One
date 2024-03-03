@@ -1,4 +1,0 @@
-{
-    "board": "arduino:samd:mkrwifi1010",
-    "sketch": "DP523.ino"
-}

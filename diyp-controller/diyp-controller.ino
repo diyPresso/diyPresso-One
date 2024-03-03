@@ -107,13 +107,13 @@ void print_state()
   }
 }
 
-
 // Test boiler loop
 void loop()
 {
   static unsigned long timer=0;
   static unsigned menu=0;
 
+/// BEGIN Test code to simulate heater
   timer += 1;
   if ( timer < 150 )
       boilerController.set_temp( settings.temperature() );
@@ -121,6 +121,8 @@ void loop()
       boilerController.set_temp( 20.0 );
   if ( timer > 300 )
     timer = 0;
+/// END Test code to simulate heater
+
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
@@ -131,7 +133,7 @@ void loop()
     case 0:
       menu_main();
       if ( display.encoder_changed() || display.button_pressed() )
-        menu += 1;
+        menu = 1;
       break;
     case 1:
       if ( menu_settings() )
@@ -145,9 +147,25 @@ void loop()
         menu = 0;
       }
       break;
+    case 2: // sleep menu
+      menu_sleep();
+      if ( !brewProcess.is_awake() )
+        menu = 0;
+      break;
     default:
       menu = 0;
   }
+
+  // sleep (de)activation and menu selection (note: sleep can be activated automatically)
+   if (display.button_long_pressed())
+      {
+        if ( brewProcess.is_awake() )
+          brewProcess.sleep();
+        else
+          brewProcess.wakeup();
+      }
+  if ( !brewProcess.is_awake() )
+    menu = 2;
 
 }
 

@@ -7,7 +7,7 @@
 #include "dp_time.h"
 
 typedef enum {
-  BREW_INIT=0, BREW_IDLE=1, BREW_PRE_INFUSE=2, BREW_INFUSE=3, BREW_EXTRACT=4, BREW_FINISHED=5, BREW_ERROR=6 
+  BREW_INIT=0, BREW_IDLE=1, BREW_PRE_INFUSE=2, BREW_INFUSE=3, BREW_EXTRACT=4, BREW_FINISHED=5, BREW_ERROR=6, BREW_SLEEP=7 
 } brew_state_t;
 
 extern char *brew_state_names[];
@@ -22,6 +22,7 @@ class BrewProcess
         Timer _brewTimer = Timer(); 
         void set_state(state_function_ptr function_ptr) {_state_function=function_ptr; _time=millis(); }
 
+        void sleep_state();
         void init();
         void idle();
         void error();
@@ -37,6 +38,9 @@ class BrewProcess
         void run(void) {if (_state_function != NULL) (this->*_state_function)();} 
         void start() { set_state(&BrewProcess::pre_infuse); }
         void stop() { set_state(&BrewProcess::idle); }
+        void sleep() { set_state(&BrewProcess::sleep_state); }
+        void wakeup() { set_state(&BrewProcess::idle); }
+        bool is_awake() { return _state_function != &BrewProcess::sleep_state;}
         double brew_time() { return _brewTimer.read() / 1000.0; }
         double step_time() { return time_since(_time) / 1000.0; }
 };

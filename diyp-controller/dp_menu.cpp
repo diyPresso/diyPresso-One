@@ -84,6 +84,13 @@ const char *menus[] = {
   "STEP-T ######## sec "
   "BREW-T ######## sec "
   "                    ",
+// SLEEP=5
+// 01234567890123456789
+  "    ###########     "
+  "   I AM SLEEPING!   "
+  " LONG PRESS BUTTON  "
+  "   TO WAKE ME...    ",
+
 
 };
 
@@ -215,5 +222,36 @@ bool menu_settings()
     prev_pos = pos;
     prev_modify = modify;
   }
+  return false;
+}
+
+
+bool menu_sleep()
+{
+  char *sleep_spinner[] =
+  {
+    "         ",
+    "Z        ",
+    "Zz       ",
+    "Zzz      ",
+    "Zzzz     ",
+    "Zzzzz    ",
+    "Zzzzzz   ",
+    " Zzzzzzz ",
+    "  Zzzzzzz",
+    "   Zzzzzz",
+    "    Zzzzz",
+    "     Zzzz",
+    "      Zzz",
+    "       Zz",
+    "        Z",
+    "         ",
+  };
+  static unsigned int spinner=0;
+  static unsigned int counter=0;
+  counter += 1;
+  if ( counter == 5 ){ counter=0; spinner +=1; }
+  if ( spinner >= sizeof(sleep_spinner) / sizeof(const char *)) spinner = 0;
+  display.show(menus[MENU_SLEEP], &sleep_spinner[spinner]);
   return false;
 }

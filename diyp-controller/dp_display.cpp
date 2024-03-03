@@ -104,6 +104,7 @@ void Display::custom_chars(const unsigned char *chars)
     lcd.createChar(i, (unsigned char*)chars+8*i);
 }
 
+
 void Display::init()
 {
   lcd.init();
@@ -122,9 +123,26 @@ void Display::init()
 bool Display::button_pressed()
 {
   static unsigned long prev_count=0;
-  bool pressed = prev_count != encoder.switch_count();
-  prev_count = encoder.switch_count();
+  bool pressed = prev_count != encoder.button_count();
+  prev_count = encoder.button_count();
   return pressed;
+}
+
+bool Display::button_long_pressed()
+{
+  static unsigned long prev_count=0;
+  bool pressed = prev_count != encoder.button_count();
+  if ( pressed && (encoder.button_time() > 1000) )
+  {
+    prev_count = encoder.button_count();
+    return true;
+  }
+  return false;
+}
+
+int Display::button_pressed_time()
+{
+    return encoder.button_time();
 }
 
 bool Display::encoder_changed()
@@ -209,14 +227,15 @@ void Display::logo()
   delay(textDelay);
 
   delay(1000);
-  lcd.setCursor(1,0);
-  lcd.print(HARDWARE_REVISION);
+  lcd.setCursor(0,3);
+  lcd.print("r" HARDWARE_REVISION);
+  lcd.setCursor(20-strlen("v" SOFTWARE_VERSION), 3);
+  lcd.print("v" SOFTWARE_VERSION);
 
-  lcd.setCursor(15,0);
-  lcd.print(SOFTWARE_VERSION);
-
-  lcd.setCursor(3,3);
+  lcd.setCursor(4,1);
   lcd.print(__DATE__);
+  lcd.setCursor(6,2);
+  lcd.print(__TIME__);
 
-  delay(1000);
+  delay(3000);
 }
