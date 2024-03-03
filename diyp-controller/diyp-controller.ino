@@ -63,7 +63,7 @@ void setup()
   statusLed.color(ColorLed::WHITE);
 
   display.init();
-  display.logo();
+  display.logo(__DATE__,__TIME__);
 
   if ( (result=settings.load()) < 0)
   {
@@ -74,13 +74,7 @@ void setup()
   else
     Serial.println("Load settings OK, result="); Serial.println(result);
 
-  Serial.println( settings.temperature() );
-  Serial.println( settings.P() );
-  Serial.println( settings.I() );
-  Serial.println( settings.D() );
-
-  boilerController.set_pid( settings.P(), settings.I(), settings.D() );
-  boilerController.set_temp( settings.temperature() );
+  apply_settings();
 
   display.custom_chars(custom_chars_spinner);
   encoder.start();
@@ -90,6 +84,29 @@ void setup()
   boilerController.set_temp( settings.temperature() );
 }
 
+void apply_settings()
+{
+  Serial.print("temperature="); Serial.println( settings.temperature() );
+  boilerController.set_temp( settings.temperature() );
+
+  Serial.print("P="); Serial.println( settings.P() );
+  Serial.print("I="); Serial.println( settings.I() );
+  Serial.print("D="); Serial.println( settings.D() );
+  boilerController.set_pid( settings.P(), settings.I(), settings.D() );
+
+  Serial.print("tareWeight="); Serial.println( settings.tareWeight() );
+  Serial.print("trimWeight="); Serial.println( settings.trimWeight() );
+  reservoir.set_trim( settings.trimWeight() );
+  reservoir.set_tare( settings.tareWeight() );
+
+  Serial.print("preInfusionTime="); Serial.println( settings.preInfusionTime() );
+  Serial.print("infuseTime="); Serial.println( settings.infusionTime() );
+  Serial.print("extractTime="); Serial.println( settings.extractionTime() );
+  Serial.print("extractionWeight="); Serial.println( settings.extractionWeight() );
+  brewProcess.preInfuseTime=settings.preInfusionTime();
+  brewProcess.infuseTime=settings.infusionTime();
+  brewProcess.extractTime=settings.extractionTime();
+}
 
 // Output the state to serial port
 void print_state()
@@ -140,9 +157,7 @@ void loop()
       {
         Serial.println("Done!");
         boilerController.clear_error();
-        brewProcess.preInfuseTime=settings.preInfusionTime();
-        brewProcess.infuseTime=settings.infusionTime();
-        brewProcess.extractTime=settings.extractionTime();
+        apply_settings();
         settings.save();
         menu = 0;
       }

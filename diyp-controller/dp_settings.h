@@ -21,9 +21,12 @@ class DiyeSettings
             double preInfusionTime;
             double infusionTime;
             double extractionTime;
-            double extractionWeight;            
+            double extractionWeight;
             double p, i, d, ff;
+            double tareWeight;
+            double trimWeight;
             int shotCounter;
+            int wifiState;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -53,8 +56,15 @@ class DiyeSettings
         double D(double d) { return settings.d = min(10.0, max(d, 0.0)); }
         double FF() { return settings.ff; }
         double FF(double ff) { return settings.ff = min(100.0, max(ff, 0.0)); }
+        double tareWeight() { return settings.tareWeight; }
+        double tareWeight(double t) { return settings.tareWeight = min(1000.0, max(t, 0.0)); }
+        double trimWeight() { return settings.trimWeight; }
+        double trimWeight(double t) { return settings.trimWeight = min(10.0, max(t, -10.0)); }
+        int wifiState() { return settings.wifiState; }
+        int wifiState(int state) { return settings.wifiState = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
         int incShotCounter() { return settings.shotCounter += 1; }
+        void zeroShotCounter() { settings.shotCounter = 0; }
 };
 
 extern DiyeSettings settings;

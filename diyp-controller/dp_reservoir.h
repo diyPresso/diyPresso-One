@@ -16,18 +16,21 @@ class Reservoir
 {
     private:
       double _level = 0;  // level [0..100%]
-      double _tarre = 0;  // tarre weight [gr]
+      double _tare = 0;  // tare weight [gr]
       double _weight = 0; // weight [gr]
       double _offset = 240000; // zero level offset [adc_units]
       double _scale = 427.4;   // scale [adc_units/gram]
+      double _trim = 0.0;      // scale trim to match calibrated weight [%]
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
       void read();  // update the internal state, based on weight measurement
     public:
       Reservoir();
-      double level() { read(); return 100.0 * (_weight / RESERVOIR_CAPACITY); } // level [in %]
-      double weight() { read(); return _weight - _tarre; }
-      void tarre() { read(); _tarre = _weight; }
-      void tarre(double t) { _tarre = t; }
+      double level() { return 100.0 * ( weight() / RESERVOIR_CAPACITY); } // level [in %]
+      double weight() { read(); return _weight - _tare; }
+      double get_tare() { return _tare; }
+      void set_tare(double t) { _tare = t; }
+      void set_trim(double t) { _trim = t; }
+      void tare() { read(); _tare = _weight; }
       bool empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
       reservoir_error_t error() { return _error; }
 };

@@ -15,14 +15,13 @@ Reservoir reservoir;
 Reservoir::Reservoir()
 {
   scale.begin(PIN_HX711_DAT, PIN_HX711_CLK);
-  read(); // at least one control loop to init the state
+  read(); // at least one reading at start to init the state
 }
 
+/// @brief Read weight sensor and store the scaled weight value
 void Reservoir::read()
 {
   _weight = scale.read_average(3);
-  _weight = (_weight - _offset) / _scale;
-  if ( _weight <10 ) // clamp weight at low end
-    _weight = 1;
+  _weight = (_weight - _offset) / ( (1.0+_trim/100.0) * _scale);
 }
 

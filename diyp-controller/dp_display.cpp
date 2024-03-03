@@ -159,7 +159,7 @@ long Display::encoder_value()
 }
 
 
-void Display::logo()
+void Display::logo(const char *date, const char*time)
 {
   int textDelay = 1;
   lcd.setCursor(8,0);
@@ -233,9 +233,9 @@ void Display::logo()
   lcd.print("v" SOFTWARE_VERSION);
 
   lcd.setCursor(4,1);
-  lcd.print(__DATE__);
+  lcd.print(date);
   lcd.setCursor(6,2);
-  lcd.print(__TIME__);
+  lcd.print(time);
 
   delay(3000);
 }

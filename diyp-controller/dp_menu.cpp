@@ -11,7 +11,18 @@
 #include "dp_pump.h"
 #include "dp_settings.h"
 
-double settings_vals[10];
+double settings_vals[32];
+
+// the increment setting has some special values:
+#define READ_ONLY 0         // only display value, cannot modify
+#define EXECUTE_FUNCTION -1 // Execute a function, the 'decimals' field contains a function ID
+#define SELECT_ITEM -2      // Select item from a list, 'unit' has an `ASCII-ZERO` separated list
+
+// List of function IDs
+#define FUNCTION_SAVE 1
+#define FUNCTION_TARE 2
+#define FUNCTION_ZERO 3
+
 
 // "text", "unit", pointer, increment, decimals
 const setting_t settings_list[] =
@@ -25,8 +36,12 @@ const setting_t settings_list[] =
   {"I-Gain", "%/\337C/s",  &settings_vals[6],0.02, 2 },
   {"D-Gain", "%s",  &settings_vals[7], 0.02, 2 },
   {"FF-Value", "%",  &settings_vals[8], 0.02, 2 },
-  {"Shot counter", "shots",  &settings_vals[9], 0.00, 0 },
-  {"       [SAVE]", "",  &settings_vals[10], -1.0, 0 }
+  {"Shot counter", "shots",  &settings_vals[9], READ_ONLY, 0 },
+  {"WIFI", "ON\0OFF\0AP\0", &settings_vals[10], SELECT_ITEM, 1},
+  {"Weight trim", "%",  &settings_vals[11], 0.05, 2 },
+  {"   <Tare Weight>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
+  {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
+  {"       <SAVE>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
 };
 
 const int num_settings = sizeof(settings_list) / sizeof(setting_t);
@@ -34,8 +49,8 @@ const int num_settings = sizeof(settings_list) / sizeof(setting_t);
 
 const char *errors_list[] = {
   //0123456789012345678
-  " OVER TERMPERATURE  ",
-  " UNDER TERMPERATURE ",
+  " OVER TEMPERATURE   ",
+  " UNDER TEMPERATURE  ",
   " TEMPERATURE SENSOR ",
   "   HEATER TIMEOUT   ",
   "   WEIGHT SENSOR    "
@@ -43,8 +58,8 @@ const char *errors_list[] = {
 
 const int num_errors = sizeof(errors_list) / sizeof(char*);
 
-#define CELCIUS_CHAR 0xDF
-#define CELCIUS_STR "\337"
+#define CELSIUS_CHAR 0xDF
+#define CELSIUS_STR "\337"
 
 //const char spinner_chars[] = "/-\|";
 const char spinner_chars[] = "\0\1\2\3\4\5\6\7";
@@ -59,7 +74,7 @@ const char *menus[] = {
 
 // SETTING=1
 // 01234567890123456789
-  "SETTING      [##/##]"
+  "SETTINGS     [##/##]"
   "################### "
   "  ########## #######"
   "             [PRESS]",
@@ -91,10 +106,19 @@ const char *menus[] = {
   " LONG PRESS BUTTON  "
   "   TO WAKE ME...    ",
 
+// SURE=6
+// 01234567890123456789
+  "####################"
+  "    ARE YOU SURE?   "
+  "                    "
+  "       ###    [TURN]",
 
 };
-
 const int num_menus = sizeof(menus) / sizeof(char*);
+
+const char *get_string_item(const char *items, int index);
+int get_item_count(const char *items);
+double add_value(int n, double delta);
 
 
 bool menu_brew()
@@ -146,7 +170,6 @@ bool menu_main()
   format_float(arg[1], boilerController.set_temp(), 1);
   format_float(arg[2], heaterDevice.power(), 0, 3);
   strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
-  //arg[3] = heater;
   format_float(arg[4], brewProcess.brew_time(), 1, 5);
   arg[5] = spinner;
   format_float(arg[6], reservoir.weight(), 0, 5);
@@ -154,10 +177,81 @@ bool menu_main()
   return false;
 }
 
+
+// Settings menu (blocking)
+bool menu_settings()
+{
+  static char buf[32], bufs[10][32];
+  static char *arg[10];
+  static bool modify = false;
+  static int idx = 0;
+  static bool button_pressed;
+  static long pos=0, prev_pos=0, loop=0;
+  static double set_val=0;
+
+  for(int i=0; i<10; i++)
+    arg[i] = bufs[i];
+  format_float(arg[1], num_settings, 0);
+
+  setting_t set = settings_list[idx];
+  pos = display.encoder_value();
+  button_pressed = display.button_pressed();
+  if ( modify )
+  {
+    set_val = add_value(idx, set.delta * (pos - prev_pos));
+  }
+  else
+  {
+    idx +=  pos - prev_pos;
+    idx %= num_settings;
+    if ( idx < 0) idx += num_settings;
+    set_val = add_value(idx, 0.0);
+  }
+
+  if ( button_pressed )
+  {
+    if ( set.delta == EXECUTE_FUNCTION )
+    {
+      switch ( set.decimals )
+      {
+        case FUNCTION_SAVE: return true; break;
+        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); return true; break;
+        case FUNCTION_ZERO: settings.zeroShotCounter(); return true; break;
+      }
+    }
+    else
+    {
+      if (set.delta != READ_ONLY)
+        modify = !modify;
+    }
+  }
+
+  if ( modify && set.delta == EXECUTE_FUNCTION && set.decimals == FUNCTION_SAVE )
+    return true;
+
+  arg[2] = set.name;
+  arg[4] = set.unit;
+
+  switch ( (int)set.delta )
+  {
+    case EXECUTE_FUNCTION: *arg[3] = 0; break;    // A function to execute: no value to display
+    case SELECT_ITEM: strcpy(arg[3], get_string_item(set.unit, set_val)); arg[4] = ""; break;
+    default: format_float(arg[3], set_val, set.decimals, 10); break;  // Show the value
+  }
+
+  format_float(arg[0], idx+1, 0, 2); // the item number
+  display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
+  prev_pos = pos;
+
+  return false;
+}
+
 // add a value to a setting
 double add_value(int n, double delta)
 {
   double result;
+  if ( delta != 0 ) Serial.print("delta:"); Serial.print(delta);
+
   switch ( n )
   {
     case 0: return settings.temperature(settings.temperature() + delta);
@@ -169,60 +263,11 @@ double add_value(int n, double delta)
     case 6: return settings.I(settings.I() + delta);
     case 7: return settings.D(settings.D() + delta);
     case 8: return settings.FF(settings.FF() + delta);
-    case 9: return settings.shotCounter(); // Shot counter;
-    case 10: return 0; // SAVE
+    case 9: return settings.shotCounter();
+    case 10: return settings.wifiState(settings.wifiState() + delta / 2.0);
+    case 11: return settings.trimWeight( settings.trimWeight() + delta);
+    default: return 0;
   }
-}
-
-// Settings menu (blocking)
-bool menu_settings()
-{
-  static char buf[32], bufs[10][32];
-  static char *arg[10];
-  static bool modify = false, prev_modify = false;
-  static int idx = 0;
-  static bool button_pressed;
-  static long pos=0, prev_pos=0, loop=0;
-  static double set_val=0;
-
-  for(int i=0; i<10; i++)
-    arg[i] = bufs[i];
-  format_float(arg[1], num_settings, 0);
-
-//  while ( loop++ < 1000 && brewSwitch.down())
-  {
-    setting_t set = settings_list[idx];
-    pos = display.encoder_value();
-    button_pressed = display.button_pressed();
-    if ( modify )
-    {
-      set_val = add_value(idx, set.delta * (pos - prev_pos));
-    }
-    else
-    {
-      idx +=  pos - prev_pos;
-      idx %= num_settings;
-      if ( idx < 0) idx += num_settings;
-      set_val = add_value(idx, 0.0);
-    }
-    if ( button_pressed )
-       modify = !modify;
-    if ( modify && set.delta == -1.0)
-      return true;
-
-    if (set.delta == -1.0) // Save menu: no value to display
-      *arg[3] = 0;
-    else
-      format_float(arg[3], set_val, set.decimals, 10);  // Show the value
-
-    format_float(arg[0], idx+1, 0, 2);
-    arg[2] = set.name;
-    arg[4] = set.unit;
-    display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
-    prev_pos = pos;
-    prev_modify = modify;
-  }
-  return false;
 }
 
 
@@ -255,3 +300,32 @@ bool menu_sleep()
   display.show(menus[MENU_SLEEP], &sleep_spinner[spinner]);
   return false;
 }
+
+
+/// @brief Get a string from a list of strings
+/// @param a pointer to list of ASCIZ terminated strings, where the last item has zero length
+/// @param index the index in the list (0 ..[n-items]) 
+/// @return pointer to ASCIZ string from list. If index is larger than items, return zero length item
+const char *get_string_item(const char *items, int index)
+{
+  const char *ptr = items;
+  while ( index && strlen(ptr) )
+  {
+    ptr += strlen(ptr)+1;
+    index--;
+  }
+  return ptr;
+}
+
+int get_item_count(const char *items)
+{
+  const char *ptr = items;
+  int count = 0;
+  while ( strlen(ptr) )
+  {
+    ptr += strlen(ptr)+1;
+    count++;
+  }
+  return count;
+}
+
