@@ -6,9 +6,9 @@
 #ifndef MENU_H
 #define MENU_H
 
-extern void display_settings();
-extern void menu_brew();
-extern void menu_main();
+extern bool menu_settings();
+extern bool menu_brew();
+extern bool menu_main();
 
 typedef enum { MENU_MAIN=0, MENU_SETTING=1, MENU_MODIFY=2, MENU_ERROR=3, MENU_BREW=4 } menu_list_t;
 

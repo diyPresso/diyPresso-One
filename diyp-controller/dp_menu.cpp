@@ -13,17 +13,18 @@
 
 double settings_vals[10];
 
-const setting_t settings_list[] = 
+// "text", "unit", pointer, increment, decimals
+const setting_t settings_list[] =
 {
   {"Temperature", "\337C", &settings_vals[0], 0.5, 2 },
   {"Pre-infusion time", "sec", &settings_vals[1], 0.1, 2 },
   {"Infusion time", "sec", &settings_vals[2], 0.1, 2 },
   {"Extraction time", "sec", &settings_vals[3], 0.5, 2 },
   {"Extraction weight", "gram", &settings_vals[4], 0.5, 2 },
-  {"P-Gain", "", &settings_vals[5], 0.1, 2 },
-  {"I-Gain", "",  &settings_vals[6],0.02, 2 },
-  {"D-Gain", "",  &settings_vals[7], 0.02, 2 },
-  {"FF-Value", "",  &settings_vals[8], 0.02, 2 },
+  {"P-Gain", "%/\337C", &settings_vals[5], 0.1, 2 },
+  {"I-Gain", "%/\337C/s",  &settings_vals[6],0.02, 2 },
+  {"D-Gain", "%s",  &settings_vals[7], 0.02, 2 },
+  {"FF-Value", "%",  &settings_vals[8], 0.02, 2 },
   {"Shot counter", "shots",  &settings_vals[9], 0.00, 0 },
   {"       [SAVE]", "",  &settings_vals[10], -1.0, 0 }
 };
@@ -60,14 +61,14 @@ const char *menus[] = {
 // 01234567890123456789
   "SETTING      [##/##]"
   "################### "
-  "####### ######      "
+  "  ########## #######"
   "             [PRESS]",
 
 // MODIFY=2
 // 01234567890123456789
   "MODIFY       [##/##]"
   "################### "
-  "####### ######      "
+  "  ########## #######"
   "              [TURN]",
 
 // ERROR=3
@@ -89,7 +90,7 @@ const char *menus[] = {
 const int num_menus = sizeof(menus) / sizeof(char*);
 
 
-void menu_brew()
+bool menu_brew()
 {
   char bufs[10][32];
   char *arg[10];
@@ -104,10 +105,11 @@ void menu_brew()
   format_float(arg[2], brewProcess.brew_time(), 1);
 
   display.show(menus[MENU_BREW], arg);
+  return false;
 }
 
 // Main menu
-void menu_main()
+bool menu_main()
 {
   static int count=0;
   char bufs[10][32];
@@ -142,6 +144,7 @@ void menu_main()
   arg[5] = spinner;
   format_float(arg[6], reservoir.weight(), 0, 5);
   display.show(menus[MENU_MAIN], arg);
+  return false;
 }
 
 // add a value to a setting
@@ -165,7 +168,7 @@ double add_value(int n, double delta)
 }
 
 // Settings menu (blocking)
-void display_settings()
+bool menu_settings()
 {
   static char buf[32], bufs[10][32];
   static char *arg[10];
@@ -179,7 +182,7 @@ void display_settings()
     arg[i] = bufs[i];
   format_float(arg[1], num_settings, 0);
 
-  while ( loop++ < 1000 && brewSwitch.down())
+//  while ( loop++ < 1000 && brewSwitch.down())
   {
     setting_t set = settings_list[idx];
     pos = display.encoder_value();
@@ -198,12 +201,12 @@ void display_settings()
     if ( button_pressed )
        modify = !modify;
     if ( modify && set.delta == -1.0)
-      return;
+      return true;
 
     if (set.delta == -1.0) // Save menu: no value to display
       *arg[3] = 0;
     else
-      format_float(arg[3], set_val, set.decimals);  // Show the value
+      format_float(arg[3], set_val, set.decimals, 10);  // Show the value
 
     format_float(arg[0], idx+1, 0, 2);
     arg[2] = set.name;
@@ -212,5 +215,5 @@ void display_settings()
     prev_pos = pos;
     prev_modify = modify;
   }
-
+  return false;
 }

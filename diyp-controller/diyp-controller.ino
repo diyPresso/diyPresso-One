@@ -83,12 +83,10 @@ void setup()
   boilerController.set_temp( settings.temperature() );
 
   display.custom_chars(custom_chars_spinner);
-  //plotMainMenu();   // LCD main menu after 3 seconds
   encoder.start();
   Serial.println("INIT DONE");
-  // display_settings();
-  heaterDevice.pwm_period(0.5); // [sec]
-  boilerController.maintain();
+  heaterDevice.pwm_period(2.0); // [sec]
+  boilerController.on();
   boilerController.set_temp( settings.temperature() );
 }
 
@@ -99,16 +97,12 @@ void print_state()
   static unsigned long prev_time = millis();
   if ( time_since(prev_time) > 500)
   {
-    Serial.print("setpoint:");
-    Serial.print(boilerController.set_temp());
-    Serial.print(", power:");
-    Serial.print(heaterDevice.power());
-    Serial.print(", average:");
-    Serial.print(heaterDevice.average());
-    Serial.print(", act_temp:");
-    Serial.print(boilerController.act_temp());
-    Serial.print(", error:");
-    Serial.println(boiler_error_text[boilerController.error()]);
+    Serial.print("setpoint:"); Serial.print(boilerController.set_temp());
+    Serial.print(", power:");  Serial.print(heaterDevice.power());
+    Serial.print(", average:"); Serial.print(heaterDevice.average());
+    Serial.print(", act_temp:"); Serial.print(boilerController.act_temp());
+    Serial.print(", boiler-state:"); Serial.print(boilerController.get_state_text());
+    Serial.print(", boiler-error:"); Serial.println(boilerController.get_error_text());
     prev_time = millis();
   }
 }
@@ -130,24 +124,26 @@ void loop()
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
-  //print_state();
+  print_state();
 
   switch ( menu )
   {
     case 0:
       menu_main();
-      if ( display.encoder_changed() )
-        menu +=1;
+      if ( display.encoder_changed() || display.button_pressed() )
+        menu += 1;
       break;
     case 1:
-      display_settings(); // blocking!
-      display.encoder_changed();
-      Serial.println("Done!");
-      brewProcess.preInfuseTime=settings.preInfusionTime();
-      brewProcess.infuseTime=settings.infusionTime();
-      brewProcess.extractTime=settings.extractionTime();
-      settings.save();
-      menu = 0;
+      if ( menu_settings() )
+      {
+        Serial.println("Done!");
+        boilerController.clear_error();
+        brewProcess.preInfuseTime=settings.preInfusionTime();
+        brewProcess.infuseTime=settings.infusionTime();
+        brewProcess.extractTime=settings.extractionTime();
+        settings.save();
+        menu = 0;
+      }
       break;
     default:
       menu = 0;

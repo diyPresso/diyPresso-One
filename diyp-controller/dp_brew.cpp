@@ -2,7 +2,6 @@
  diyEspresso Brew Process control
  Implemented as a Finite State Machine
  Uses state machine library: YASM v1.2.0 - Bricofoy - https://github.com/bricofoy/yasm/
- 
  */
 #include "dp_brew.h"
 #include "dp_boiler.h"
@@ -31,14 +30,14 @@ void BrewProcess::init()
 }
 
 
-void BrewProcess::idle() 
+void BrewProcess::idle()
 {
   STATE(BREW_IDLE);
-  _start = millis(); 
+  _start = millis();
   _brewTimer.stop();
   statusLed.color(ColorLed::GREEN);
   pumpDevice.off();
-  boilerController.maintain();
+  boilerController.on();
   if ( brewSwitch.up() ) NEXT(pre_infuse);
 }
 
@@ -46,12 +45,12 @@ void BrewProcess::idle()
 void BrewProcess::pre_infuse()
 {
   STATE(BREW_PRE_INFUSE);
-  ON_ENTRY() 
+  ON_ENTRY()
   {
     _brewTimer.start();
     statusLed.color(ColorLed::BLUE);
     pumpDevice.on();
-    boilerController.brew();
+    boilerController.start_brew();
     settings.incShotCounter();
   }
   if ( brewSwitch.down() ) NEXT(idle);
@@ -62,9 +61,10 @@ void BrewProcess::pre_infuse()
 void BrewProcess::infuse()
 {
   STATE(BREW_INFUSE);
+  boilerController.stop_brew();
   statusLed.color(ColorLed::YELLOW);
   pumpDevice.off();
-  boilerController.maintain();
+  boilerController.on();
   if ( brewSwitch.down() ) NEXT(idle);
   AFTER(infuseTime, extract);
 }
@@ -75,7 +75,7 @@ void BrewProcess::extract()
   STATE(BREW_EXTRACT);
   statusLed.color(ColorLed::PURPLE);
   pumpDevice.on();
-  boilerController.brew();
+  boilerController.start_brew();
   //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle);
   AFTER(extractTime, finished);
   if ( brewSwitch.down() ) NEXT(idle);
@@ -87,7 +87,7 @@ void BrewProcess::finished()
   STATE(BREW_FINISHED);
   statusLed.color(ColorLed::CYAN);
   pumpDevice.off();
-  boilerController.off();
+  boilerController.stop_brew();
   if ( display.button_pressed() ) NEXT(extract);
   if ( brewSwitch.down() ) NEXT(idle);
   AFTER(finishedTime, error);

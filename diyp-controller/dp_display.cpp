@@ -209,13 +209,13 @@ void Display::logo()
   delay(textDelay);
 
   delay(1000);
-  lcd.setCursor(1,3);
+  lcd.setCursor(1,0);
   lcd.print(HARDWARE_REVISION);
 
-  lcd.setCursor(15,3);
+  lcd.setCursor(15,0);
   lcd.print(SOFTWARE_VERSION);
 
-  lcd.setCursor(5,0);
+  lcd.setCursor(3,3);
   lcd.print(__DATE__);
 
   delay(1000);

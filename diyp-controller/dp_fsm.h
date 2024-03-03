@@ -16,21 +16,21 @@
     };
 
 
+    // a prototype state handler function
     MyStateMachine::state_function()
     {
-        if ( on_entry() ) ON_ENTRY_CODE ...
-        if ( on_timeout(10.0) ) next(error_state_function);
-        if ( on_message(MSG_A) ) next(state_function1);
-        else if ( on_message(MSG_B) ) next(state_function2);
-        if ( on_exit() ) ON_EXIT_CODE ...
+        if ( on_entry() ) ON_ENTRY_CODE ...  // Executed once, if we enter this state
+        if ( on_timeout(10.0) ) next(error_state_function); // Executed when we are longer in this state than timeout [seconds]
+        if ( on_message(MSG_A) ) next(state_function1); // Executed when we receive a message
+        else if ( on_message(MSG_B) ) next(state_function2); // Note: only 1 message per handler execution is received
+        if ( on_exit() ) ON_EXIT_CODE ... // use as last statement in function, executed once if we leave this state
     }
-
 
     To execute the state machine:
 
     if ( stateMachine.run(msg) )
     {
-        error("Unhandled message [message] in state [state]");
+        error("Unhandled message [msg] in state [state]");
     }
 
 */
@@ -49,7 +49,7 @@ class StateMachine
         void next(state_function_ptr state) { _next_state = state; };
         bool on_entry() { return _cur_state != _prev_state; }
         bool on_exit() { return _cur_state != _next_state; }
-        bool on_timeout( unsigned long duration ) { return !( (_state_time+(1000*duration)) < millis()); }
+        bool on_timeout( unsigned long duration ) { return (_state_time+duration) < millis(); }
         bool on_message(int msg) { if ( msg == _message) { _message = 0; return true; } return false; }
         bool no_message() { return _message == 0; }
         void state_none() { }
@@ -61,17 +61,26 @@ class StateMachine
             _next_state = &StateMachine::state_none;
             _prev_state = &StateMachine::state_none;
         }
+        bool in_state(state_function_ptr s) { return _cur_state == s; }
+        bool run() { run(0); }
         bool run(int msg)
         {
             _message = msg;
             (((T*)this)->*_cur_state)();
             _prev_state = _cur_state;
-            if ( _next_state != &StateMachine::state_none )
+            if ( _next_state != _cur_state )
             {
                 _cur_state = _next_state;
-                _next_state = &StateMachine::state_none;
-                 _state_time=millis(); 
+                _next_state = _cur_state;
+                _state_time = millis();
             }
             return !no_message();
         }
 };
+
+// Some convenient macros (note: set _DP_FSM_TYPE to the Class name of your state machine before including this header to use them)
+#define NEXT(state) next(&_DP_FSM_TYPE::state)
+#define ON_ENTRY() if ( on_entry() )
+#define ON_EXIT() if ( on_exit() )
+#define ON_TIMEOUT(t) if ( on_timeout(t) )
+#define ON_MESSAGE(m) if ( on_message(m) )
