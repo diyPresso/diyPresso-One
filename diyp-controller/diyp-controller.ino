@@ -3,7 +3,8 @@
     (c) 2024 - diyPresso
 
     Used Libraries:
-    Timer v1.2.1 - stefan Staub
+    * Timer v1.2.1 - stefan Staub
+    * EasyWiFi-for-Mkr1010 v1.4.0 - JAY fOX  - https://github.com/javos65/EasyWifi-for-MKR1010/
 
     This software uses a singleton design pattern for all modules. A .cpp file with an instance of a single object is created for each
     function. Such a module may contain instances to low-level devices and use other modules and objects
@@ -48,7 +49,9 @@
 #include "dp_brew.h"
 #include "dp_heater.h"
 
+#include "dp_wifi.h"
 
+static bool wifi_enabled = false;
 
 /**
  * @brief setup code
@@ -62,8 +65,9 @@ void setup()
   Serial.println(__DATE__ " " __TIME__);
   statusLed.color(ColorLed::WHITE);
 
+  encoder.start();
   display.init();
-  display.logo(__DATE__,__TIME__);
+  display.logo(__DATE__, __TIME__);
 
   if ( (result=settings.load()) < 0)
   {
@@ -74,14 +78,36 @@ void setup()
   else
     Serial.println("Load settings OK, result="); Serial.println(result);
 
+  Serial.println(encoder.button_count());
+  if ( encoder.button_count() > 3 )
+  {
+    Serial.println("button pressed 4x at startup: perform factory reset of settings");
+    settings.defaults();
+    Serial.println( settings.save() );
+  }
+
   apply_settings();
 
   display.custom_chars(custom_chars_spinner);
-  encoder.start();
+
   Serial.println("INIT DONE");
   heaterDevice.pwm_period(2.0); // [sec]
   boilerController.on();
   boilerController.set_temp( settings.temperature() );
+
+  if ( wifi_enabled )
+  {
+    if ( settings.wifiMode() == WIFI_MODE_AP)
+    {
+      wifi_erase();
+      settings.wifiMode(WIFI_MODE_ON);
+      settings.save();
+    }
+    menu_wifi("starting");
+    wifi_setup();
+    wifi_loop();
+    delay(1000);
+  }
 }
 
 void apply_settings()
@@ -106,6 +132,7 @@ void apply_settings()
   brewProcess.preInfuseTime=settings.preInfusionTime();
   brewProcess.infuseTime=settings.infusionTime();
   brewProcess.extractTime=settings.extractionTime();
+  wifi_enabled = settings.wifiMode() != WIFI_MODE_OFF;
 }
 
 // Output the state to serial port
@@ -128,6 +155,7 @@ void print_state()
 void loop()
 {
   static unsigned long timer=0;
+  static unsigned long counter=0;
   static unsigned menu=0;
 
 /// BEGIN Test code to simulate heater
@@ -148,8 +176,9 @@ void loop()
   switch ( menu )
   {
     case 0:
+      counter = 0;
       menu_main();
-      if ( display.encoder_changed() || display.button_pressed() )
+      if ( display.encoder_changed() /*|| display.button_pressed()*/ )
         menu = 1;
       break;
     case 1:
@@ -159,12 +188,18 @@ void loop()
         boilerController.clear_error();
         apply_settings();
         settings.save();
-        menu = 0;
+        menu = 3;
       }
       break;
     case 2: // sleep menu
       menu_sleep();
       if ( !brewProcess.is_awake() )
+        menu = 0;
+      break;
+    case 3: // saved menu
+      menu_saved();
+      display.button_pressed();
+      if ( counter++ > 10 )
         menu = 0;
       break;
     default:

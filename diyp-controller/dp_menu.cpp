@@ -37,7 +37,7 @@ const setting_t settings_list[] =
   {"D-Gain", "%s",  &settings_vals[7], 0.02, 2 },
   {"FF-Value", "%",  &settings_vals[8], 0.02, 2 },
   {"Shot counter", "shots",  &settings_vals[9], READ_ONLY, 0 },
-  {"WIFI", "ON\0OFF\0AP\0", &settings_vals[10], SELECT_ITEM, 1},
+  {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[10], SELECT_ITEM, 1},
   {"Weight trim", "%",  &settings_vals[11], 0.05, 2 },
   {"   <Tare Weight>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
@@ -106,12 +106,25 @@ const char *menus[] = {
   " LONG PRESS BUTTON  "
   "   TO WAKE ME...    ",
 
-// SURE=6
+// CONFIRM=6
 // 01234567890123456789
   "####################"
   "    ARE YOU SURE?   "
   "                    "
   "       ###    [TURN]",
+
+// WIFI=7
+// 01234567890123456789
+  " WIFI CONNECTING... "
+  " ################## "
+  " ################## "
+  "                    ",
+// SAVED=8
+// 01234567890123456789
+  "                    "
+  "   SETTINGS SAVED   "
+  "                    "
+  "                    "
 
 };
 const int num_menus = sizeof(menus) / sizeof(char*);
@@ -264,7 +277,7 @@ double add_value(int n, double delta)
     case 7: return settings.D(settings.D() + delta);
     case 8: return settings.FF(settings.FF() + delta);
     case 9: return settings.shotCounter();
-    case 10: return settings.wifiState(settings.wifiState() + delta / 2.0);
+    case 10: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
     case 11: return settings.trimWeight( settings.trimWeight() + delta);
     default: return 0;
   }
@@ -298,6 +311,35 @@ bool menu_sleep()
   if ( counter == 5 ){ counter=0; spinner +=1; }
   if ( spinner >= sizeof(sleep_spinner) / sizeof(const char *)) spinner = 0;
   display.show(menus[MENU_SLEEP], &sleep_spinner[spinner]);
+  return false;
+}
+
+bool menu_wifi(char *msg="")
+{
+  const char *wifi_spinner[] =
+  {
+    ".     ",
+    " .    ",
+    "  .   ",
+    "   .  ",
+    "    . ",
+    "     .",
+  };
+  static unsigned int spinner=0;
+  static char *args[10];
+  spinner += 1;
+  if ( spinner >= sizeof(wifi_spinner) / sizeof(const char *)) spinner = 0;
+  args[0] = (char*)wifi_spinner[spinner];
+  args[1] = msg;
+  display.show(menus[MENU_WIFI], args);
+  return false;
+}
+
+
+bool menu_saved()
+{
+  static char *args[10];
+  display.show(menus[MENU_SAVED], args);
   return false;
 }
 

@@ -11,7 +11,9 @@
 
 #include "Arduino.h"
 
-class DiyeSettings 
+typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP };
+
+class DiyeSettings
 {
     private:
         typedef struct __attribute__ ((packed)) settings_struct { // a packed struct has no alignment of fields
@@ -26,7 +28,7 @@ class DiyeSettings
             double tareWeight;
             double trimWeight;
             int shotCounter;
-            int wifiState;
+            int wifiMode;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -60,8 +62,8 @@ class DiyeSettings
         double tareWeight(double t) { return settings.tareWeight = min(1000.0, max(t, 0.0)); }
         double trimWeight() { return settings.trimWeight; }
         double trimWeight(double t) { return settings.trimWeight = min(10.0, max(t, -10.0)); }
-        int wifiState() { return settings.wifiState; }
-        int wifiState(int state) { return settings.wifiState = min(2, max(state, 0)); }
+        int wifiMode() { return settings.wifiMode; }
+        int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
         int incShotCounter() { return settings.shotCounter += 1; }
         void zeroShotCounter() { settings.shotCounter = 0; }

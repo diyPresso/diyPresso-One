@@ -61,7 +61,7 @@ void DiyeSettings::defaults()
     settings.ff = 10.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
-    settings.wifiState = 0;
+    settings.wifiMode = 0;
     settings.shotCounter = 0;
     update_crc();
 }
