@@ -55,7 +55,7 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     bool is_on() { return _on; }
     bool is_ready() { return _cur_state == &BoilerStateMachine::state_ready; }
     const char *get_error_text();
-    const char *get_state_text();
+    const char *get_state_name();
     void control();
   private:
     ArduPID _pid;

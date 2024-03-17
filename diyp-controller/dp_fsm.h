@@ -35,6 +35,9 @@
 
 */
 
+#ifndef _DP_FSM_H
+#define _DP_FSM_H
+
 
 template<typename T>
 class StateMachine
@@ -61,7 +64,7 @@ class StateMachine
             _next_state = &StateMachine::state_none;
             _prev_state = &StateMachine::state_none;
         }
-        bool in_state(state_function_ptr s) { return _cur_state == s; }
+        bool in_state(state_function_ptr state) { return _cur_state == state; }
         bool run() { run(0); }
         bool run(int msg)
         {
@@ -76,11 +79,19 @@ class StateMachine
             }
             return !no_message();
         }
+        virtual const char *get_state_name() { return "<undefined>"; }
 };
 
-// Some convenient macros (note: set _DP_FSM_TYPE to the Class name of your state machine before including this header to use them)
-#define NEXT(state) next(&_DP_FSM_TYPE::state)
+#endif // _DP_FSM_H
+
+// Some convenient macros (note: set _DP_FSM_TYPE to the Class name of your state machine before including <dp_fsm.h> header to use them)
+#define STATE(state) (&_DP_FSM_TYPE::state)
+#define NEXT(state) next(STATE(state))
 #define ON_ENTRY() if ( on_entry() )
 #define ON_EXIT() if ( on_exit() )
 #define ON_TIMEOUT(t) if ( on_timeout(t) )
 #define ON_MESSAGE(m) if ( on_message(m) )
+
+// Handy macro to be used in get_state_name() implementation
+#define RETURN_STATE_NAME(state) if (in_state(STATE(state_ ##state))) return #state;
+#define RETURN_UNKNOWN_STATE_NAME() return  "<unknown>"

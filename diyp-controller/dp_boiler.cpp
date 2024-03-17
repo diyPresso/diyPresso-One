@@ -122,12 +122,12 @@ const char *BoilerStateMachine::get_error_text()
     }
 }
 
-const char *BoilerStateMachine::get_state_text()
+const char *BoilerStateMachine::get_state_name()
 {
-    if (_cur_state == &BoilerStateMachine::state_off) return "OFF";
-    else if (_cur_state == &BoilerStateMachine::state_heating) return "HEATING";
-    else if (_cur_state == &BoilerStateMachine::state_ready) return "READY";
-    else if (_cur_state == &BoilerStateMachine::state_brew) return "BREW";
-    else if (_cur_state == &BoilerStateMachine::state_error) return "ERROR";
-    else return "UNKNOWN";
+    RETURN_STATE_NAME(off);
+    RETURN_STATE_NAME(heating);
+    RETURN_STATE_NAME(ready);
+    RETURN_STATE_NAME(brew);
+    RETURN_STATE_NAME(error);
+    RETURN_UNKNOWN_STATE_NAME();
 }

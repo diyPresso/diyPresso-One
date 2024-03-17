@@ -145,8 +145,12 @@ void print_state()
     Serial.print(", power:");  Serial.print(heaterDevice.power());
     Serial.print(", average:"); Serial.print(heaterDevice.average());
     Serial.print(", act_temp:"); Serial.print(boilerController.act_temp());
-    Serial.print(", boiler-state:"); Serial.print(boilerController.get_state_text());
-    Serial.print(", boiler-error:"); Serial.println(boilerController.get_error_text());
+    Serial.print(", boiler-state:"); Serial.print(boilerController.get_state_name());
+    Serial.print(", boiler-error:"); Serial.print(boilerController.get_error_text());
+    Serial.print(", brew-state:"); Serial.print(brewProcess.get_state_name());
+    Serial.print(", weight:"); Serial.print(brewProcess.weight());
+    Serial.print(", end_weight:"); Serial.print(brewProcess.end_weight());
+    Serial.println();
     prev_time = millis();
   }
 }

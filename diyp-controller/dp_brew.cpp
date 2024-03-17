@@ -3,109 +3,121 @@
  Implemented as a Finite State Machine
  Uses state machine library: YASM v1.2.0 - Bricofoy - https://github.com/bricofoy/yasm/
  */
-#include "dp_brew.h"
+#include "dp.h"
 #include "dp_boiler.h"
+#include "dp_reservoir.h"
 #include "dp_pump.h"
 #include "dp_brew_switch.h"
 #include "dp_display.h"
 #include "dp_led.h"
 #include "dp_settings.h"
-
+#include "dp_brew.h"
 
 BrewProcess brewProcess = BrewProcess();
 
-// Some handy macros to write a state machine
-#define STATE(s) do { _prev_state = state; state = s; } while(0) // Set state variable 
-#define AFTER(t, s) do { if ( (_time+(unsigned long)(1000*t)) < millis() ) set_state(&BrewProcess::s); } while(0) // set next state after time
-#define NEXT(s) set_state(&BrewProcess::s) // Set next state fct
-#define ON_ENTRY() if ( state != _prev_state ) // Execute once on entry of state
-
-char *brew_state_names[] = { "INIT", "IDLE", "PRE_INFUSE", "INFUSE", "EXTRACT", "FINISHED", "ERROR"};
-
-void BrewProcess::init()
+void BrewProcess::state_init()
 {
-  STATE(BREW_INIT);
   statusLed.color(ColorLed::BLACK);
-  NEXT(idle);
+  NEXT(state_idle);
 }
 
-void BrewProcess::sleep_state()
+void BrewProcess::state_sleep()
 {
-  STATE(BREW_SLEEP);
   statusLed.color(ColorLed::BLACK);
+  ON_MESSAGE(WAKEUP) NEXT(state_idle);
 }
 
-
-void BrewProcess::idle()
+void BrewProcess::state_idle()
 {
-  STATE(BREW_IDLE);
-  _start = millis();
-  _brewTimer.stop();
-  statusLed.color(ColorLed::GREEN);
-  pumpDevice.off();
-  boilerController.on();
-  if ( brewSwitch.up() ) NEXT(pre_infuse);
-}
-
-
-void BrewProcess::pre_infuse()
-{
-  STATE(BREW_PRE_INFUSE);
   ON_ENTRY()
   {
+    _brewTimer.stop();
+    statusLed.color(ColorLed::GREEN);
+    pumpDevice.off();
+    boilerController.on();
+  }
+  if ( brewSwitch.up() ) NEXT(state_pre_infuse);
+}
+
+void BrewProcess::state_pre_infuse()
+{
+  ON_ENTRY()
+  {
+    _start_weight = reservoir.weight();
     _brewTimer.start();
     statusLed.color(ColorLed::BLUE);
     pumpDevice.on();
     boilerController.start_brew();
     settings.incShotCounter();
   }
-  if ( brewSwitch.down() ) NEXT(idle);
-  AFTER(preInfuseTime, infuse);
+  if ( brewSwitch.down() ) NEXT(state_idle);
+  ON_TIMEOUT(1000*preInfuseTime) NEXT(state_infuse);
 }
 
-
-void BrewProcess::infuse()
+void BrewProcess::state_infuse()
 {
-  STATE(BREW_INFUSE);
-  boilerController.stop_brew();
-  statusLed.color(ColorLed::YELLOW);
-  pumpDevice.off();
-  boilerController.on();
-  if ( brewSwitch.down() ) NEXT(idle);
-  AFTER(infuseTime, extract);
+  ON_ENTRY()
+  {
+    boilerController.stop_brew();
+    statusLed.color(ColorLed::YELLOW);
+    pumpDevice.off();
+    boilerController.on();
+  }
+  if ( brewSwitch.down() ) NEXT(state_idle);
+  ON_TIMEOUT(1000*infuseTime) NEXT(state_extract);
 }
 
-
-void BrewProcess::extract()
+void BrewProcess::state_extract()
 {
-  STATE(BREW_EXTRACT);
-  statusLed.color(ColorLed::PURPLE);
-  pumpDevice.on();
-  boilerController.start_brew();
+  ON_ENTRY()
+  {
+    statusLed.color(ColorLed::PURPLE);
+    pumpDevice.on();
+    boilerController.start_brew();
+  }
   //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle);
-  AFTER(extractTime, finished);
-  if ( brewSwitch.down() ) NEXT(idle);
+  ON_TIMEOUT(1000*extractTime) NEXT(state_finished);
+  if ( brewSwitch.down() ) NEXT(state_idle);
 }
 
 
-void BrewProcess::finished()
+void BrewProcess::state_finished()
 {
-  STATE(BREW_FINISHED);
-  statusLed.color(ColorLed::CYAN);
-  pumpDevice.off();
-  boilerController.stop_brew();
-  if ( display.button_pressed() ) NEXT(extract);
-  if ( brewSwitch.down() ) NEXT(idle);
-  AFTER(finishedTime, error);
+  ON_ENTRY()
+  {
+    _end_weight = weight();
+    statusLed.color(ColorLed::CYAN);
+    pumpDevice.off();
+    boilerController.stop_brew();
+  }
+  if ( display.button_pressed() ) NEXT(state_extract);
+  if ( brewSwitch.down() ) NEXT(state_idle);
+  ON_TIMEOUT(1000*finishedTime) NEXT(state_error);
 }
 
 
-void BrewProcess::error()
+void BrewProcess::state_error()
 {
-  STATE(BREW_ERROR);
-  statusLed.color(ColorLed::RED);
-  pumpDevice.off();
-  _brewTimer.stop();
-  boilerController.off();
-  if ( brewSwitch.down() ) NEXT(idle);
+  ON_ENTRY()
+  {
+    statusLed.color(ColorLed::RED);
+    pumpDevice.off();
+    _brewTimer.stop();
+    boilerController.off();
+  }
+  if ( brewSwitch.down() ) NEXT(state_idle);
+}
+
+
+const char *BrewProcess::get_state_name()
+{
+    RETURN_STATE_NAME(init);
+    RETURN_STATE_NAME(sleep);
+    RETURN_STATE_NAME(idle);
+    RETURN_STATE_NAME(pre_infuse);
+    RETURN_STATE_NAME(infuse);
+    RETURN_STATE_NAME(extract);
+    RETURN_STATE_NAME(finished);
+    RETURN_STATE_NAME(error);
+    RETURN_UNKNOWN_STATE_NAME();
 }

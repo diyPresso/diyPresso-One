@@ -143,8 +143,7 @@ bool menu_brew()
   arg[1] = bufs[1];
   arg[2] = bufs[2];
 
-  format_float(arg[0], brewProcess.state, 0);
-  arg[0] = brew_state_names[brewProcess.state];
+  arg[0] = (char*)brewProcess.get_state_name();
   format_float(arg[1], brewProcess.step_time(), 1);
   format_float(arg[2], brewProcess.brew_time(), 1);
 
