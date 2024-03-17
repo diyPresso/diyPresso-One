@@ -55,6 +55,9 @@ class StateMachine
         bool on_timeout( unsigned long duration ) { return (_state_time+duration) < millis(); }
         bool on_message(int msg) { if ( msg == _message) { _message = 0; return true; } return false; }
         bool no_message() { return _message == 0; }
+        bool is_prev_state(state_function_ptr state) { return _prev_state == state; }
+        bool is_next_state(state_function_ptr state) { return _next_state == state; }
+        bool is_in_state(state_function_ptr state) { return _cur_state == state; }
         void state_none() { }
 
     public:

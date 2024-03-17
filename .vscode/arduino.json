@@ -1,6 +1,6 @@
 {
     "board": "arduino:samd:mkrwifi1010",
     "sketch": "diyp-controller/diyp-controller.ino",
-    "port": "/dev/ttyACM0"
-
+    "port": "/dev/ttyACM0",
+    "output": "../ArduinoOutput"
 }

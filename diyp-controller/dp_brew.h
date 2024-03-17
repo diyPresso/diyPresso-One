@@ -40,6 +40,7 @@ class BrewProcess : public StateMachine<BrewProcess>
     void state_infuse();
     void state_extract();
     void state_finished();
+    void common_transitions();
 
 };
 

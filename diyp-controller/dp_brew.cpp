@@ -1,7 +1,6 @@
 /*
  diyEspresso Brew Process control
  Implemented as a Finite State Machine
- Uses state machine library: YASM v1.2.0 - Bricofoy - https://github.com/bricofoy/yasm/
  */
 #include "dp.h"
 #include "dp_boiler.h"
@@ -14,6 +13,12 @@
 #include "dp_brew.h"
 
 BrewProcess brewProcess = BrewProcess();
+
+void BrewProcess::common_transitions()
+{
+  ON_MESSAGE(SLEEP) NEXT(state_sleep);
+  if ( brewSwitch.down() ) NEXT(state_idle);
+}
 
 void BrewProcess::state_init()
 {
@@ -31,12 +36,15 @@ void BrewProcess::state_idle()
 {
   ON_ENTRY()
   {
+    if ( !is_prev_state(STATE(state_finished)))
+      _end_weight = weight();
     _brewTimer.stop();
     statusLed.color(ColorLed::GREEN);
     pumpDevice.off();
     boilerController.on();
   }
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
+  common_transitions();
 }
 
 void BrewProcess::state_pre_infuse()
@@ -50,8 +58,8 @@ void BrewProcess::state_pre_infuse()
     boilerController.start_brew();
     settings.incShotCounter();
   }
-  if ( brewSwitch.down() ) NEXT(state_idle);
   ON_TIMEOUT(1000*preInfuseTime) NEXT(state_infuse);
+  common_transitions();
 }
 
 void BrewProcess::state_infuse()
@@ -63,8 +71,8 @@ void BrewProcess::state_infuse()
     pumpDevice.off();
     boilerController.on();
   }
-  if ( brewSwitch.down() ) NEXT(state_idle);
   ON_TIMEOUT(1000*infuseTime) NEXT(state_extract);
+  common_transitions();
 }
 
 void BrewProcess::state_extract()
@@ -78,6 +86,7 @@ void BrewProcess::state_extract()
   //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle);
   ON_TIMEOUT(1000*extractTime) NEXT(state_finished);
   if ( brewSwitch.down() ) NEXT(state_idle);
+  common_transitions();
 }
 
 
@@ -91,8 +100,8 @@ void BrewProcess::state_finished()
     boilerController.stop_brew();
   }
   if ( display.button_pressed() ) NEXT(state_extract);
-  if ( brewSwitch.down() ) NEXT(state_idle);
   ON_TIMEOUT(1000*finishedTime) NEXT(state_error);
+  common_transitions();
 }
 
 
@@ -105,7 +114,7 @@ void BrewProcess::state_error()
     _brewTimer.stop();
     boilerController.off();
   }
-  if ( brewSwitch.down() ) NEXT(state_idle);
+  common_transitions();
 }
 
 
