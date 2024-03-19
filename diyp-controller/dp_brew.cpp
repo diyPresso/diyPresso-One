@@ -16,8 +16,8 @@ BrewProcess brewProcess = BrewProcess();
 
 void BrewProcess::common_transitions()
 {
-  ON_MESSAGE(SLEEP) NEXT(state_sleep);
   if ( brewSwitch.down() ) NEXT(state_idle);
+  ON_MESSAGE(SLEEP) NEXT(state_sleep);
 }
 
 void BrewProcess::state_init()
@@ -45,6 +45,7 @@ void BrewProcess::state_idle()
   }
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
   common_transitions();
+  ON_TIMEOUT(1000*AUTOSLEEP_TIMEOUT) NEXT(state_sleep);
 }
 
 void BrewProcess::state_pre_infuse()
@@ -85,7 +86,6 @@ void BrewProcess::state_extract()
   }
   //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle);
   ON_TIMEOUT(1000*extractTime) NEXT(state_finished);
-  if ( brewSwitch.down() ) NEXT(state_idle);
   common_transitions();
 }
 

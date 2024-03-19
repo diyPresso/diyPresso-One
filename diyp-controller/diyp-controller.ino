@@ -163,6 +163,7 @@ void loop()
   static unsigned menu=0;
 
 /// BEGIN Test code to simulate heater
+#ifdef SIMULATE
   timer += 1;
   if ( timer < 150 )
       boilerController.set_temp( settings.temperature() );
@@ -170,6 +171,7 @@ void loop()
       boilerController.set_temp( 20.0 );
   if ( timer > 300 )
     timer = 0;
+#endif
 /// END Test code to simulate heater
 
   heaterDevice.control();
@@ -182,7 +184,7 @@ void loop()
     case 0:
       counter = 0;
       menu_main();
-      if ( display.encoder_changed() /*|| display.button_pressed()*/ )
+      if ( display.encoder_changed() )
         menu = 1;
       break;
     case 1:
@@ -206,6 +208,9 @@ void loop()
       if ( counter++ > 10 )
         menu = 0;
       break;
+    case 4: // error menu
+      // menu_error();
+      break;
     default:
       menu = 0;
   }
@@ -222,7 +227,6 @@ void loop()
     menu = 2;
 
 }
-
 
 
 void test_heater_loop()
