@@ -64,7 +64,7 @@ class StateMachine
         StateMachine(state_function_ptr initial_state)
         {
             _cur_state = initial_state;
-            _next_state = &StateMachine::state_none;
+            _next_state = initial_state;
             _prev_state = &StateMachine::state_none;
         }
         bool in_state(state_function_ptr state) { return _cur_state == state; }
@@ -97,4 +97,5 @@ class StateMachine
 
 // Handy macro to be used in get_state_name() implementation
 #define RETURN_STATE_NAME(state) if (in_state(STATE(state_ ##state))) return #state;
-#define RETURN_UNKNOWN_STATE_NAME() return  "<unknown>"
+#define RETURN_NONE_STATE_NAME() if (in_state(STATE(state_none))) return "<none>";
+#define RETURN_UNKNOWN_STATE_NAME() return  "<unknown>";

@@ -5,7 +5,6 @@
 #define HARDWARE_H
 
 #define HARDWARE_REVISION "1"
-#define SOFTWARE_VERSION "1.2.0"
 
 // GPIO
 #define PIN_BREW_SWITCH 1

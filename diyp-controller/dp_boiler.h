@@ -10,7 +10,7 @@
 #define TEMP_WINDOW 2.0 // in temperature range
 #define TEMP_LIMIT_HIGH 104.0 // > is TOO HGH
 #define TEMP_LIMIT_LOW 1.0 // < is TOO LOW
-#define TEMP_MIN_BREW 40.0 // do not brew under this temp
+#define TEMP_MIN_BREW 10.0 // do not brew under this temp
 
 // Times in [msec]
 #define TIMEOUT_HEATING (1000*600) // maximum heater on time: 10 minutes
@@ -18,15 +18,6 @@
 #define TIMEOUT_READY (1000*600) // maximum time in state ready: 10 minutes
 #define TIMEOUT_HEATER_SSR (1000 * 60) // maximum time the SSR is allowed to be ON
 #define TIMEOUT_CONTROL (1000 * 10) // Max time between control updates
-
-
-// Boiler state machine states:
-//  OFF: SSR is forced OFF
-//  HEATING: temperature control, but not yet on target temperature
-//  READY: temperature control, within range of target temperature
-//  BREW: temperature control in brewing mode with feed-forward active
-//  ERROR: heater is forced OFF, error code is set, set state OFF to clear error
-
 
 // Various boiler errors
 typedef enum {
@@ -64,15 +55,14 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     unsigned long _last_control_time=0;
     boiler_error_t _error = BOILER_ERROR_NONE;
     int _rtd_error = 0;  // current RTD errors
-    void state_off();
-    void state_heating();
-    void state_ready();
-    void state_brew();
-    void state_error();
+    void state_off();     // SSR is forced OFF
+    void state_heating(); // Temperature control, but not yet on target temperature
+    void state_ready();   // temperature control, within range of target temperature
+    void state_brew();    // temperature control in brewing mode with feed-forward active
+    void state_error();   // heater is forced OFF, error code is set, set state to OFF to clear error
     void init();
     void goto_error(boiler_error_t err);
 };
-
 
 extern BoilerStateMachine boilerController;
 

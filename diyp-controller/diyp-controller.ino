@@ -5,6 +5,7 @@
     Used Libraries:
     * Timer v1.2.1 - stefan Staub
     * EasyWiFi-for-Mkr1010 v1.4.0 - JAY fOX  - https://github.com/javos65/EasyWifi-for-MKR1010/
+    * wdt_samd21 v1.1.0 -Guglielmo Braguglia - https://github.com/gpb01/wdt_samd21
 
     This software uses a singleton design pattern for all modules. A .cpp file with an instance of a single object is created for each
     function. Such a module may contain instances to low-level devices and use other modules and objects
@@ -108,6 +109,7 @@ void setup()
     wifi_loop();
     delay(1000);
   }
+
 }
 
 void apply_settings()
@@ -153,6 +155,7 @@ void print_state()
     Serial.println();
     prev_time = millis();
   }
+
 }
 
 // Test boiler loop

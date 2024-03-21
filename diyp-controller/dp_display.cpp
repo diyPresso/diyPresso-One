@@ -1,12 +1,13 @@
 /*
   display
  */
-#include <math.h>
-#include <Arduino.h>
+#include "dp.h"
 #include "dp_display.h"
 #include "dp_hardware.h"
 #include "dp_chars.h"
 #include "dp_encoder.h"
+
+#include <math.h>
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(DISPLAY_I2C_ADDRESS, 20, 4);  // address 0x27, 4 lines, 20 chars:
 
@@ -237,9 +238,9 @@ void Display::logo(const char *date, const char*time)
   lcd.setCursor(6,2);
   lcd.print(time);
 
-#ifdef SIMULATE
-  lcd.setCursor(10,0);
-  lcd.print("SIMULATED");
+#if defined(SIMULATE) || !defined(WATCHDOG_ENABLED)
+  lcd.setCursor(2,0);
+  lcd.print("!!! TESTING !!!");
 #endif
 
 

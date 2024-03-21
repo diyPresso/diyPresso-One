@@ -1,13 +1,17 @@
 /*
  diyPresso Boiler control
  */
-#include <Arduino.h>
-#include <Adafruit_MAX31865.h>
-#include "ArduPID.h"
+#include "dp.h"
 #include "dp_hardware.h"
 #include "dp_boiler.h"
 #include "dp_heater.h"
 
+#include <Adafruit_MAX31865.h>
+#include "ArduPID.h"
+
+#ifdef WATCHDOG_ENABLED
+#include <wdt_samd21.h>
+#endif
 
 Adafruit_MAX31865 thermistor = Adafruit_MAX31865(PIN_THERM_CS, PIN_THERM_MOSI, PIN_THERM_MISO, PIN_THEM_SCLK);
 
@@ -40,9 +44,9 @@ void BoilerStateMachine::state_brew()
 {
   if  ( ! _on ) NEXT(state_off);
   if  ( ! _brew ) NEXT(state_heating);
-  ON_TIMEOUT(TIMEOUT_BREW) goto_error(BOILER_ERROR_TIMEOUT_BREW);
   _pid.setBias(_ff);
-  if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
+  // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
+  ON_TIMEOUT(TIMEOUT_BREW) goto_error(BOILER_ERROR_TIMEOUT_BREW);
   ON_EXIT() { _pid.setBias(0); _brew = false; }
 }
 
@@ -73,6 +77,9 @@ void BoilerStateMachine::init()
   _error = BOILER_ERROR_NONE;
   _rtd_error = 0;
   _last_control_time = millis();
+#ifdef WATCHDOG_ENABLED
+  wdt_init ( WDT_CONFIG_PER_16K );
+#endif
 }
 
 
@@ -106,6 +113,11 @@ void BoilerStateMachine::control(void)
   run();
   _pid.compute();
   heaterDevice.power(_power);
+
+#ifdef WATCHDOG_ENABLED
+  wdt_reset();
+#endif
+
 }
 
 
@@ -133,5 +145,6 @@ const char *BoilerStateMachine::get_state_name()
     RETURN_STATE_NAME(ready);
     RETURN_STATE_NAME(brew);
     RETURN_STATE_NAME(error);
+    RETURN_NONE_STATE_NAME()
     RETURN_UNKNOWN_STATE_NAME();
 }
