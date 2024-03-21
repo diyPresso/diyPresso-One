@@ -48,6 +48,7 @@
 #include "dp_menu.h"
 #include "dp_brew.h"
 #include "dp_heater.h"
+#include "dp_pump.h"
 
 #include "dp_wifi.h"
 
@@ -92,8 +93,7 @@ void setup()
 
   Serial.println("INIT DONE");
   heaterDevice.pwm_period(2.0); // [sec]
-  boilerController.on();
-  boilerController.set_temp( settings.temperature() );
+  boilerController.off();
 
   if ( wifi_enabled )
   {
@@ -181,7 +181,7 @@ void loop()
 
   switch ( menu )
   {
-    case 0:
+    case 0: // main menu
       counter = 0;
       menu_main();
       if ( display.encoder_changed() )
@@ -209,7 +209,9 @@ void loop()
         menu = 0;
       break;
     case 4: // error menu
-      // menu_error();
+      menu_error("ERROR");
+      boilerController.off();
+      pumpDevice.off();
       break;
     default:
       menu = 0;
@@ -228,7 +230,7 @@ void loop()
 
 }
 
-
+#ifdef TEST_CODE
 void test_heater_loop()
 {
   static double delay_time = 10000.0;
@@ -237,15 +239,15 @@ void test_heater_loop()
   power += delay_time/100000.0;
   if ( power > 150.0) power = -50.0;
   heaterDevice.power(power);
-  //heaterDevice.on();
-  //heaterDevice.off();
+  heaterDevice.on();
+  heaterDevice.off();
 
   statusLed.color( heaterDevice.is_on() ? ColorLed::RED : ColorLed::BLUE);
 
   delayMicroseconds(delay_time);
   print_state();
 }
-
+#endif
 
 
 

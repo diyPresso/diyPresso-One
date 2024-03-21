@@ -29,6 +29,7 @@ void BrewProcess::state_init()
 void BrewProcess::state_sleep()
 {
   statusLed.color(ColorLed::BLACK);
+  boilerController.off();
   ON_MESSAGE(WAKEUP) NEXT(state_idle);
 }
 
@@ -42,6 +43,7 @@ void BrewProcess::state_idle()
     statusLed.color(ColorLed::GREEN);
     pumpDevice.off();
     boilerController.on();
+    boilerController.set_temp(settings.temperature());
   }
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
   common_transitions();
@@ -70,7 +72,6 @@ void BrewProcess::state_infuse()
     boilerController.stop_brew();
     statusLed.color(ColorLed::YELLOW);
     pumpDevice.off();
-    boilerController.on();
   }
   ON_TIMEOUT(1000*infuseTime) NEXT(state_extract);
   common_transitions();

@@ -80,6 +80,11 @@ void BoilerStateMachine::init()
 void BoilerStateMachine::control(void)
 {
   _act_temp = thermistor.temperature(RNOMINAL, RREF);
+
+#ifdef SIMULATE
+  _act_temp = heaterDevice.average(); // hack for testing, read average power as actual temperature
+#endif
+
   _rtd_error = thermistor.readFault();
   if ( _rtd_error ) {
     thermistor.clearFault();
@@ -93,7 +98,6 @@ void BoilerStateMachine::control(void)
       goto_error(BOILER_ERROR_RTD);
   }
 
-  _act_temp = heaterDevice.average(); // hack for testing, read average power as actual temperature
 
   if ( _last_control_time + TIMEOUT_CONTROL < millis() )
     goto_error(BOILER_ERROR_CONTROL_TIMEOUT);

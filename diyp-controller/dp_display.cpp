@@ -237,5 +237,11 @@ void Display::logo(const char *date, const char*time)
   lcd.setCursor(6,2);
   lcd.print(time);
 
+#ifdef SIMULATE
+  lcd.setCursor(10,0);
+  lcd.print("SIMULATED");
+#endif
+
+
   delay(3000);
 }

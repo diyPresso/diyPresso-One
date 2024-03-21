@@ -313,6 +313,16 @@ bool menu_sleep()
   return false;
 }
 
+
+bool menu_error(const char *msg)
+{
+  static unsigned int counter=0;
+  static char *arg[10];
+  arg[0] = (char*)msg;
+  display.show(menus[MENU_ERROR], arg);
+  return false;
+}
+
 bool menu_wifi(char *msg="")
 {
   const char *wifi_spinner[] =
