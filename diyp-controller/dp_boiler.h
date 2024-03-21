@@ -5,6 +5,7 @@
 #define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 #include "ArduPID.h"
+#include "dp_heater.h"
 
 // Temperatures in [degC]
 #define TEMP_WINDOW 2.0 // in temperature range
@@ -40,7 +41,7 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     double get_ff(void) { return _ff; } // feedforward in [%]
     void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
     void on() { _on = true; }
-    void off() { _on = false; }
+    void off() { _on = false; heaterDevice.power(0); }
     void start_brew() { _brew = true; }
     void stop_brew() { _brew = false; }
     bool is_on() { return _on; }

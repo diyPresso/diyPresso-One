@@ -19,8 +19,7 @@ BoilerStateMachine boilerController = BoilerStateMachine();
 
 
 void BoilerStateMachine::state_off()
-{
-  _set_temp = 0;
+{;
   if ( _on ) NEXT(state_heating);
 }
 
@@ -105,15 +104,13 @@ void BoilerStateMachine::control(void)
       goto_error(BOILER_ERROR_RTD);
   }
 
-
   if ( _last_control_time + TIMEOUT_CONTROL < millis() )
     goto_error(BOILER_ERROR_CONTROL_TIMEOUT);
   _last_control_time = millis();
 
   run();
   _pid.compute();
-  heaterDevice.power(_power);
-
+  heaterDevice.power( _on ? _power : 0.0 );
 #ifdef WATCHDOG_ENABLED
   wdt_reset();
 #endif
