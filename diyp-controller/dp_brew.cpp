@@ -42,8 +42,9 @@ void BrewProcess::state_idle()
     _brewTimer.stop();
     statusLed.color(ColorLed::GREEN);
     pumpDevice.off();
+    boilerController.stop_brew();
     boilerController.on();
-    boilerController.set_temp(settings.temperature());
+    boilerController.set_temp(settings.temperature());    
   }
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
   common_transitions();

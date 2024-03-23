@@ -55,9 +55,9 @@ void DiyeSettings::defaults()
     settings.preInfusionTime = 3;
     settings.infusionTime = 3;
     settings.extractionTime = 25;
-    settings.p = 30;
-    settings.i = 0.8;
-    settings.d = 0.8;
+    settings.p = 1.0;
+    settings.i = 0.1;
+    settings.d = 20.0;
     settings.ff = 10.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;

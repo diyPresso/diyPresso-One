@@ -53,9 +53,9 @@ class DiyeSettings
         double P() { return settings.p; }
         double P(double p) { return settings.p = min(10.0, max(p, 0.0)); }
         double I() { return settings.i; }
-        double I(double i) { return settings.i = min(10.0, max(i, 0.0)); }
+        double I(double i) { return settings.i = min(20.0, max(i, 0.0)); }
         double D() { return settings.d; }
-        double D(double d) { return settings.d = min(10.0, max(d, 0.0)); }
+        double D(double d) { return settings.d = min(20.0, max(d, 0.0)); }
         double FF() { return settings.ff; }
         double FF(double ff) { return settings.ff = min(100.0, max(ff, 0.0)); }
         double tareWeight() { return settings.tareWeight; }

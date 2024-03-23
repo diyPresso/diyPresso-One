@@ -25,6 +25,10 @@ void BoilerStateMachine::state_off()
 
 void BoilerStateMachine::state_heating()
 {
+  ON_ENTRY()
+  {
+     _pid.setBias(3);
+  }
   if  ( ! _on ) NEXT(state_off);
   if ( _brew ) NEXT(state_brew);
   if ( abs(_set_temp - _act_temp) < TEMP_WINDOW) NEXT(state_ready);
@@ -33,6 +37,10 @@ void BoilerStateMachine::state_heating()
 
 void BoilerStateMachine::state_ready()
 {
+  ON_ENTRY()
+  {
+      _pid.setBias(1);
+  }
   if ( ! _on ) NEXT(state_off);
   if ( _brew ) NEXT(state_brew);
   if ( abs(_set_temp - _act_temp) > TEMP_WINDOW) NEXT(state_heating);
@@ -70,7 +78,7 @@ void BoilerStateMachine::init()
   _pid.begin(&_act_temp, &_power, &_set_temp, p, i, d);
   _pid.setOutputLimits(0, 100);
   _pid.setBias(0);
-  _pid.setWindUpLimits( -100.0, 20.0); // bounds for the integral term to prevent integral wind-up
+  _pid.setWindUpLimits( -100.0, 10.0); // bounds for the integral term to prevent integral wind-up
   _pid.start();
   thermistor.begin(MAX31865_2WIRE);  // set to 2WIRE or 4WIRE as necessary
   _error = BOILER_ERROR_NONE;
