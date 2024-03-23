@@ -76,12 +76,17 @@ void Display::show(const char *screen, char *args[])
 
 void format_float(char *dest, double f, int digits, int len)
 {
+  bool neg = f < 0;
+  if ( neg ) f *= -1.0;
+  char sign[2] = {'-', 0};
+  if ( !neg )
+    sign[0] = 0;
   switch( digits )
   {
-    case 1: sprintf(dest, "%d.%d", (int)f, (int)fmod(10.0*f,10)); break;
-    case 2: sprintf(dest, "%d.%d%d", (int)f, (int)fmod(10.0*f,10),(int)fmod(100.0*f,10)); break;
-    case 3: sprintf(dest, "%d.%d%d%d", (int)f, (int)fmod(10.0*f,10),(int)fmod(100.0*f,10),(int)fmod(1000.0*f,10)); break;
-    default: sprintf(dest, "%d", (int)f); break;
+    case 1: sprintf(dest, "%s%d.%d", sign, (int)f, (int)fmod(10.0*f,10)); break;
+    case 2: sprintf(dest, "%s%d.%d%d", sign, (int)f, (int)fmod(10.0*f,10),(int)fmod(100.0*f,10)); break;
+    case 3: sprintf(dest, "%s%d.%d%d%d", sign, (int)f, (int)fmod(10.0*f,10),(int)fmod(100.0*f,10),(int)fmod(1000.0*f,10)); break;
+    default: sprintf(dest, "%s%d", sign, (int)f); break;
   }
   if ( len ) // right align result to length
   {
