@@ -1,9 +1,9 @@
 /*
  diyEspresso reservoir control
  */
-#include "dp_reservoir.h"
+#include "dp.h"
 #include "dp_hardware.h"
-#include <Arduino.h>
+#include "dp_reservoir.h"
 #include "HX711.h"
 
 
@@ -21,7 +21,11 @@ Reservoir::Reservoir()
 /// @brief Read weight sensor and store the scaled weight value
 void Reservoir::read()
 {
-  _weight = scale.read_average(3);
-  _weight = (_weight - _offset) / ( (1.0+_trim/100.0) * _scale);
+  scale.wait_ready_timeout(1);
+  if ( scale.is_ready() )
+  {
+    _weight = scale.read();
+    _weight = (_weight - _offset) / ( (1.0+_trim/100.0) * _scale);
+  }
 }
 

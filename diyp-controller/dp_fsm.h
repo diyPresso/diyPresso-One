@@ -89,6 +89,8 @@ class StateMachine
 
 // Some convenient macros (note: set _DP_FSM_TYPE to the Class name of your state machine before including <dp_fsm.h> header to use them)
 #define STATE(state) (&_DP_FSM_TYPE::state)
+#define IN_STATE(state) (in_state(STATE(state_ ##state)))
+
 #define NEXT(state) next(STATE(state))
 #define ON_ENTRY() if ( on_entry() )
 #define ON_EXIT() if ( on_exit() )
@@ -96,6 +98,6 @@ class StateMachine
 #define ON_MESSAGE(m) if ( on_message(m) )
 
 // Handy macro to be used in get_state_name() implementation
-#define RETURN_STATE_NAME(state) if (in_state(STATE(state_ ##state))) return #state;
-#define RETURN_NONE_STATE_NAME() if (in_state(STATE(state_none))) return "<none>";
+#define RETURN_STATE_NAME(state) if (IN_STATE(state)) return #state;
+#define RETURN_NONE_STATE_NAME() if (IN_STATE(none)) return "<none>";
 #define RETURN_UNKNOWN_STATE_NAME() return  "<unknown>";

@@ -152,13 +152,17 @@ void print_state()
     Serial.print(", brew-state:"); Serial.print(brewProcess.get_state_name());
     Serial.print(", weight:"); Serial.print(brewProcess.weight());
     Serial.print(", end_weight:"); Serial.print(brewProcess.end_weight());
+    Serial.print(", reservoir_level:"); Serial.print(reservoir.level());
+
     Serial.println();
     prev_time = millis();
   }
 
 }
 
-// Test boiler loop
+/**
+ * @brief main process loop
+ */
 void loop()
 {
   static unsigned long timer=0;
@@ -180,14 +184,14 @@ void loop()
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
-  print_state();
+  if ( true ) print_state();
 
   switch ( menu )
   {
     case 0: // main menu
       counter = 0;
       menu_main();
-      if ( display.encoder_changed() )
+      if ( display.button_pressed() )
         menu = 1;
       break;
     case 1:
@@ -197,6 +201,7 @@ void loop()
         boilerController.clear_error();
         apply_settings();
         settings.save();
+        if ( display.button_pressed() );
         menu = 3;
       }
       break;
@@ -208,7 +213,7 @@ void loop()
     case 3: // saved menu
       menu_saved();
       display.button_pressed();
-      if ( counter++ > 10 )
+      if ( counter++ > 5 )
         menu = 0;
       break;
     case 4: // error menu

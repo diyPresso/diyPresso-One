@@ -15,8 +15,8 @@
 
 // Times in [msec]
 #define TIMEOUT_HEATING (1000*600) // maximum heater on time: 10 minutes
-#define TIMEOUT_BREW (1000*60) // maximum brew on time: 1 minutes
-#define TIMEOUT_READY (1000*600) // maximum time in state ready: 10 minutes
+#define TIMEOUT_BREW (1000*60*3) // maximum brew on time: 3 minutes
+#define TIMEOUT_READY (1000*60*60) // maximum time in state ready: 1 hour
 #define TIMEOUT_HEATER_SSR (1000 * 60) // maximum time the SSR is allowed to be ON
 #define TIMEOUT_CONTROL (1000 * 10) // Max time between control updates
 

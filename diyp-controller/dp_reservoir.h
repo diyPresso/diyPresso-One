@@ -5,8 +5,8 @@
 #ifndef RESERVOIR_H
 #define RESERVOIR_H
 
-#define RESERVOIR_EMPTY_LEVEL 5.0 // empty level threshold [%]
-#define RESERVOIR_CAPACITY 500.0 // capacity of reservoir in [grams]
+#define RESERVOIR_EMPTY_LEVEL 10.0 // empty level threshold [%]
+#define RESERVOIR_CAPACITY 1000.0 // capacity of reservoir in [grams]
 
 typedef enum {
   RESERVOIR_ERROR_NONE 
@@ -25,13 +25,13 @@ class Reservoir
       void read();  // update the internal state, based on weight measurement
     public:
       Reservoir();
-      double level() { return 100.0 * ( weight() / RESERVOIR_CAPACITY); } // level [in %]
+      double level() { return max(0, min(100.0 * ( weight() / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
       double weight() { read(); return _weight - _tare; }
       double get_tare() { return _tare; }
       void set_tare(double t) { _tare = t; }
       void set_trim(double t) { _trim = t; }
       void tare() { read(); _tare = _weight; }
-      bool empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
+      bool is_empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
       reservoir_error_t error() { return _error; }
 };
 

@@ -1,5 +1,6 @@
 /*
-  display
+  menu functions
+  We are non-blocking and we assume to be called ~ 2x to 4x per second
  */
 #include "dp_menu.h"
 #include "dp_display.h"
@@ -22,6 +23,7 @@ double settings_vals[32];
 #define FUNCTION_SAVE 1
 #define FUNCTION_TARE 2
 #define FUNCTION_ZERO 3
+#define FUNCTION_DEFAULTS 4
 
 
 // "text", "unit", pointer, increment, decimals
@@ -41,6 +43,7 @@ const setting_t settings_list[] =
   {"Weight trim", "%",  &settings_vals[11], 0.05, 2 },
   {"   <Tare Weight>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
+  {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
   {"       <SAVE>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
 };
 
@@ -67,10 +70,10 @@ const char spinner_chars[] = "\0\1\2\3\4\5\6\7";
 const char *menus[] = {
 // MAIN=0
 // 01234567890123456789
-  "Boiler #####/#####\337C"
-  "Power    ### % ##   "
-  "Time   ##### sec #  "
-  "Weight ##### gram   ",
+  "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
+  "Power    ### % ## # "    // [2:percentage] [3:ON_OFF] [4:PUMP]
+  "############# #####s"    // [5:state] [6:time]
+  "Weight ##### gram # ",   // [7:Weight] [8:level]
 
 // SETTING=1
 // 01234567890123456789
@@ -157,34 +160,64 @@ bool menu_main()
   static int count=0;
   char bufs[10][32];
   char *arg[10];
-  char spinner[2], heater[2];
+  char pump_spinner[2], heater_spinner[2], level_spinner[2];
 
+  count += 1;
   if ( pumpDevice.is_on() )
   {
-    spinner[0] = spinner_chars[count % 8];
-    spinner[1] = 0;
-    count += 1;
+    pump_spinner[0] = spinner_chars[count % 8];
+    pump_spinner[1] = 0;
   }
   else
-    spinner[0] = 0;
+    pump_spinner[0] = 0;
+
   if ( heaterDevice.is_on() )
   {
-    heater[0] = spinner_chars[7];
-    heater[1] = 0;
+    heater_spinner[0] = spinner_chars[7];
+    heater_spinner[1] = 0;
   }
   else
-    heater[0] = 0;
+    heater_spinner[0] = 0;
+
+  if ( reservoir.is_empty() )
+  {
+    level_spinner[0] = spinner_chars[ (count % 2) ? 7 : 0]; // flash empty
+  }
+  else
+  {
+    int level = (8*reservoir.level())/100.0;
+    if (level < 0) level = 0;
+    if (level > 7) level = 7;
+    level_spinner[0] = spinner_chars[ level ];
+    level_spinner[1] = 0;
+  }
 
   for(int i=0; i<10; i++)
     arg[i] = bufs[i];
 
+  // [0:actual] / [1:set_temp]
   format_float(arg[0], boilerController.act_temp(), 1, 5);
   format_float(arg[1], boilerController.set_temp(), 1);
+
+  // [2:percentage] [3:ON_OFF] [4:PUMP]
   format_float(arg[2], heaterDevice.power(), 0, 3);
   strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
-  format_float(arg[4], brewProcess.brew_time(), 1, 5);
-  arg[5] = spinner;
-  format_float(arg[6], reservoir.weight(), 0, 5);
+  arg[4] = pump_spinner;
+
+  // [5:state] [6:time]
+  arg[5] = (char*)brewProcess.get_state_name();
+  format_float(arg[6], brewProcess.brew_time(), 1, 5);
+
+  // [7:Weight] [8:level]
+  if ( brewProcess.is_busy() )
+    format_float(arg[7], brewProcess.weight(), 0, 5);
+  else if ( brewProcess.is_finished() )
+    format_float(arg[7], brewProcess.end_weight(), 0, 5);
+  else
+    format_float(arg[7], reservoir.weight(), 0, 5);
+
+  arg[8] = level_spinner;
+
   display.show(menus[MENU_MAIN], arg);
   return false;
 }
@@ -229,6 +262,7 @@ bool menu_settings()
         case FUNCTION_SAVE: return true; break;
         case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); return true; break;
         case FUNCTION_ZERO: settings.zeroShotCounter(); return true; break;
+        case FUNCTION_DEFAULTS: settings.defaults(); return true; break;
       }
     }
     else

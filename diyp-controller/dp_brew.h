@@ -16,13 +16,15 @@ class BrewProcess : public StateMachine<BrewProcess>
   private:
     typedef enum BrewProcessMessages { START=1, STOP=2, SLEEP=3, WAKEUP=4 };
   public:
-    double preInfuseTime=3, infuseTime=4, extractTime=10, finishedTime=5;
+    double preInfuseTime=3, infuseTime=4, extractTime=10, finishedTime=60;
     BrewProcess() : StateMachine( STATE(state_init) ) { };
     void start() { run(START); }
     void stop() { run(STOP); }
     void sleep() { run(SLEEP); }
     void wakeup() { run(WAKEUP); }
-    bool is_awake() { return ! in_state( STATE(state_sleep) ); }
+    bool is_awake() { return ! IN_STATE(sleep); }
+    bool is_finished() { return IN_STATE(finished); }
+    bool is_busy() { return IN_STATE(pre_infuse) || IN_STATE(infuse) || IN_STATE(extract); }
     double brew_time() { return _brewTimer.read() / 1000.0; }
     double step_time() { return _state_time/1000.0; }
     double weight() { return _start_weight - reservoir.weight(); }
@@ -35,6 +37,7 @@ class BrewProcess : public StateMachine<BrewProcess>
     void state_sleep();
     void state_init();
     void state_idle();
+    void state_empty();
     void state_error();
     void state_pre_infuse();
     void state_infuse();

@@ -17,20 +17,33 @@ BrewProcess brewProcess = BrewProcess();
 void BrewProcess::common_transitions()
 {
   if ( brewSwitch.down() ) NEXT(state_idle);
+  if ( reservoir.is_empty() ) NEXT(state_empty);
   ON_MESSAGE(SLEEP) NEXT(state_sleep);
 }
 
 void BrewProcess::state_init()
 {
   statusLed.color(ColorLed::BLACK);
-  NEXT(state_idle);
+  if ( brewSwitch.down() ) NEXT(state_idle);
 }
 
 void BrewProcess::state_sleep()
 {
   statusLed.color(ColorLed::BLACK);
   boilerController.off();
+  pumpDevice.off();
   ON_MESSAGE(WAKEUP) NEXT(state_idle);
+}
+
+void BrewProcess::state_empty()
+{
+  statusLed.color(ColorLed::CYAN);
+  ON_ENTRY()
+  {
+    boilerController.off();
+    pumpDevice.off();
+  }
+  if ( !reservoir.is_empty() && brewSwitch.down() ) NEXT(state_idle);
 }
 
 void BrewProcess::state_idle()
@@ -44,7 +57,7 @@ void BrewProcess::state_idle()
     pumpDevice.off();
     boilerController.stop_brew();
     boilerController.on();
-    boilerController.set_temp(settings.temperature());    
+    boilerController.set_temp(settings.temperature());
   }
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
   common_transitions();
@@ -100,6 +113,7 @@ void BrewProcess::state_finished()
     statusLed.color(ColorLed::CYAN);
     pumpDevice.off();
     boilerController.stop_brew();
+    _brewTimer.stop();
   }
   if ( display.button_pressed() ) NEXT(state_extract);
   ON_TIMEOUT(1000*finishedTime) NEXT(state_error);
@@ -124,6 +138,7 @@ const char *BrewProcess::get_state_name()
 {
     RETURN_STATE_NAME(init);
     RETURN_STATE_NAME(sleep);
+    RETURN_STATE_NAME(empty);
     RETURN_STATE_NAME(idle);
     RETURN_STATE_NAME(pre_infuse);
     RETURN_STATE_NAME(infuse);

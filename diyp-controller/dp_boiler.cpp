@@ -29,7 +29,7 @@ void BoilerStateMachine::state_heating()
   {
      _pid.setBias(3);
   }
-  if  ( ! _on ) NEXT(state_off);
+  if ( ! _on ) NEXT(state_off);
   if ( _brew ) NEXT(state_brew);
   if ( abs(_set_temp - _act_temp) < TEMP_WINDOW) NEXT(state_ready);
   ON_TIMEOUT(TIMEOUT_HEATING) goto_error(BOILER_ERROR_TIMEOUT_HEATING);
