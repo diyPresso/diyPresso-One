@@ -53,12 +53,12 @@ void DiyeSettings::defaults()
     settings.version = 1;  // Update this if new fields are added to the settings structure to prevent incorrect reads
     settings.temperature = 98.0;
     settings.preInfusionTime = 3;
-    settings.infusionTime = 3;
+    settings.infusionTime = 1;
     settings.extractionTime = 25;
-    settings.p = 1.0;
-    settings.i = 0.1;
-    settings.d = 20.0;
-    settings.ff = 10.0;
+    settings.p = 7.0;
+    settings.i = 0.3;
+    settings.d = 80.0;
+    settings.ff = 80.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
     settings.wifiMode = 0;
