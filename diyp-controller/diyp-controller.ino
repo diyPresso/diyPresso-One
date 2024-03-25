@@ -195,6 +195,7 @@ void loop()
         menu = 1;
       break;
     case 1:
+      if ( brewProcess.is_busy() ) menu = 0; // When brewing: Always show main menu
       if ( menu_settings() )
       {
         Serial.println("Done!");
