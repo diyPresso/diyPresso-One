@@ -120,7 +120,9 @@ void apply_settings()
   Serial.print("P="); Serial.println( settings.P() );
   Serial.print("I="); Serial.println( settings.I() );
   Serial.print("D="); Serial.println( settings.D() );
+  Serial.print("FF="); Serial.println( settings.FF() );
   boilerController.set_pid( settings.P(), settings.I(), settings.D() );
+  boilerController.set_ff( settings.FF() );
 
   Serial.print("tareWeight="); Serial.println( settings.tareWeight() );
   Serial.print("trimWeight="); Serial.println( settings.trimWeight() );
@@ -195,7 +197,6 @@ void loop()
         menu = 1;
       break;
     case 1:
-      if ( brewProcess.is_busy() ) menu = 0; // When brewing: Always show main menu
       if ( menu_settings() )
       {
         Serial.println("Done!");
