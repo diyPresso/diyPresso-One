@@ -120,9 +120,13 @@ void apply_settings()
   Serial.print("P="); Serial.println( settings.P() );
   Serial.print("I="); Serial.println( settings.I() );
   Serial.print("D="); Serial.println( settings.D() );
-  Serial.print("FF="); Serial.println( settings.FF() );
+  Serial.print("ff_heat="); Serial.println( settings.ff_heat() );
+  Serial.print("ff_ready="); Serial.println( settings.ff_ready() );
+  Serial.print("ff_brew="); Serial.println( settings.ff_brew() );
   boilerController.set_pid( settings.P(), settings.I(), settings.D() );
-  boilerController.set_ff( settings.FF() );
+  boilerController.set_ff_heat( settings.ff_heat() );
+  boilerController.set_ff_ready( settings.ff_ready() );
+  boilerController.set_ff_brew( settings.ff_brew() );
 
   Serial.print("tareWeight="); Serial.println( settings.tareWeight() );
   Serial.print("trimWeight="); Serial.println( settings.trimWeight() );

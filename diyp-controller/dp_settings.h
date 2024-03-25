@@ -24,7 +24,7 @@ class DiyeSettings
             double infusionTime;
             double extractionTime;
             double extractionWeight;
-            double p, i, d, ff;
+            double p, i, d, ff_heat, ff_ready, ff_brew;
             double tareWeight;
             double trimWeight;
             int shotCounter;
@@ -56,8 +56,12 @@ class DiyeSettings
         double I(double i) { return settings.i = min(20.0, max(i, 0.00)); }
         double D() { return settings.d; }
         double D(double d) { return settings.d = min(40.0, max(d, 0.0)); }
-        double FF() { return settings.ff; }
-        double FF(double ff) { return settings.ff = min(100.0, max(ff, 0.0)); }
+        double ff_heat() { return settings.ff_heat; }
+        double ff_heat(double ff) { return settings.ff_heat = min(100.0, max(ff, 0.0)); }
+        double ff_ready() { return settings.ff_ready; }
+        double ff_ready(double ff) { return settings.ff_ready = min(100.0, max(ff, 0.0)); }
+        double ff_brew() { return settings.ff_brew; }
+        double ff_brew(double ff) { return settings.ff_brew = min(100.0, max(ff, 0.0)); }
         double tareWeight() { return settings.tareWeight; }
         double tareWeight(double t) { return settings.tareWeight = min(1000.0, max(t, 0.0)); }
         double trimWeight() { return settings.trimWeight; }

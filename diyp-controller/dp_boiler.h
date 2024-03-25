@@ -36,9 +36,13 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     double set_temp() { return _set_temp; }
     double set_temp(int temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
     double act_temp() { return _act_temp; }
-    double act_power() { return _power; } // power in [%]
-    double set_ff(double ff) { return _ff = min(100.0, max(ff, 0.0)); } // feedforward in [%]
-    double get_ff(void) { return _ff; } // feedforward in [%]
+    double act_power() { return _power; }
+    double set_ff_heat(double ff) { return _ff_heat = min(100.0, max(ff, 0.0)); }
+    double get_ff_heat(void) { return _ff_heat; }
+    double set_ff_ready(double ff) { return _ff_ready = min(100.0, max(ff, 0.0)); }
+    double get_ff_ready(void) { return _ff_ready; }
+    double set_ff_brew(double ff) { return _ff_brew = min(100.0, max(ff, 0.0)); }
+    double get_ff_brew(void) { return _ff_brew; }
     void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
     void on() { _on = true; }
     void off() { _on = false; heaterDevice.power(0); }
@@ -51,7 +55,7 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     void control();
   private:
     ArduPID _pid;
-    double _act_temp=0, _set_temp=0, _ff=0, _power=0;
+    double _act_temp=0, _set_temp=0, _ff_heat=0, _ff_ready=0, _ff_brew=0, _power=0;
     bool _on = false, _brew = false;
     unsigned long _last_control_time=0;
     boiler_error_t _error = BOILER_ERROR_NONE;

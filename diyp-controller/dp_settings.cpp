@@ -58,7 +58,9 @@ void DiyeSettings::defaults()
     settings.p = 7.0;
     settings.i = 0.3;
     settings.d = 80.0;
-    settings.ff = 80.0;
+    settings.ff_heat = 3.0;
+    settings.ff_ready = 10.0;
+    settings.ff_brew = 80.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
     settings.wifiMode = 0;
@@ -122,10 +124,6 @@ int DiyeSettings::save()
     update_crc();
     read( &old_settings );
 
-    /*Serial.print("new CRC:"); Serial.println(settings.crc);
-    Serial.print("old temp:"); Serial.println(old_settings.temperature);
-    Serial.print("new temp:"); Serial.println(settings.temperature); */
-
     unsigned char *s = (unsigned char*) &settings;
     unsigned char *d = (unsigned char*) &old_settings;
     bool changed = false;
@@ -135,7 +133,6 @@ int DiyeSettings::save()
         {
             EEPROM.write(i, *s);
             changed = true;
-            //Serial.print("changed:"); Serial.print(i); Serial.print("="); Serial.println(*s);
         }
     }
     if ( changed )

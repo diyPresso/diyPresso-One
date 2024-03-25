@@ -37,10 +37,12 @@ const setting_t settings_list[] =
   {"P-Gain", "%/\337C", &settings_vals[5], 0.2, 1 },
   {"I-Gain", "%/\337C/s",  &settings_vals[6],0.01, 2 },
   {"D-Gain", "%s",  &settings_vals[7], 0.2, 1 },
-  {"FF-Value", "%",  &settings_vals[8], 0.2, 1 },
-  {"Shot counter", "shots",  &settings_vals[9], READ_ONLY, 0 },
-  {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[10], SELECT_ITEM, 1},
-  {"Weight trim", "%",  &settings_vals[11], 0.05, 2 },
+  {"FF-heat Value", "%",  &settings_vals[8], 0.2, 1 },
+  {"FF-ready Value", "%",  &settings_vals[9], 0.2, 1 },
+  {"FF-brew Value", "%",  &settings_vals[10], 0.2, 1 },
+  {"Shot counter", "shots",  &settings_vals[11], READ_ONLY, 0 },
+  {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
+  {"Weight trim", "%",  &settings_vals[13], 0.05, 2 },
   {"   <Tare Weight>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
   {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
@@ -308,10 +310,12 @@ double add_value(int n, double delta)
     case 5: return settings.P(settings.P() + delta);
     case 6: return settings.I(settings.I() + delta);
     case 7: return settings.D(settings.D() + delta);
-    case 8: return settings.FF(settings.FF() + delta);
-    case 9: return settings.shotCounter();
-    case 10: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
-    case 11: return settings.trimWeight( settings.trimWeight() + delta);
+    case 8: return settings.ff_heat(settings.ff_heat() + delta);
+    case 9: return settings.ff_ready(settings.ff_ready() + delta);
+    case 10: return settings.ff_brew(settings.ff_brew() + delta);
+    case 11: return settings.shotCounter();
+    case 12: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
+    case 13: return settings.trimWeight( settings.trimWeight() + delta);
     default: return 0;
   }
 }
