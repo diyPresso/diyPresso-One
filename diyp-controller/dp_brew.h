@@ -18,7 +18,7 @@ typedef enum {
 class BrewProcess : public StateMachine<BrewProcess>
 {
   private:
-    typedef enum BrewProcessMessages { START=1, STOP=2, SLEEP=3, WAKEUP=4 };
+    typedef enum BrewProcessMessages { START=1, STOP=2, SLEEP=3, WAKEUP=4, RESET=10 };
     brew_error_t _error;
     bool _initialized = false; // did we perform initialization?
   public:
@@ -28,6 +28,7 @@ class BrewProcess : public StateMachine<BrewProcess>
     void stop() { run(STOP); }
     void sleep() { run(SLEEP); }
     void wakeup() { run(WAKEUP); }
+    void clear_error() { run(RESET); };
     bool is_awake() { return ! IN_STATE(sleep); }
     bool is_error() { return IN_STATE(error); }
     bool is_finished() { return IN_STATE(finished); }

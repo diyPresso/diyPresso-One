@@ -179,6 +179,7 @@ void BrewProcess::state_error()
     boilerController.off();
   }
   common_transitions();
+  ON_MESSAGE(RESET) NEXT(state_init);
 }
 
 void BrewProcess::goto_error(brew_error_t error)
