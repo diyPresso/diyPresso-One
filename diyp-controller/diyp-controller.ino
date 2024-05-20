@@ -53,7 +53,6 @@
 
 #include "dp_wifi.h"
 
-static bool wifi_enabled = false;
 
 /**
  * @brief setup code
@@ -98,7 +97,7 @@ void setup()
   heaterDevice.pwm_period(2.0); // [sec]
   boilerController.off();
 
-  if (wifi_enabled)
+  if ( settings.wifiMode() != WIFI_MODE_OFF)
   {
     if (settings.wifiMode() == WIFI_MODE_AP)
     {
@@ -154,7 +153,6 @@ void apply_settings()
   brewProcess.preInfuseTime = settings.preInfusionTime();
   brewProcess.infuseTime = settings.infusionTime();
   brewProcess.extractTime = settings.extractionTime();
-  wifi_enabled = settings.wifiMode() != WIFI_MODE_OFF;
 }
 
 // Output the state to serial port
@@ -189,6 +187,11 @@ void print_state()
   }
 }
 
+
+
+typedef enum { MAIN=0, SETTINGS=1, SLEEP=2, SAVED=3, ERROR=4, INFO=5 } menus_t;
+
+
 /**
  * @brief main process loop
  */
@@ -196,7 +199,7 @@ void loop()
 {
   static unsigned long timer = 0;
   static unsigned long counter = 0;
-  static unsigned menu = 0;
+  static menus_t menu = MAIN;
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
@@ -216,49 +219,69 @@ void loop()
   if (true)
     print_state();
 
+  if ( brewProcess.is_error() )
+    menu = ERROR; // error menu
+
   switch (menu)
   {
-  case 0: // main menu
+  case MAIN: // main menu
     counter = 0;
     menu_main();
     if (display.button_pressed())
-      menu = 1;
+      menu = SETTINGS;
+    if( display.encoder_changed() )
+      menu = INFO;
     break;
-  case 1:
+  case SETTINGS: // settings menu
     if (brewProcess.is_busy())
-      menu = 0; // When brewing: Always show main menu
+      menu = MAIN; // When brewing: Always show main menu
     if (menu_settings())
     {
       Serial.println("Done!");
       boilerController.clear_error();
+      reservoir.clear_error();
       apply_settings();
-      settings.save();
-      if (display.button_pressed())
-        ;
-      menu = 3;
+      display.button_pressed(); // prevent entering settings again
+      menu = SAVED;
     }
     break;
-  case 2: // sleep menu
+  case SLEEP: // sleep menu
     menu_sleep();
     if (!brewProcess.is_awake())
     {
-      menu = 0;
+      menu = MAIN;
       display.button_pressed(); // consume button pressed event, prevent jump to settings menu
+      display.encoder_changed();
     }
     break;
-  case 3: // saved menu
+  case SAVED: // saved menu
     menu_saved();
     display.button_pressed();
+    display.encoder_changed();
     if (counter++ > 5)
-      menu = 0;
+      menu = MAIN;
     break;
-  case 4: // error menu
+  case ERROR: // error menu
     menu_error("ERROR");
     boilerController.off();
     pumpDevice.off();
+    if (display.button_pressed())
+    {
+      boilerController.clear_error();
+      reservoir.clear_error();
+      brewProcess.clear_error();
+      menu = MAIN;
+    }
+    break;
+  case INFO: // state info menu
+    menu_state();
+    if (display.button_pressed())
+      menu = SETTINGS;
+    if( display.encoder_changed() )
+      menu = MAIN;
     break;
   default:
-    menu = 0;
+    menu = MAIN;
   }
 
   // sleep (de)activation and menu selection (note: sleep can be activated automatically)
@@ -270,7 +293,7 @@ void loop()
       brewProcess.wakeup();
   }
   if (!brewProcess.is_awake())
-    menu = 2;
+    menu = SLEEP;
 }
 
 #ifdef TEST_CODE

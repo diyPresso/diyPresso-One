@@ -135,7 +135,7 @@ const char *BoilerStateMachine::get_error_text()
 {
     switch ( _error )
     {
-      case BOILER_ERROR_NONE: return "NONE";
+      case BOILER_ERROR_NONE: return "OK";
       case BOILER_ERROR_OVER_TEMP: return "OVER_TEMP";
       case BOILER_ERROR_UNDER_TEMP: return "UNDER_TEMP";
       case BOILER_ERROR_RTD: return "RTD_ERROR";

@@ -63,7 +63,7 @@ class DiyeSettings
         double ff_brew() { return settings.ff_brew; }
         double ff_brew(double ff) { return settings.ff_brew = min(100.0, max(ff, 0.0)); }
         double tareWeight() { return settings.tareWeight; }
-        double tareWeight(double t) { return settings.tareWeight = min(1000.0, max(t, 0.0)); }
+        double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
         double trimWeight() { return settings.trimWeight; }
         double trimWeight(double t) { return settings.trimWeight = min(10.0, max(t, -10.0)); }
         int wifiMode() { return settings.wifiMode; }
