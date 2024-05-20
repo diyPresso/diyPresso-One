@@ -147,3 +147,8 @@ const char *BrewProcess::get_state_name()
     RETURN_STATE_NAME(error);
     RETURN_UNKNOWN_STATE_NAME();
 }
+
+const char *BrewProcess::get_error_text()
+{
+  return "OK";
+}

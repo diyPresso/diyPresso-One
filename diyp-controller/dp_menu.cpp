@@ -24,6 +24,7 @@ double settings_vals[32];
 #define FUNCTION_TARE 2
 #define FUNCTION_ZERO 3
 #define FUNCTION_DEFAULTS 4
+#define FUNCTION_EXIT 5
 
 
 // "text", "unit", pointer, increment, decimals
@@ -43,9 +44,10 @@ const setting_t settings_list[] =
   {"Shot counter", "shots",  &settings_vals[11], READ_ONLY, 0 },
   {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
   {"Weight trim", "%",  &settings_vals[13], 0.05, 2 },
-  {"   <Tare Weight>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
+  {"   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
   {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
+  {"       <EXIT>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT },
   {"       <SAVE>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
 };
 
@@ -129,8 +131,13 @@ const char *menus[] = {
   "                    "
   "   SETTINGS SAVED   "
   "                    "
-  "                    "
-
+  "                    ",
+// STATE=9
+// 01234567890123456789
+  "################### "
+  "################### "
+  "T: ################ "
+  "W: ################ "
 };
 const int num_menus = sizeof(menus) / sizeof(char*);
 
@@ -261,11 +268,13 @@ bool menu_settings()
     {
       switch ( set.decimals )
       {
-        case FUNCTION_SAVE: return true; break;
-        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); return true; break;
-        case FUNCTION_ZERO: settings.zeroShotCounter(); return true; break;
-        case FUNCTION_DEFAULTS: settings.defaults(); return true; break;
+        case FUNCTION_EXIT: break;
+        case FUNCTION_SAVE: settings.save(); break;
+        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); break;
+        case FUNCTION_ZERO: settings.zeroShotCounter(); break;
+        case FUNCTION_DEFAULTS: settings.defaults(); break;
       }
+      return true;
     }
     else
     {
@@ -390,6 +399,18 @@ bool menu_saved()
   return false;
 }
 
+
+bool menu_state()
+{
+  static char *args[10];
+  args[0] = (char*)brewProcess.get_state_name();
+  args[1] = (char*)boilerController.get_state_name();
+  args[2] = (char*)boilerController.get_error_text();
+  args[3] = (char*)reservoir.get_error_text();
+
+  display.show(menus[MENU_STATE], args);
+  return false;
+}
 
 /// @brief Get a string from a list of strings
 /// @param a pointer to list of ASCIZ terminated strings, where the last item has zero length

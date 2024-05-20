@@ -50,6 +50,7 @@ class BoilerStateMachine : public StateMachine<BoilerStateMachine>
     void stop_brew() { _brew = false; }
     bool is_on() { return _on; }
     bool is_ready() { return _cur_state == &BoilerStateMachine::state_ready; }
+    bool is_error() { return _cur_state == &BoilerStateMachine::state_error; }
     const char *get_error_text();
     const char *get_state_name();
     void control();

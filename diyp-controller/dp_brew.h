@@ -23,13 +23,15 @@ class BrewProcess : public StateMachine<BrewProcess>
     void sleep() { run(SLEEP); }
     void wakeup() { run(WAKEUP); }
     bool is_awake() { return ! IN_STATE(sleep); }
+    bool is_error() { return IN_STATE(error); }
     bool is_finished() { return IN_STATE(finished); }
     bool is_busy() { return IN_STATE(pre_infuse) || IN_STATE(infuse) || IN_STATE(extract); }
     double brew_time() { return _brewTimer.read() / 1000.0; }
-    double step_time() { return _state_time/1000.0; }
+    double step_time() { return _state_time / 1000.0; }
     double weight() { return _start_weight - reservoir.weight(); }
     double end_weight() { return _end_weight; }
     virtual const char *get_state_name();
+    const char *get_error_text();
 
   protected:
     double _start_weight = 0.0, _end_weight=0.0;
