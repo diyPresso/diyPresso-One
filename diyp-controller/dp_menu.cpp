@@ -134,10 +134,10 @@ const char *menus[] = {
   "                    ",
 // STATE=9
 // 01234567890123456789
-  "################### "
-  "################### "
-  "T: ################ "
-  "W: ################ "
+  "######### ##########"
+  "B: ################ "
+  "E: ################ "
+  "R: ################ "
 };
 const int num_menus = sizeof(menus) / sizeof(char*);
 
@@ -363,11 +363,22 @@ bool menu_sleep()
 
 bool menu_error(const char *msg)
 {
-  static unsigned int counter=0;
+
+  static char *args[10];
+  args[0] = (char*)brewProcess.get_state_name();
+  args[1] = (char*)brewProcess.get_error_text();
+  args[2] = (char*)boilerController.get_state_name();
+  args[3] = (char*)boilerController.get_error_text();
+  args[4] = (char*)reservoir.get_error_text();
+
+  display.show(menus[MENU_STATE], args);
+  return false;
+
+  /*static unsigned int counter=0;
   static char *arg[10];
   arg[0] = (char*)msg;
   display.show(menus[MENU_ERROR], arg);
-  return false;
+  return false; */
 }
 
 bool menu_wifi(char *msg="")
@@ -404,9 +415,10 @@ bool menu_state()
 {
   static char *args[10];
   args[0] = (char*)brewProcess.get_state_name();
-  args[1] = (char*)boilerController.get_state_name();
-  args[2] = (char*)boilerController.get_error_text();
-  args[3] = (char*)reservoir.get_error_text();
+  args[1] = (char*)brewProcess.get_error_text();
+  args[2] = (char*)boilerController.get_state_name();
+  args[3] = (char*)boilerController.get_error_text();
+  args[4] = (char*)reservoir.get_error_text();
 
   display.show(menus[MENU_STATE], args);
   return false;

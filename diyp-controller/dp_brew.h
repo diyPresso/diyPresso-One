@@ -10,11 +10,17 @@
 #define _DP_FSM_TYPE BrewProcess // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 
+// Various errors
+typedef enum {
+  BREW_ERROR_NONE, BREW_ERROR_CIRCULATION, BREW_ERROR_FILL, BREW_ERROR_TIMEOUT
+} brew_error_t;
 
 class BrewProcess : public StateMachine<BrewProcess>
 {
   private:
     typedef enum BrewProcessMessages { START=1, STOP=2, SLEEP=3, WAKEUP=4 };
+    brew_error_t _error;
+    bool _initialized = false; // did we perform initialization?
   public:
     double preInfuseTime=3, infuseTime=4, extractTime=10, finishedTime=60;
     BrewProcess() : StateMachine( STATE(state_init) ) { };
@@ -38,6 +44,8 @@ class BrewProcess : public StateMachine<BrewProcess>
     Timer _brewTimer = Timer();
     void state_sleep();
     void state_init();
+    void state_fill();
+    void state_circulate();
     void state_idle();
     void state_empty();
     void state_error();
@@ -46,7 +54,7 @@ class BrewProcess : public StateMachine<BrewProcess>
     void state_extract();
     void state_finished();
     void common_transitions();
-
+    void goto_error(brew_error_t err);
 };
 
 extern BrewProcess brewProcess;

@@ -26,4 +26,8 @@ unsigned long usec_since(unsigned long ts)
     return time_diff(micros(), ts);
 }
 
-
+// return true/false, period approx 1 sec
+bool blink ()
+{
+    return (millis() >> 9) & 1;
+}
