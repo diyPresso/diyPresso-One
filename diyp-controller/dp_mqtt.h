@@ -1,3 +1,7 @@
+/*
+ * MQTT client (using ArduinoMqttClient) with message formatting in influxDB line format
+ * This allows easy forwarding of measurements to influxDB, using telegraf or another client.
+ */
 #ifndef DP_MQTT_H
 #define DP_MQTT_H
 
