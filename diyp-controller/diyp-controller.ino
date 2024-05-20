@@ -258,7 +258,6 @@ void loop()
     menu_saved();
     display.button_pressed();
     display.encoder_changed();
-
     if (counter++ > 5)
       menu = MAIN;
     break;
@@ -269,6 +268,8 @@ void loop()
     if (display.button_pressed())
     {
       boilerController.clear_error();
+      reservoir.clear_error();
+      brewProcess.clear_error();
       menu = MAIN;
     }
     break;
