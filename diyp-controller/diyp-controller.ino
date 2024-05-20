@@ -52,6 +52,7 @@
 #include "dp_pump.h"
 
 #include "dp_wifi.h"
+#include "dp_mqtt.h"
 
 
 /**
@@ -110,6 +111,7 @@ void setup()
     wifi_loop();
     delay(1000);
   }
+  mqttDevice.init();
 }
 
 void apply_settings()
@@ -188,6 +190,40 @@ void print_state()
 }
 
 
+// Send the state to MQTT
+void send_state()
+{
+  static unsigned long prev_time = millis();
+  if (time_since(prev_time) > 5000)
+  {
+    mqttDevice.write("t_set", boilerController.set_temp());
+    mqttDevice.write("t_act", boilerController.act_temp());
+    mqttDevice.write("h_pwr", heaterDevice.power());
+    mqttDevice.write("h_avg", heaterDevice.average() );
+    mqttDevice.write("r_lvl", reservoir.level() );
+    mqttDevice.write("r_wgt", reservoir.weight() );
+    mqttDevice.write("w_cur", brewProcess.weight() );
+    mqttDevice.write("w_end", brewProcess.end_weight() );
+    mqttDevice.write("shots", (long)settings.shotCounter() );
+
+    mqttDevice.write("boil", (char*)boilerController.get_state_name() );
+    if ( boilerController.is_error() )
+      mqttDevice.write("boil_err", (char*)boilerController.get_error_text() );
+
+    mqttDevice.write("brew", (char*)brewProcess.get_state_name() );
+    if ( brewProcess.is_error() )
+      mqttDevice.write("brew_err", (char*)brewProcess.get_error_text() );
+
+    if ( reservoir.is_error() )
+      mqttDevice.write("res_err", (char*)reservoir.get_error_text() );
+
+    mqttDevice.write("msec", (long)millis() );
+    mqttDevice.send();
+
+    prev_time = millis();
+  }
+}
+
 
 typedef enum { MAIN=0, SETTINGS=1, SLEEP=2, SAVED=3, ERROR=4, INFO=5 } menus_t;
 
@@ -216,6 +252,10 @@ void loop()
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
+
+  send_state();
+  mqttDevice.run();
+
   if (true)
     print_state();
 

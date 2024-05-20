@@ -29,7 +29,7 @@ void Reservoir::read()
   {
     _readings = 0;
     _weight = scale.read();
-    Serial.println(_weight);
+    // DEBUG: Serial.println(_weight);
     _weight = (_weight - _offset) / ( (1.0+_trim/100.0) * _scale);
     double w = weight();
     if ( w > RESERVOIR_CAPACITY + 100.0 || w < -100 )

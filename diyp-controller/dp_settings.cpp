@@ -63,7 +63,7 @@ void DiyeSettings::defaults()
     settings.ff_brew = 80.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
-    settings.wifiMode = 0;
+    settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
     update_crc();
 }
