@@ -1,10 +1,7 @@
  /*
  * EasyWiFi
  * Created by John V. - 2020 V 1.4.1
- * 
- * 
- * 
- * 
+ *
  * Released into the public domain on github: https://github.com/javos65/EasyWifi-for-MKR1010
  */
 #ifndef EASYWIFI_H
@@ -25,7 +22,7 @@
 #define MAXCONNECT 4                       // Max number of wifi logon connects before opening AP
 #define ESCAPECONNECT 15                   // Max number of Total wifi logon retries-connects before escaping/stopping the Wifi start
 
-// Define UDP settings for DNS 
+// Define UDP settings for DNS
 #define UDP_PACKET_SIZE 1024          // UDP packet size time out, preventign too large packet reads
 #define DNSHEADER_SIZE 12             // DNS Header
 #define DNSANSWER_SIZE 16             // DNS Answer = standard set with Packet Compression
@@ -47,26 +44,25 @@ class EasyWiFi
     EasyWiFi();
     void start();
     byte erase();
-    byte apname(char * name);  
+    byte apname(char * name);
     void seed(int value);
     void led(boolean value);
     void useAP(boolean value);
     void NINAled(char r, char g, char b);
-    
-  private:                      
-  void SimpleDecypher(char * textin, char * textout);
-  void SimpleCypher(char * textin, char * textout);
-  byte Check_Credentials();
-  byte Erase_Credentials();
-  byte Write_Credentials(char * buf1,int size1,char * buf2,int size2);
-  byte Read_Credentials(char * buf1,char * buf2);
-  void APWiFiClientCheck();
-  void APDNSScan();
-  void listNetworks();
-  void APSetup();
-  void printWiFiStatus();
-  
-  
+
+  private:
+    void SimpleDecypher(char * textin, char * textout);
+    void SimpleCypher(char * textin, char * textout);
+    byte Check_Credentials();
+    byte Erase_Credentials();
+    byte Write_Credentials(char * buf1,int size1,char * buf2,int size2);
+    byte Read_Credentials(char * buf1,char * buf2);
+    void APWiFiClientCheck();
+    void APDNSScan();
+    void listNetworks();
+    void APSetup();
+    void printWiFiStatus();
+
 };
 
 #endif

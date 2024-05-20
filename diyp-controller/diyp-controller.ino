@@ -61,7 +61,7 @@ static bool wifi_enabled = false;
  */
 void setup()
 {
-  int result=0;
+  int result = 0;
   Serial.begin(115200);
   delay(1000);
   Serial.println(__DATE__ " " __TIME__);
@@ -71,21 +71,23 @@ void setup()
   display.init();
   display.logo(__DATE__, __TIME__);
 
-  if ( (result=settings.load()) < 0)
+  if ((result = settings.load()) < 0)
   {
-    Serial.println("Failed to load settings, result="); Serial.println(result);
+    Serial.println("Failed to load settings, result=");
+    Serial.println(result);
     Serial.print("Save default settings, result=");
-    Serial.println( settings.save() );
+    Serial.println(settings.save());
   }
   else
-    Serial.println("Load settings OK, result="); Serial.println(result);
+    Serial.println("Load settings OK, result=");
+  Serial.println(result);
 
   Serial.println(encoder.button_count());
-  if ( encoder.button_count() > 3 )
+  if (encoder.button_count() > 3)
   {
     Serial.println("button pressed 4x at startup: perform factory reset of settings");
     settings.defaults();
-    Serial.println( settings.save() );
+    Serial.println(settings.save());
   }
 
   apply_settings();
@@ -96,9 +98,9 @@ void setup()
   heaterDevice.pwm_period(2.0); // [sec]
   boilerController.off();
 
-  if ( wifi_enabled )
+  if (wifi_enabled)
   {
-    if ( settings.wifiMode() == WIFI_MODE_AP)
+    if (settings.wifiMode() == WIFI_MODE_AP)
     {
       wifi_erase();
       settings.wifiMode(WIFI_MODE_ON);
@@ -109,37 +111,49 @@ void setup()
     wifi_loop();
     delay(1000);
   }
-
 }
 
 void apply_settings()
 {
-  Serial.print("temperature="); Serial.println( settings.temperature() );
-  boilerController.set_temp( settings.temperature() );
+  Serial.print("temperature=");
+  Serial.println(settings.temperature());
+  boilerController.set_temp(settings.temperature());
 
-  Serial.print("P="); Serial.println( settings.P() );
-  Serial.print("I="); Serial.println( settings.I() );
-  Serial.print("D="); Serial.println( settings.D() );
-  Serial.print("ff_heat="); Serial.println( settings.ff_heat() );
-  Serial.print("ff_ready="); Serial.println( settings.ff_ready() );
-  Serial.print("ff_brew="); Serial.println( settings.ff_brew() );
-  boilerController.set_pid( settings.P(), settings.I(), settings.D() );
-  boilerController.set_ff_heat( settings.ff_heat() );
-  boilerController.set_ff_ready( settings.ff_ready() );
-  boilerController.set_ff_brew( settings.ff_brew() );
+  Serial.print("P=");
+  Serial.println(settings.P());
+  Serial.print("I=");
+  Serial.println(settings.I());
+  Serial.print("D=");
+  Serial.println(settings.D());
+  Serial.print("ff_heat=");
+  Serial.println(settings.ff_heat());
+  Serial.print("ff_ready=");
+  Serial.println(settings.ff_ready());
+  Serial.print("ff_brew=");
+  Serial.println(settings.ff_brew());
+  boilerController.set_pid(settings.P(), settings.I(), settings.D());
+  boilerController.set_ff_heat(settings.ff_heat());
+  boilerController.set_ff_ready(settings.ff_ready());
+  boilerController.set_ff_brew(settings.ff_brew());
 
-  Serial.print("tareWeight="); Serial.println( settings.tareWeight() );
-  Serial.print("trimWeight="); Serial.println( settings.trimWeight() );
-  reservoir.set_trim( settings.trimWeight() );
-  reservoir.set_tare( settings.tareWeight() );
+  Serial.print("tareWeight=");
+  Serial.println(settings.tareWeight());
+  Serial.print("trimWeight=");
+  Serial.println(settings.trimWeight());
+  reservoir.set_trim(settings.trimWeight());
+  reservoir.set_tare(settings.tareWeight());
 
-  Serial.print("preInfusionTime="); Serial.println( settings.preInfusionTime() );
-  Serial.print("infuseTime="); Serial.println( settings.infusionTime() );
-  Serial.print("extractTime="); Serial.println( settings.extractionTime() );
-  Serial.print("extractionWeight="); Serial.println( settings.extractionWeight() );
-  brewProcess.preInfuseTime=settings.preInfusionTime();
-  brewProcess.infuseTime=settings.infusionTime();
-  brewProcess.extractTime=settings.extractionTime();
+  Serial.print("preInfusionTime=");
+  Serial.println(settings.preInfusionTime());
+  Serial.print("infuseTime=");
+  Serial.println(settings.infusionTime());
+  Serial.print("extractTime=");
+  Serial.println(settings.extractionTime());
+  Serial.print("extractionWeight=");
+  Serial.println(settings.extractionWeight());
+  brewProcess.preInfuseTime = settings.preInfusionTime();
+  brewProcess.infuseTime = settings.infusionTime();
+  brewProcess.extractTime = settings.extractionTime();
   wifi_enabled = settings.wifiMode() != WIFI_MODE_OFF;
 }
 
@@ -147,23 +161,32 @@ void apply_settings()
 void print_state()
 {
   static unsigned long prev_time = millis();
-  if ( time_since(prev_time) > 500)
+  if (time_since(prev_time) > 500)
   {
-    Serial.print("setpoint:"); Serial.print(boilerController.set_temp());
-    Serial.print(", power:");  Serial.print(heaterDevice.power());
-    Serial.print(", average:"); Serial.print(heaterDevice.average());
-    Serial.print(", act_temp:"); Serial.print(boilerController.act_temp());
-    Serial.print(", boiler-state:"); Serial.print(boilerController.get_state_name());
-    Serial.print(", boiler-error:"); Serial.print(boilerController.get_error_text());
-    Serial.print(", brew-state:"); Serial.print(brewProcess.get_state_name());
-    Serial.print(", weight:"); Serial.print(brewProcess.weight());
-    Serial.print(", end_weight:"); Serial.print(brewProcess.end_weight());
-    Serial.print(", reservoir_level:"); Serial.print(reservoir.level());
+    Serial.print("setpoint:");
+    Serial.print(boilerController.set_temp());
+    Serial.print(", power:");
+    Serial.print(heaterDevice.power());
+    Serial.print(", average:");
+    Serial.print(heaterDevice.average());
+    Serial.print(", act_temp:");
+    Serial.print(boilerController.act_temp());
+    Serial.print(", boiler-state:");
+    Serial.print(boilerController.get_state_name());
+    Serial.print(", boiler-error:");
+    Serial.print(boilerController.get_error_text());
+    Serial.print(", brew-state:");
+    Serial.print(brewProcess.get_state_name());
+    Serial.print(", weight:");
+    Serial.print(brewProcess.weight());
+    Serial.print(", end_weight:");
+    Serial.print(brewProcess.end_weight());
+    Serial.print(", reservoir_level:");
+    Serial.print(reservoir.level());
 
     Serial.println();
     prev_time = millis();
   }
-
 }
 
 /**
@@ -171,98 +194,101 @@ void print_state()
  */
 void loop()
 {
-  static unsigned long timer=0;
-  static unsigned long counter=0;
-  static unsigned menu=0;
+  static unsigned long timer = 0;
+  static unsigned long counter = 0;
+  static unsigned menu = 0;
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
   timer += 1;
-  if ( timer < 150 )
-      boilerController.set_temp( settings.temperature() );
+  if (timer < 150)
+    boilerController.set_temp(settings.temperature());
   else
-      boilerController.set_temp( 20.0 );
-  if ( timer > 300 )
+    boilerController.set_temp(20.0);
+  if (timer > 300)
     timer = 0;
 #endif
-/// END Test code to simulate heater
+  /// END Test code to simulate heater
 
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
-  if ( true ) print_state();
+  if (true)
+    print_state();
 
-  switch ( menu )
+  switch (menu)
   {
-    case 0: // main menu
-      counter = 0;
-      menu_main();
-      if ( display.button_pressed() )
-        menu = 1;
-      break;
-    case 1:
-      if ( brewProcess.is_busy() ) menu = 0; // When brewing: Always show main menu
-      if ( menu_settings() )
-      {
-        Serial.println("Done!");
-        boilerController.clear_error();
-        apply_settings();
-        settings.save();
-        if ( display.button_pressed() );
-        menu = 3;
-      }
-      break;
-    case 2: // sleep menu
-      menu_sleep();
-      if ( !brewProcess.is_awake() )
-        menu = 0;
-      break;
-    case 3: // saved menu
-      menu_saved();
-      display.button_pressed();
-      if ( counter++ > 5 )
-        menu = 0;
-      break;
-    case 4: // error menu
-      menu_error("ERROR");
-      boilerController.off();
-      pumpDevice.off();
-      break;
-    default:
+  case 0: // main menu
+    counter = 0;
+    menu_main();
+    if (display.button_pressed())
+      menu = 1;
+    break;
+  case 1:
+    if (brewProcess.is_busy())
+      menu = 0; // When brewing: Always show main menu
+    if (menu_settings())
+    {
+      Serial.println("Done!");
+      boilerController.clear_error();
+      apply_settings();
+      settings.save();
+      if (display.button_pressed())
+        ;
+      menu = 3;
+    }
+    break;
+  case 2: // sleep menu
+    menu_sleep();
+    if (!brewProcess.is_awake())
+    {
       menu = 0;
+      display.button_pressed(); // consume button pressed event, prevent jump to settings menu
+    }
+    break;
+  case 3: // saved menu
+    menu_saved();
+    display.button_pressed();
+    if (counter++ > 5)
+      menu = 0;
+    break;
+  case 4: // error menu
+    menu_error("ERROR");
+    boilerController.off();
+    pumpDevice.off();
+    break;
+  default:
+    menu = 0;
   }
 
   // sleep (de)activation and menu selection (note: sleep can be activated automatically)
-   if (display.button_long_pressed())
-      {
-        if ( brewProcess.is_awake() )
-          brewProcess.sleep();
-        else
-          brewProcess.wakeup();
-      }
-  if ( !brewProcess.is_awake() )
+  if (display.button_long_pressed())
+  {
+    if (brewProcess.is_awake())
+      brewProcess.sleep();
+    else
+      brewProcess.wakeup();
+  }
+  if (!brewProcess.is_awake())
     menu = 2;
-
 }
 
 #ifdef TEST_CODE
 void test_heater_loop()
 {
   static double delay_time = 10000.0;
-  static double power=0.0;
+  static double power = 0.0;
   // brewProcess.run();
-  power += delay_time/100000.0;
-  if ( power > 150.0) power = -50.0;
+  power += delay_time / 100000.0;
+  if (power > 150.0)
+    power = -50.0;
   heaterDevice.power(power);
   heaterDevice.on();
   heaterDevice.off();
 
-  statusLed.color( heaterDevice.is_on() ? ColorLed::RED : ColorLed::BLUE);
+  statusLed.color(heaterDevice.is_on() ? ColorLed::RED : ColorLed::BLUE);
 
   delayMicroseconds(delay_time);
   print_state();
 }
 #endif
-
-
-

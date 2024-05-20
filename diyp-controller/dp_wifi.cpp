@@ -1,7 +1,7 @@
 /*
  diyEspresso Wifi interface
  */
-#include "dp_wifi.h"
+#include "dp.h"
 #include <Arduino.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
@@ -17,7 +17,7 @@ void wifi_setup()
     Serial.println("WiFi shield not present");
   }
   MyEasyWiFi.apname(MyAPName);
-  MyEasyWiFi.seed(1);
+  MyEasyWiFi.seed(5);
 }
 
 void printWiFiStatus()
