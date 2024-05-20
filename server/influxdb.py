@@ -2,12 +2,11 @@
 
 import requests 
 
-
-INFLUX_TOKEN="YQ0RG4TRcHzAWKje2lzTYDxOOL2KuiMlmEcdRs0b5M1LnzyqQuYsYshSLe2GzvFAYpKUh0ATLIgWEaHSknlvPw=="
+# Local test influx server 
+INFLUX_TOKEN="Di8XWkE1Qz_kx0clc5TLXDfQhLVF2USrFBOq5Sh_cPLHqNH0JaJaP_Q6isIpqclOlWDcE04sMuxsQDsLIvLKDQ=="
 INFLUX_HOST="http://192.168.123.110:8086"
 INFLUX_ORG="peter"
-INFLUX_BUCKET="solar"
-
+INFLUX_BUCKET="diyPresso"
 
 class InfluxClient():
     def __init__(self):
@@ -41,11 +40,11 @@ class InfluxClient():
             "Authorization": f"Token {INFLUX_TOKEN}",
             "Content-Type": "text/plain; charset=utf-8",
             "Accept": "application/json"
-        }        
+        }
         print(self.data)
 
         response = requests.post(url, headers=headers, data=self.data)
-        
+
         if response.status_code == 204:
             print("Data posted successfully")
             self.data = ""
