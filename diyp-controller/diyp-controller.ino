@@ -225,7 +225,7 @@ void send_state()
 }
 
 
-typedef enum { MAIN=0, SETTINGS=1, SLEEP=2, SAVED=3, ERROR=4, INFO=5 } menus_t;
+typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO } menus_t;
 
 
 /**
@@ -235,7 +235,7 @@ void loop()
 {
   static unsigned long timer = 0;
   static unsigned long counter = 0;
-  static menus_t menu = MAIN;
+  static menus_t menu = COMMISSIONING;
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
@@ -262,9 +262,19 @@ void loop()
   if ( brewProcess.is_error() )
     menu = ERROR; // error menu
 
+
   switch (menu)
   {
+  case COMMISSIONING:
+    if ( settings.commissioningDone() )
+      menu = MAIN;
+    else
+      menu_commissioning();
+    break;
   case MAIN: // main menu
+    if ( !settings.commissioningDone() )
+      menu = COMMISSIONING;
+
     counter = 0;
     menu_main();
     if (display.button_pressed())
@@ -273,6 +283,9 @@ void loop()
       menu = INFO;
     break;
   case SETTINGS: // settings menu
+    if ( !settings.commissioningDone() )
+      menu = COMMISSIONING;
+
     if (brewProcess.is_busy())
       menu = MAIN; // When brewing: Always show main menu
     if (menu_settings())

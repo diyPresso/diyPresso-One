@@ -19,59 +19,79 @@ BrewProcess brewProcess = BrewProcess();
 void BrewProcess::common_transitions()
 {
   if ( brewSwitch.down() )
-    if ( _initialized )
+    if ( settings.commissioningDone() )
       NEXT( state_idle);
   if ( reservoir.is_empty() ) NEXT(state_empty);
   ON_MESSAGE(SLEEP) NEXT(state_sleep);
 }
 
-// initial state at startup, brew switch needs to be moved from UP (open) to DOWN (closed) before init
+// initial state at startup, 
+// If we are not commissioned, ask user to fill reservoir and tare the measurement
+// Next state is fill
+// brew switch needs to be moved from UP (open) to DOWN (closed) before init
+
 void BrewProcess::state_init()
 {
-  static bool was_up = false;
   statusLed.color(ColorLed::BLACK);
   boilerController.off();
-  if ( brewSwitch.up() ) was_up = true;
-  if ( brewSwitch.down() && was_up )
+  if ( settings.commissioningDone() )
+    NEXT(state_idle);
+  if ( display.button_pressed() )
+  {
+    reservoir.tare();
+    settings.tareWeight( reservoir.get_tare() );
+    settings.save();
     NEXT( state_fill );
-  if ( reservoir.is_empty() ) NEXT(state_empty);
+  }
 }
 
-// pump for 10 seconds and check that reservoir level has dropped
+// pump 60 seconds and check that reservoir level has dropped
 void BrewProcess::state_fill()
 {
+  static int counter=0;
+  counter += 1;
   ON_ENTRY()
   {
     _start_weight = reservoir.weight();
     pumpDevice.on();
   }
   statusLed.color( blink() ? ColorLed::YELLOW : ColorLed::BLACK);
-  ON_TIMEOUT(1000*INITIAL_PUMP_TIME) 
+  if ( counter >= 30 )
   {
-     if ( (reservoir.weight() - _start_weight) > -INITIAL_WEIGHT_DROP )
-      goto_error(BREW_ERROR_FILL);
-    else
-      NEXT(state_circulate);
+    if( abs(_start_weight - reservoir.weight()) < FILL_WEIGHT_VARIATION  )
+    {
+       NEXT(state_purge);
+      counter = 0;
+    }
+    _start_weight = reservoir.weight();
+
   }
+  ON_TIMEOUT(1000*INITIAL_PUMP_TIME) goto_error(BREW_ERROR_FILL);
+}
+
+// Open gate and see that water flows out
+void BrewProcess::state_purge()
+{
+  if (abs( _start_weight - reservoir.weight()) > PURGE_WEIGHT_DROP )
+  {
+    pumpDevice.off();
+    NEXT(state_done);
+  }
+  ON_TIMEOUT(1000*PURGE_TIMEOUT) goto_error(BREW_ERROR_PURGE);
   common_transitions();
 }
 
-// keep pumping and check that reservoir level is kept constant
-void BrewProcess::state_circulate()
+// Done commissioning
+void BrewProcess::state_done()
 {
-  ON_ENTRY() _start_weight = reservoir.weight();
-  ON_TIMEOUT(1000*MAINTAIN_PUMP_TIME)
+  if ( brewSwitch.down() ) 
   {
-    if (abs( _start_weight - reservoir.weight()) > MAINTAIN_WEIGHT_VARIATION )
-      goto_error(BREW_ERROR_CIRCULATION);
-    else
-    {
-      NEXT(state_idle);
-      _initialized = true;
-    }
+    settings.commissioningDone(1);
+    settings.save();
+    NEXT(state_idle);
   }
-  common_transitions();
 }
+
 
 void BrewProcess::state_sleep()
 {
@@ -108,7 +128,7 @@ void BrewProcess::state_idle()
   if ( brewSwitch.up() ) NEXT(state_pre_infuse);
   common_transitions();
   ON_TIMEOUT(1000*AUTOSLEEP_TIMEOUT) NEXT(state_sleep);
-  if ( !_initialized ) NEXT(state_init);
+  if ( !settings.commissioningDone() ) NEXT(state_init);
 }
 
 void BrewProcess::state_pre_infuse()
@@ -192,10 +212,11 @@ const char *BrewProcess::get_state_name()
 {
     RETURN_STATE_NAME(init);
     RETURN_STATE_NAME(fill);
-    RETURN_STATE_NAME(circulate);
+    RETURN_STATE_NAME(purge);
     RETURN_STATE_NAME(sleep);
     RETURN_STATE_NAME(empty);
     RETURN_STATE_NAME(idle);
+    RETURN_STATE_NAME(done);
     RETURN_STATE_NAME(pre_infuse);
     RETURN_STATE_NAME(infuse);
     RETURN_STATE_NAME(extract);
@@ -210,7 +231,7 @@ const char *BrewProcess::get_error_text()
   {
     case BREW_ERROR_NONE: return "OK";
     case BREW_ERROR_FILL: return "NO_FILL";
-    case BREW_ERROR_CIRCULATION: return "NO_CIRCULATION";
+    case BREW_ERROR_PURGE: return "NO_PURGE";
     case BREW_ERROR_TIMEOUT: return "TIMEOUT";
     default: return "UNKNOWN";
   }

@@ -27,6 +27,7 @@ class DiyeSettings
             double p, i, d, ff_heat, ff_ready, ff_brew;
             double tareWeight;
             double trimWeight;
+            int commissioningDone;
             int shotCounter;
             int wifiMode;
         } settings_t;
@@ -69,6 +70,8 @@ class DiyeSettings
         int wifiMode() { return settings.wifiMode; }
         int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
+        int commissioningDone() { return settings.commissioningDone; }
+        int commissioningDone(int state) { return settings.commissioningDone = min(1, max(state, 0)); }
         int incShotCounter() { return settings.shotCounter += 1; }
         void zeroShotCounter() { settings.shotCounter = 0; }
 };

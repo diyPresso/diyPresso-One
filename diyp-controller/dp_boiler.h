@@ -8,7 +8,7 @@
 #include "dp_heater.h"
 
 // Temperatures in [degC]
-#define TEMP_WINDOW 2.0 // in temperature range
+#define TEMP_WINDOW 10.0 // in temperature range
 #define TEMP_LIMIT_HIGH 104.0 // > is TOO HGH
 #define TEMP_LIMIT_LOW 1.0 // < is TOO LOW
 #define TEMP_MIN_BREW 10.0 // do not brew under this temp

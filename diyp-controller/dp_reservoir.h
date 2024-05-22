@@ -6,10 +6,11 @@
 #define RESERVOIR_H
 
 #define RESERVOIR_EMPTY_LEVEL 10.0 // empty level threshold [%]
-#define RESERVOIR_CAPACITY 1000.0 // capacity of reservoir in [grams]
+#define RESERVOIR_CAPACITY 1500.0 // capacity of reservoir in [grams]
 
 typedef enum {
-  RESERVOIR_ERROR_NONE, RESERVOIR_ERROR_SENSOR, RESERVOIR_ERROR_NO_READINGS, RESERVOIR_ERROR_OUT_OF_RANGE,
+  RESERVOIR_ERROR_NONE, RESERVOIR_ERROR_SENSOR, RESERVOIR_ERROR_NO_READINGS,
+  RESERVOIR_ERROR_OUT_OF_RANGE, RESERVOIR_ERROR_NEGATIVE
 } reservoir_error_t;
 
 class Reservoir
@@ -29,9 +30,9 @@ class Reservoir
       double level() { return max(0, min(100.0 * ( weight() / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
       double weight() { read(); return _weight - _tare; } // net weight
       double get_tare() { return _tare; }
-      void set_tare(double t) { _tare = t; }
+      void set_tare(double t) { _tare = t; clear_error(); }
       void set_trim(double t) { _trim = t; }
-      void tare() { read(); _tare = _weight - RESERVOIR_CAPACITY; } // note: tare when reservoir is full
+      void tare() { read(); _tare = _weight - RESERVOIR_CAPACITY; clear_error(); } // note: tare when reservoir is full
       bool is_empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
       bool is_error() { return _error != RESERVOIR_ERROR_NONE; }
       reservoir_error_t error() { return _error; }

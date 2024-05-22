@@ -44,6 +44,7 @@ const setting_t settings_list[] =
   {"Shot counter", "shots",  &settings_vals[11], READ_ONLY, 0 },
   {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
   {"Weight trim", "%",  &settings_vals[13], 0.05, 2 },
+  {"Commissioning done", "NO\0YES\0", &settings_vals[14], SELECT_ITEM, 1},
   {"   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
   {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
@@ -52,7 +53,6 @@ const setting_t settings_list[] =
 };
 
 const int num_settings = sizeof(settings_list) / sizeof(setting_t);
-
 
 const char *errors_list[] = {
   //0123456789012345678
@@ -137,7 +137,15 @@ const char *menus[] = {
   "####### ############"
   "B: ################ "
   "E: ################ "
-  "R: ################ "
+  "R: ################ ",
+
+// STATE=10
+// 01234567890123456789
+  "   COMMISSIONING    "
+  " ################## "
+  " ################## "
+  " Weight ##### gram  "
+
 };
 const int num_menus = sizeof(menus) / sizeof(char*);
 
@@ -325,8 +333,37 @@ double add_value(int n, double delta)
     case 11: return settings.shotCounter();
     case 12: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
     case 13: return settings.trimWeight( settings.trimWeight() + delta);
+    case 14: return settings.commissioningDone(settings.commissioningDone() + (delta / 2.0) );
+
     default: return 0;
   }
+}
+
+
+
+
+bool menu_commissioning()
+{
+  static char *substate_names[] = {"Fill reservoir", "Filling boiler", "Purge", "Done!", "?"};
+  static char *substate_info[] = {"And press button", "Wait...", "Put lever UP", "Put lever DOWN", "?"};
+  char *args[3];
+  char weight[10];
+  int substate=4;
+
+  format_float(weight, brewProcess.weight(), 0, 5);
+  args[2] = weight;
+
+  if ( brewProcess.is_init() ) substate = 0;
+  if ( brewProcess.is_fill() ) substate = 1;
+  if ( brewProcess.is_purge() ) substate = 2;
+  if ( brewProcess.is_done() ) substate = 3;
+  
+  args[0] = (char*)substate_names[substate];
+  args[1] = (char*)substate_info[substate];
+  display.show(menus[MENU_COMMISSIONING], args);
+  if ( display.button_pressed() )
+    return true;
+  return false;
 }
 
 

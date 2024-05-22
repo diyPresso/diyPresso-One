@@ -65,6 +65,7 @@ void DiyeSettings::defaults()
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
+    settings.commissioningDone = 0; // default is 0 (not done)
     update_crc();
 }
 

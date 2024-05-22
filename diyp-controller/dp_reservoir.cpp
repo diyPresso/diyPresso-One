@@ -32,8 +32,8 @@ void Reservoir::read()
     // DEBUG: Serial.println(_weight);
     _weight = (_weight - _offset) / ( (1.0+_trim/100.0) * _scale);
     double w = weight();
-    if ( w > RESERVOIR_CAPACITY + 100.0 || w < -100 )
-      _error = RESERVOIR_ERROR_OUT_OF_RANGE;
+    if ( w > RESERVOIR_CAPACITY + 100.0 ) _error = RESERVOIR_ERROR_OUT_OF_RANGE;
+    if ( w < -100.0 ) _error = RESERVOIR_ERROR_NEGATIVE;
   }
 }
 
@@ -43,6 +43,7 @@ const char *Reservoir::get_error_text()
     {
       case RESERVOIR_ERROR_NONE: return "OK"; break;
       case RESERVOIR_ERROR_OUT_OF_RANGE: return "OUT_OF_RANGE"; break;
+      case RESERVOIR_ERROR_NEGATIVE: return "NEGATIVE_READING"; break;
       case RESERVOIR_ERROR_NO_READINGS: return "NO_READINGS"; break;
       case RESERVOIR_ERROR_SENSOR: return "SENSOR_ERROR"; break;
       default: return "UNKNOWN"; break;
