@@ -252,7 +252,7 @@ void loop()
   heaterDevice.control();
   boilerController.control();
   brewProcess.run();
-
+  int menuSettings;
   send_state();
   mqttDevice.run();
 
@@ -288,7 +288,9 @@ void loop()
 
     if (brewProcess.is_busy())
       menu = MAIN; // When brewing: Always show main menu
-    if (menu_settings())
+
+    menuSettings = menu_settings();
+    if (menuSettings == 1)
     {
       Serial.println("Done!");
       boilerController.clear_error();
@@ -296,6 +298,12 @@ void loop()
       apply_settings();
       display.button_pressed(); // prevent entering settings again
       menu = SAVED;
+    } else if (menuSettings == 2)
+    {
+      Serial.println("Cancel!");
+      display.button_pressed();
+      display.encoder_changed();
+      menu = MAIN;
     }
     break;
   case SLEEP: // sleep menu

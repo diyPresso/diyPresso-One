@@ -241,7 +241,10 @@ bool menu_main()
 
 
 // Settings menu (blocking)
-bool menu_settings()
+/* Returns 0 if the settings menu should continue running, 1 if a save action was performed and the menu should be exited, 
+ * and 2 if an exit action was performed and the menu should be exited.
+*/
+int menu_settings()
 {
   static char buf[32], bufs[10][32];
   static char *arg[10];
@@ -276,13 +279,13 @@ bool menu_settings()
     {
       switch ( set.decimals )
       {
-        case FUNCTION_EXIT: break;
+        case FUNCTION_EXIT: return 2;
         case FUNCTION_SAVE: settings.save(); break;
         case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); break;
         case FUNCTION_ZERO: settings.zeroShotCounter(); break;
         case FUNCTION_DEFAULTS: settings.defaults(); break;
       }
-      return true;
+      return 1;
     }
     else
     {
@@ -292,7 +295,7 @@ bool menu_settings()
   }
 
   if ( modify && set.delta == EXECUTE_FUNCTION && set.decimals == FUNCTION_SAVE )
-    return true;
+    return 1;
 
   arg[2] = set.name;
   arg[4] = set.unit;
@@ -308,7 +311,7 @@ bool menu_settings()
   display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
   prev_pos = pos;
 
-  return false;
+  return 0;
 }
 
 // add a value to a setting

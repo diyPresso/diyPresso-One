@@ -6,7 +6,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-extern bool menu_settings();
+extern int menu_settings();
 extern bool menu_brew();
 extern bool menu_main();
 extern bool menu_sleep();
