@@ -11,7 +11,7 @@
 
 Encoder encoder(PIN_ENC_A,  PIN_ENC_B, PIN_ENC_S);
 
-volatile static int enc_value=0, enc_button=0, enc_button_count=0, enc_button_time=0;
+volatile static int enc_value=0, enc_button=0, enc_button_count=0, enc_button_time=0,last_button_time=0;
 volatile static int timer_count = 0;
 static int _pin_a, _pin_b, _pin_s;
 
@@ -27,17 +27,21 @@ void encoder_timer_function()
     timer_count = (timer_count+1) & 0xFFFF;
 
 
-    // button de-glitching and handling
-    enc_switch = (enc_switch<<1) | (digitalRead(_pin_s) ? 0 : 1);
-    enc_button = (enc_switch & BUTTON_DEGLITCH_BITS) == BUTTON_DEGLITCH_BITS ? 1 : 0;
+  // button de-glitching and handling
+  enc_switch = (enc_switch << 1) | (digitalRead(_pin_s) ? 0 : 1);
+  enc_button = (enc_switch & BUTTON_DEGLITCH_BITS) == BUTTON_DEGLITCH_BITS ? 1 : 0;
 
-    if ( (enc_button) && (!enc_prev_button) ) // falling edge
-      enc_button_count += 1;
-    enc_prev_button = enc_button;
-    if ( enc_button )
-      enc_button_time += 1;
-    else
-      enc_button_time = 0;
+  if ( (!enc_button) && (enc_prev_button) ) // rising edge
+    enc_button_count += 1;
+  enc_prev_button = enc_button;
+
+  if ( enc_button ) 
+  {
+    enc_button_time += 1;
+    last_button_time = enc_button_time;
+  }
+  else
+    enc_button_time = 0;
 
     // encoder de-glitching and handling
     val = 0;
@@ -100,7 +104,7 @@ volatile bool Encoder::button_state()
 /// @return  time in msec, zero if raised, counting up while pressed
 volatile int Encoder::button_time()
 {
-    return (enc_button_time*TIMER_PERIOD_US) / 1000;
+    return (last_button_time*TIMER_PERIOD_US) / 1000;
 }
 
 volatile void Encoder::reset()

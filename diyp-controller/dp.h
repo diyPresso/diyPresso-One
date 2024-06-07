@@ -15,6 +15,6 @@
 #define PURGE_TIMEOUT (60.0)
 #define PURGE_WEIGHT_DROP (50.0) // [grams] max reservoir variation during pump/maintain state
 
-#define SOFTWARE_VERSION "1.5.0"
+#define SOFTWARE_VERSION "1.6.0"
 
 #endif // LED_H

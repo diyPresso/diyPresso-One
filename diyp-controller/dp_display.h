@@ -23,6 +23,7 @@ class Display
         bool button_pressed();
         bool button_long_pressed();
         int button_pressed_time();
+        static int last_button_count; 
         bool encoder_changed();
         long encoder_value();
         void custom_chars(const unsigned char *chars);

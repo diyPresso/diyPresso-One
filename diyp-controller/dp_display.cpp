@@ -74,6 +74,9 @@ void Display::show(const char *screen, char *args[])
   }
 }
 
+int Display::last_button_count = 0;
+
+
 void format_float(char *dest, double f, int digits, int len)
 {
   bool neg = f < 0;
@@ -125,26 +128,32 @@ void Display::init()
   lcd.createChar(7, (unsigned char*)cC7);
 }
 
-
-bool Display::button_pressed()
-{
-  static unsigned long prev_count=0;
-  bool pressed = prev_count != encoder.button_count();
-  prev_count = encoder.button_count();
-  return pressed;
-}
-
-bool Display::button_long_pressed()
-{
-  static unsigned long prev_count=0;
-  bool pressed = prev_count != encoder.button_count();
-  if ( pressed && (encoder.button_time() > 1000) )
-  {
-    prev_count = encoder.button_count();
-    return true;
+bool Display::button_pressed() {
+  static int last_button_count = 0;
+  int current_button_count = encoder.button_count();
+  
+  if (current_button_count > last_button_count) {
+    last_button_count = current_button_count;
+    if (encoder.button_time() < 400) {
+      return true;
+    }
   }
   return false;
 }
+
+bool Display::button_long_pressed() {
+  static int last_button_count = 0;
+  int current_button_count = encoder.button_count();
+  
+  if (current_button_count > last_button_count) {
+    last_button_count = current_button_count;
+    if (encoder.button_time() >= 400) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 int Display::button_pressed_time()
 {

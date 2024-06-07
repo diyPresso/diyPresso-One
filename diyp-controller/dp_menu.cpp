@@ -144,7 +144,13 @@ const char *menus[] = {
   "   COMMISSIONING    "
   " ################## "
   " ################## "
-  " Weight ##### gram  "
+  " Weight ##### gram  ",
+// PRESET=11
+// 01234567890123456789
+  "Select Preset:      "
+  "#################   "
+  "##################  "
+  "    [TURN AND PRESS]",
 
 };
 const int num_menus = sizeof(menus) / sizeof(char*);
@@ -281,7 +287,7 @@ int menu_settings()
       {
         case FUNCTION_EXIT: return 2;
         case FUNCTION_SAVE: settings.save(); break;
-        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); break;
+        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); settings.save(); break;
         case FUNCTION_ZERO: settings.zeroShotCounter(); break;
         case FUNCTION_DEFAULTS: settings.defaults(); break;
       }
@@ -300,13 +306,12 @@ int menu_settings()
   arg[2] = set.name;
   arg[4] = set.unit;
 
-  switch ( (int)set.delta )
+switch ( (int)set.delta )
   {
     case EXECUTE_FUNCTION: *arg[3] = 0; break;    // A function to execute: no value to display
     case SELECT_ITEM: strcpy(arg[3], get_string_item(set.unit, set_val)); arg[4] = ""; break;
     default: format_float(arg[3], set_val, set.decimals, 10); break;  // Show the value
   }
-
   format_float(arg[0], idx+1, 0, 2); // the item number
   display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
   prev_pos = pos;
@@ -449,6 +454,102 @@ bool menu_saved()
   display.show(menus[MENU_SAVED], args);
   return false;
 }
+
+void apply_preset(int preset) {
+  switch (preset) {
+    case 0: // Lungo
+      settings.preInfusionTime(1);
+      settings.infusionTime(3);
+      settings.extractionTime(30);
+      settings.extractionWeight(50);
+      break;
+    case 1: // Espresso
+      settings.preInfusionTime(1);
+      settings.infusionTime(3);
+      settings.extractionTime(23);
+      settings.extractionWeight(36);
+      break;
+    /*
+    case 2: //preset 3
+      settings.preInfusionTime(1);
+      settings.infusionTime(3);
+      settings.extractionTime(23);
+      settings.extractionWeight(36);
+      break;
+    case 3: //Cancel
+      break;*/
+    default:
+      break;
+  }
+}
+
+bool menu_preset() {
+  static int preset_index = 0;
+  static char *arg[4];
+  static char bufs[4][32];
+  const char *presets[] = {"1. Lungo", "2. Espresso"};
+  const int num_presets = sizeof(presets) / sizeof(presets[0]);
+
+  for (int i = 0; i < 4; i++)
+    arg[i] = bufs[i];
+
+  int encoder_value = display.encoder_value();
+  preset_index = encoder_value % num_presets;
+  if (preset_index < 0) preset_index += num_presets;
+
+  for (int i = 0; i < num_presets; i++) {
+    if (i == preset_index) {
+      snprintf(arg[i], 32, "> %s", presets[i]);
+    } else {
+      snprintf(arg[i], 32, "  %s", presets[i]);
+    }
+  }
+  display.show(menus[PRESET_MENU], arg);
+
+  if (display.button_pressed()) {
+    apply_preset(preset_index);
+    return true;
+  };
+
+  return false;
+}
+/* 
+// more presets?
+bool menu_preset() {
+  static int preset_index = 0;
+  static char *arg[4];
+  static char bufs[4][32];
+  const char *presets[] = {"1. Lungo", "2. Espresso", "3. Cappuccino", "4. Latte"};
+  const int num_presets = sizeof(presets) / sizeof(presets[0]);
+
+  for (int i = 0; i < 4; i++)
+    arg[i] = bufs[i];
+
+  int encoder_value = display.encoder_value();
+  preset_index = encoder_value % num_presets;
+  if (preset_index < 0) preset_index += num_presets;
+
+  for (int i = 0; i < num_presets; i++) {
+    if (i == preset_index) {
+      snprintf(arg[i % 4], 32, "> %s", presets[i]);
+    } else {
+      snprintf(arg[i % 4], 32, "  %s", presets[i]);
+    }
+  }
+  display.show(menus[PRESET_MENU], arg);
+
+  if (display.button_pressed()) {
+    apply_preset(preset_index + 1);
+    return true;
+  }
+
+  return false;
+}
+*/
+
+
+
+
 
 
 bool menu_state()

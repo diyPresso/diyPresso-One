@@ -225,7 +225,7 @@ void send_state()
 }
 
 
-typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO } menus_t;
+typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO, PRESET } menus_t;
 
 
 /**
@@ -256,12 +256,11 @@ void loop()
   send_state();
   mqttDevice.run();
 
-  if (true)
-    print_state();
+  //if (true)
+  //  print_state();
 
   if ( brewProcess.is_error() )
     menu = ERROR; // error menu
-
 
   switch (menu)
   {
@@ -277,8 +276,12 @@ void loop()
 
     counter = 0;
     menu_main();
-    if (display.button_pressed())
+    if (display.button_long_pressed()) {
       menu = SETTINGS;
+    }
+    if (display.button_pressed()) {
+      menu = PRESET;
+      }
     if( display.encoder_changed() )
       menu = INFO;
     break;
@@ -308,6 +311,7 @@ void loop()
     break;
   case SLEEP: // sleep menu
     menu_sleep();
+
     if (!brewProcess.is_awake())
     {
       menu = MAIN;
@@ -336,25 +340,39 @@ void loop()
     break;
   case INFO: // state info menu
     menu_state();
-    if (display.button_pressed())
+    if (display.button_long_pressed())
       menu = SETTINGS;
+    if (display.button_pressed()) 
+      menu = PRESET;
     if( display.encoder_changed() )
       menu = MAIN;
     break;
+  case PRESET:
+    if ( !settings.commissioningDone() )
+      menu = COMMISSIONING;
+
+    if (brewProcess.is_busy())
+      menu = MAIN; // When brewing: Always show main menu
+
+    if(menu_preset()) {
+      apply_settings();
+      menu = SAVED;
+    }
+      break;
   default:
     menu = MAIN;
   }
 
   // sleep (de)activation and menu selection (note: sleep can be activated automatically)
   if (display.button_long_pressed())
-  {
-    if (brewProcess.is_awake())
-      brewProcess.sleep();
-    else
-      brewProcess.wakeup();
-  }
+    {
+      if (!brewProcess.is_awake())
+        brewProcess.wakeup();
+    }
   if (!brewProcess.is_awake())
     menu = SLEEP;
+  
+
 }
 
 #ifdef TEST_CODE
