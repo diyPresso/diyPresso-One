@@ -281,7 +281,7 @@ int menu_settings()
       {
         case FUNCTION_EXIT: return 2;
         case FUNCTION_SAVE: settings.save(); break;
-        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); break;
+        case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); settings.save(); break;
         case FUNCTION_ZERO: settings.zeroShotCounter(); break;
         case FUNCTION_DEFAULTS: settings.defaults(); break;
       }
