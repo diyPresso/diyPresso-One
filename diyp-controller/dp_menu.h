@@ -15,7 +15,8 @@ extern bool menu_saved();
 extern bool menu_error(const char *msg);
 extern bool menu_commissioning();
 extern bool menu_state();
-extern bool menu_preset();
+extern int menu_preset();
+extern int menu_preset_settings();
 void apply_preset(int preset);
 
 

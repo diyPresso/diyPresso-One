@@ -74,6 +74,26 @@ EasyWiFi::EasyWiFi()
 {
 }
 
+String urlDecode(String input) {
+  String decoded = "";
+  char temp[] = "0x00";
+  unsigned int code;
+
+  for (int i = 0; i < input.length(); i++) {
+    if (input[i] == '%') {
+      temp[2] = input[i + 1];
+      temp[3] = input[i + 2];
+      code = strtoul(temp, NULL, 16);
+      decoded += char(code);
+      i += 2;
+    } else {
+      decoded += input[i];
+    }
+  }
+
+  return decoded;
+}
+
 // Login to local network  //
 void EasyWiFi::start()
 {
@@ -547,7 +567,13 @@ void EasyWiFi::APWiFiClientCheck()
                   for (v = pos2; v < (t - 7); v++)
                     G_pass[u++] = currentLine[v];
                   G_pass[u] = 0;
-                  Write_Credentials(G_ssid, sizeof(G_ssid), G_pass, sizeof(G_pass)); // write credentials to flash
+                  String decodedSSID = urlDecode(G_ssid);
+                  decodedSSID.toCharArray(G_ssid, sizeof(G_ssid));
+
+                  String decodedPass = urlDecode(G_pass);
+                  decodedPass.toCharArray(G_pass, sizeof(G_pass));
+ 
+                  Write_Credentials(G_ssid, sizeof(G_ssid), G_pass, sizeof(G_pass)); // Write credentials to flash
                 }
                 else
                 {

@@ -52,9 +52,6 @@ void DiyeSettings::defaults()
 {
     settings.version = 1;  // Update this if new fields are added to the settings structure to prevent incorrect reads
     settings.temperature = 98.0;
-    settings.preInfusionTime = 3;
-    settings.infusionTime = 1;
-    settings.extractionTime = 25;
     settings.p = 7.0;
     settings.i = 0.3;
     settings.d = 80.0;
@@ -65,7 +62,13 @@ void DiyeSettings::defaults()
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
-    settings.commissioningDone = 0; // default is 0 (not done)
+    settings.commissioningDone = 1; // default is 0 (not done)
+    
+    // Default Preset Values
+    settings.defaultPreset = 0;  // Lungo
+    settings.presets[0] = {1, 3, 30, 50};  // Lungo - pre-infuse, infuse, extraction time, extraction weight.
+    settings.presets[1] = {1, 3, 23, 36};  // Espresso - pre-infuse, infuse, extraction time, extraction weight.
+
     update_crc();
 }
 

@@ -17,19 +17,22 @@ class DiyeSettings
 {
     private:
         typedef struct __attribute__ ((packed)) settings_struct { // a packed struct has no alignment of fields
-            unsigned long int crc; // crc of all the the fields after the crc
+            unsigned long int crc; // crc of all the fields after the crc
             unsigned long int version; // settings struct version
             double temperature;
-            double preInfusionTime;
-            double infusionTime;
-            double extractionTime;
-            double extractionWeight;
             double p, i, d, ff_heat, ff_ready, ff_brew;
             double tareWeight;
             double trimWeight;
             int commissioningDone;
             int shotCounter;
             int wifiMode;
+            int defaultPreset;
+            struct {
+                double preInfusionTime;
+                double infusionTime;
+                double extractionTime;
+                double extractionWeight;
+            } presets[2]; // Adjust the number of presets as needed
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -43,14 +46,16 @@ class DiyeSettings
         int save();
         double temperature() { return settings.temperature; }
         double temperature(double t) { return settings.temperature = min(110.0, max(t, 0.0)); }
-        double preInfusionTime() { return settings.preInfusionTime; }
-        double preInfusionTime(double t) { return settings.preInfusionTime = min(60.0, max(t, 0.0)); }
-        double infusionTime() { return settings.infusionTime; }
-        double infusionTime(double t) { return settings.infusionTime = min(60.0, max(t, 0.0)); }
-        double extractionTime() { return settings.extractionTime; }
-        double extractionTime(double t) { return settings.extractionTime = min(60.0, max(t, 0.0)); }
-        double extractionWeight() { return settings.extractionWeight; }
-        double extractionWeight(double w) { return settings.extractionWeight = min(500.0, max(w, 1.0)); }
+        double preInfusionTime(int index) { return settings.presets[index].preInfusionTime; }
+        double preInfusionTime(int index, double t) { return settings.presets[index].preInfusionTime = min(60.0, max(t, 0.0)); }
+        double infusionTime(int index) { return settings.presets[index].infusionTime; }
+        double infusionTime(int index, double t) { return settings.presets[index].infusionTime = min(60.0, max(t, 0.0)); }
+        double extractionTime(int index) { return settings.presets[index].extractionTime; }
+        double extractionTime(int index, double t) { return settings.presets[index].extractionTime = min(60.0, max(t, 0.0)); }
+        double extractionWeight(int index) { return settings.presets[index].extractionWeight; }
+        double extractionWeight(int index, double w) { return settings.presets[index].extractionWeight = min(500.0, max(w, 1.0)); }
+        int defaultPreset() { return settings.defaultPreset; }
+        int defaultPreset(int preset) { return settings.defaultPreset = min(1, max(preset, 0)); }
         double P() { return settings.p; }
         double P(double p) { return settings.p = min(10.0, max(p, 0.0)); }
         double I() { return settings.i; }
@@ -77,6 +82,5 @@ class DiyeSettings
 };
 
 extern DiyeSettings settings;
-
 
 #endif // DiyeSettings_h

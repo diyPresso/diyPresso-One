@@ -2,6 +2,7 @@
   menu functions
   We are non-blocking and we assume to be called ~ 2x to 4x per second
  */
+#include "dp.h"
 #include "dp_menu.h"
 #include "dp_display.h"
 #include "dp_brew.h"
@@ -13,7 +14,6 @@
 #include "dp_settings.h"
 
 double settings_vals[32];
-
 // the increment setting has some special values:
 #define READ_ONLY 0         // only display value, cannot modify
 #define EXECUTE_FUNCTION -1 // Execute a function, the 'decimals' field contains a function ID
@@ -30,28 +30,36 @@ double settings_vals[32];
 // "text", "unit", pointer, increment, decimals
 const setting_t settings_list[] =
 {
-  {"Temperature", "\337C", &settings_vals[0], 0.5, 2 },
-  {"Pre-infusion time", "sec", &settings_vals[1], 0.1, 2 },
-  {"Infusion time", "sec", &settings_vals[2], 0.1, 2 },
-  {"Extraction time", "sec", &settings_vals[3], 0.5, 2 },
-  {"Extraction weight", "gram", &settings_vals[4], 0.5, 2 },
-  {"P-Gain", "%/\337C", &settings_vals[5], 0.2, 1 },
-  {"I-Gain", "%/\337C/s",  &settings_vals[6],0.01, 2 },
-  {"D-Gain", "%s",  &settings_vals[7], 0.2, 1 },
-  {"FF-heat Value", "%",  &settings_vals[8], 0.2, 1 },
-  {"FF-ready Value", "%",  &settings_vals[9], 0.2, 1 },
-  {"FF-brew Value", "%",  &settings_vals[10], 0.2, 1 },
-  {"Shot counter", "shots",  &settings_vals[11], READ_ONLY, 0 },
-  {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
-  {"Weight trim", "%",  &settings_vals[13], 0.05, 2 },
-  {"Commissioning done", "NO\0YES\0", &settings_vals[14], SELECT_ITEM, 1},
-  {"   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
-  {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
-  {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
-  {"       <EXIT>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT },
-  {"       <SAVE>", "",  &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
+  { "Temperature", "\337C", &settings_vals[0], 0.5, 2 },
+  { "Default Preset", "LUNGO\0ESPRESSO\0", &settings_vals[15], SELECT_ITEM, 1 },
+  { "P-Gain", "%/\337C", &settings_vals[5], 0.2, 1 },
+  { "I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2 },
+  { "D-Gain", "%s", &settings_vals[7], 0.2, 1 },
+  { "FF-heat Value", "%", &settings_vals[8], 0.2, 1 },
+  { "FF-ready Value", "%", &settings_vals[9], 0.2, 1 },
+  { "FF-brew Value", "%", &settings_vals[10], 0.2, 1 },
+  { "Shot counter", "shots", &settings_vals[11], READ_ONLY, 0 },
+  { "WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1 },
+  { "Weight trim", "%", &settings_vals[13], 0.05, 2 },
+  { "Commissioning done", "NO\0YES\0", &settings_vals[14], SELECT_ITEM, 1 },
+  { "   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
+  { "   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
+  { "<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
+  { "       <EXIT>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT },
+  { "       <SAVE>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
 };
 
+const setting_t preset_settings_list[] =
+{
+  { "Pre-Infusion Time", "sec", &settings_vals[0], 0.1, 2 },
+  { "Infusion Time", "sec", &settings_vals[1], 0.1, 2 },
+  { "Extraction Time", "sec", &settings_vals[2], 0.5, 2 },
+  { "Extraction Weight", "gram", &settings_vals[3], 0.5, 2 },
+  { "       <EXIT>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT },
+  { "       <SAVE>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
+};
+
+const int num_preset_settings = sizeof(preset_settings_list) / sizeof(setting_t);
 const int num_settings = sizeof(settings_list) / sizeof(setting_t);
 
 const char *errors_list[] = {
@@ -148,8 +156,8 @@ const char *menus[] = {
 // PRESET=11
 // 01234567890123456789
   "Select Preset:      "
-  "#################   "
-  "##################  "
+  "################### "
+  "################### "
   "    [TURN AND PRESS]",
 
 };
@@ -328,26 +336,36 @@ double add_value(int n, double delta)
   switch ( n )
   {
     case 0: return settings.temperature(settings.temperature() + delta);
-    case 1: return settings.preInfusionTime(settings.preInfusionTime() + delta);
-    case 2: return settings.infusionTime(settings.infusionTime() + delta);
-    case 3: return settings.extractionTime(settings.extractionTime() + delta);
-    case 4: return settings.extractionWeight(settings.extractionWeight() + delta);
-    case 5: return settings.P(settings.P() + delta);
-    case 6: return settings.I(settings.I() + delta);
-    case 7: return settings.D(settings.D() + delta);
-    case 8: return settings.ff_heat(settings.ff_heat() + delta);
-    case 9: return settings.ff_ready(settings.ff_ready() + delta);
-    case 10: return settings.ff_brew(settings.ff_brew() + delta);
-    case 11: return settings.shotCounter();
-    case 12: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
-    case 13: return settings.trimWeight( settings.trimWeight() + delta);
-    case 14: return settings.commissioningDone(settings.commissioningDone() + (delta / 2.0) );
+    case 1: return settings.defaultPreset(settings.defaultPreset() - (delta / 2.0));
+    case 2: return settings.P(settings.P() + delta);
+    case 3: return settings.I(settings.I() + delta);
+    case 4: return settings.D(settings.D() + delta);
+    case 5: return settings.ff_heat(settings.ff_heat() + delta);
+    case 6: return settings.ff_ready(settings.ff_ready() + delta);
+    case 7: return settings.ff_brew(settings.ff_brew() + delta);
+    case 8: return settings.shotCounter();
+    case 9: return settings.wifiMode(settings.wifiMode() - (delta / 2.0) );
+    case 10: return settings.trimWeight( settings.trimWeight() + delta);
+    case 11: return settings.commissioningDone(settings.commissioningDone() + (delta / 2.0) );
 
     default: return 0;
   }
 }
 
+double add_value_preset(int n, double delta, int preset_index)
+{
+  double result;
+  if (delta != 0) Serial.print("delta:"); Serial.print(delta);
 
+  switch (n)
+  {
+    case 0: return settings.preInfusionTime(preset_index, settings.preInfusionTime(preset_index) + delta);
+    case 1: return settings.infusionTime(preset_index, settings.infusionTime(preset_index) + delta);
+    case 2: return settings.extractionTime(preset_index, settings.extractionTime(preset_index) + delta);
+    case 3: return settings.extractionWeight(preset_index, settings.extractionWeight(preset_index) + delta);
+    default: return 0;
+  }
+}
 
 
 bool menu_commissioning()
@@ -454,47 +472,99 @@ bool menu_saved()
   display.show(menus[MENU_SAVED], args);
   return false;
 }
+/* 
+ * menu_preset_settings() (blocking)
+ * return value:
+ * 0 = No change
+ * 1 = Changed values saved
+ * 2 = Exit
+ */
+int menu_preset_settings()
+{
+  static char buf[32], bufs[10][32];
+  static char *arg[10];
+  static bool modify = false;
+  static int idx = 0;
+  static bool button_pressed;
+  static long pos=0, prev_pos=0, loop=0;
+  static double set_val=0;
 
-void apply_preset(int preset) {
-  switch (preset) {
-    case 0: // Lungo
-      settings.preInfusionTime(1);
-      settings.infusionTime(3);
-      settings.extractionTime(30);
-      settings.extractionWeight(50);
-      break;
-    case 1: // Espresso
-      settings.preInfusionTime(1);
-      settings.infusionTime(3);
-      settings.extractionTime(23);
-      settings.extractionWeight(36);
-      break;
-    /*
-    case 2: //preset 3
-      settings.preInfusionTime(1);
-      settings.infusionTime(3);
-      settings.extractionTime(23);
-      settings.extractionWeight(36);
-      break;
-    case 3: //Cancel
-      break;*/
-    default:
-      break;
+  for(int i=0; i<10; i++)
+    arg[i] = bufs[i];
+  format_float(arg[1], num_preset_settings, 0);
+
+  setting_t set = preset_settings_list[idx];
+  pos = display.encoder_value();
+  button_pressed = display.button_pressed();
+  if ( modify )
+  {
+    set_val = add_value_preset(idx, set.delta * (pos - prev_pos), presetIndex);
   }
+  else
+  {
+    idx +=  pos - prev_pos;
+    idx %= num_preset_settings;
+    if ( idx < 0) idx += num_preset_settings;
+    set_val = add_value_preset(idx, 0.0, presetIndex);
+  }
+
+  if ( button_pressed )
+  {
+    if ( set.delta == EXECUTE_FUNCTION )
+    {
+      switch ( set.decimals )
+      {
+        case FUNCTION_EXIT: return 2;
+        case FUNCTION_SAVE: settings.save(); break;
+      }
+      return 1;
+    }
+    else
+    {
+      if (set.delta != READ_ONLY)
+        modify = !modify;
+    }
+  }
+
+  if ( modify && set.delta == EXECUTE_FUNCTION && set.decimals == FUNCTION_SAVE )
+    return 1;
+
+  arg[2] = set.name;
+  arg[4] = set.unit;
+
+  switch ( (int)set.delta )
+  {
+    case EXECUTE_FUNCTION: *arg[3] = 0; break;
+    case SELECT_ITEM: strcpy(arg[3], get_string_item(set.unit, set_val)); arg[4] = ""; break;
+    default: format_float(arg[3], set_val, set.decimals, 10); break;
+  }
+  format_float(arg[0], idx+1, 0, 2);
+  display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
+  prev_pos = pos;
+
+  return 0;
 }
 
-bool menu_preset() {
-  static int preset_index = 0;
+
+
+/*
+ * menu_preset_settings()
+ * return value:
+ * 0 = No change
+ * 1 = Button presssed
+ * 2 = Long presssed
+ */
+int menu_preset() {
   static char *arg[4];
   static char bufs[4][32];
-  const char *presets[] = {"1. Lungo", "2. Espresso"};
+  const char *presets[] = {"1. LUNGO", "2. ESPRESSO"};
   const int num_presets = sizeof(presets) / sizeof(presets[0]);
 
   for (int i = 0; i < 4; i++)
     arg[i] = bufs[i];
 
   int encoder_value = display.encoder_value();
-  preset_index = encoder_value % num_presets;
+  int preset_index = (presetIndex + encoder_value) % num_presets;
   if (preset_index < 0) preset_index += num_presets;
 
   for (int i = 0; i < num_presets; i++) {
@@ -507,49 +577,17 @@ bool menu_preset() {
   display.show(menus[PRESET_MENU], arg);
 
   if (display.button_pressed()) {
-    apply_preset(preset_index);
-    return true;
-  };
-
-  return false;
-}
-/* 
-// more presets?
-bool menu_preset() {
-  static int preset_index = 0;
-  static char *arg[4];
-  static char bufs[4][32];
-  const char *presets[] = {"1. Lungo", "2. Espresso", "3. Cappuccino", "4. Latte"};
-  const int num_presets = sizeof(presets) / sizeof(presets[0]);
-
-  for (int i = 0; i < 4; i++)
-    arg[i] = bufs[i];
-
-  int encoder_value = display.encoder_value();
-  preset_index = encoder_value % num_presets;
-  if (preset_index < 0) preset_index += num_presets;
-
-  for (int i = 0; i < num_presets; i++) {
-    if (i == preset_index) {
-      snprintf(arg[i % 4], 32, "> %s", presets[i]);
-    } else {
-      snprintf(arg[i % 4], 32, "  %s", presets[i]);
-    }
-  }
-  display.show(menus[PRESET_MENU], arg);
-
-  if (display.button_pressed()) {
-    apply_preset(preset_index + 1);
-    return true;
+    presetIndex = preset_index;
+    return 1;
   }
 
-  return false;
+  if (display.button_long_pressed()) {
+    presetIndex = preset_index;
+    return 2;
+  }
+
+  return 0;
 }
-*/
-
-
-
-
 
 
 bool menu_state()

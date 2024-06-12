@@ -39,6 +39,7 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 
+#include "dp.h"
 #include "dp_hardware.h"
 #include "dp_led.h"
 #include "dp_settings.h"
@@ -53,7 +54,7 @@
 
 #include "dp_wifi.h"
 #include "dp_mqtt.h"
-
+int presetIndex = 0;
 
 /**
  * @brief setup code
@@ -89,6 +90,7 @@ void setup()
     settings.defaults();
     Serial.println(settings.save());
   }
+  presetIndex = settings.defaultPreset();
 
   apply_settings();
 
@@ -119,7 +121,8 @@ void apply_settings()
   Serial.print("temperature=");
   Serial.println(settings.temperature());
   boilerController.set_temp(settings.temperature());
-
+  Serial.print("defaultPreset=");
+  Serial.println(settings.defaultPreset());
   Serial.print("P=");
   Serial.println(settings.P());
   Serial.print("I=");
@@ -144,18 +147,22 @@ void apply_settings()
   reservoir.set_trim(settings.trimWeight());
   reservoir.set_tare(settings.tareWeight());
 
+  Serial.print("presetIndex=");
+  Serial.println(presetIndex);
+
   Serial.print("preInfusionTime=");
-  Serial.println(settings.preInfusionTime());
+  Serial.println(settings.preInfusionTime(presetIndex));
   Serial.print("infuseTime=");
-  Serial.println(settings.infusionTime());
+  Serial.println(settings.infusionTime(presetIndex));
   Serial.print("extractTime=");
-  Serial.println(settings.extractionTime());
+  Serial.println(settings.extractionTime(presetIndex));
   Serial.print("extractionWeight=");
-  Serial.println(settings.extractionWeight());
-  brewProcess.preInfuseTime = settings.preInfusionTime();
-  brewProcess.infuseTime = settings.infusionTime();
-  brewProcess.extractTime = settings.extractionTime();
+  Serial.println(settings.extractionWeight(presetIndex));
+  brewProcess.preInfuseTime = settings.preInfusionTime(presetIndex);
+  brewProcess.infuseTime = settings.infusionTime(presetIndex);
+  brewProcess.extractTime = settings.extractionTime(presetIndex);
 }
+
 
 // Output the state to serial port
 void print_state()
@@ -225,8 +232,7 @@ void send_state()
 }
 
 
-typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO, PRESET } menus_t;
-
+typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO, PRESET, PRESET_SETTINGS } menus_t;
 
 /**
  * @brief main process loop
@@ -253,11 +259,14 @@ void loop()
   boilerController.control();
   brewProcess.run();
   int menuSettings;
+  int presetMenu;
+  int presetMenuSettings;
+
   send_state();
   mqttDevice.run();
 
-  //if (true)
-  //  print_state();
+  if (false)
+    print_state();
 
   if ( brewProcess.is_error() )
     menu = ERROR; // error menu
@@ -281,7 +290,7 @@ void loop()
     }
     if (display.button_pressed()) {
       menu = PRESET;
-      }
+    }
     if( display.encoder_changed() )
       menu = INFO;
     break;
@@ -342,7 +351,7 @@ void loop()
     menu_state();
     if (display.button_long_pressed())
       menu = SETTINGS;
-    if (display.button_pressed()) 
+    if (display.button_pressed())
       menu = PRESET;
     if( display.encoder_changed() )
       menu = MAIN;
@@ -352,28 +361,49 @@ void loop()
       menu = COMMISSIONING;
 
     if (brewProcess.is_busy())
-      menu = MAIN; // When brewing: Always show main menu
-
-    if(menu_preset()) {
+      menu = MAIN; 
+    menuSettings = menu_preset();
+    if( menuSettings == 1)
+    {
+      display.button_pressed();
+      display.encoder_changed();
       apply_settings();
       menu = SAVED;
     }
-      break;
+    if(menuSettings == 2) 
+    {
+
+      menu = PRESET_SETTINGS;
+    }
+    break;
+  case PRESET_SETTINGS:
+    presetMenuSettings = menu_preset_settings();
+    if (presetMenuSettings == 1)
+    {
+      apply_settings();
+      menu = SAVED;
+    }
+    if(presetMenuSettings==2)
+    {
+      display.button_pressed();
+      display.encoder_changed();
+      menu = MAIN;
+    }
+    break;
   default:
     menu = MAIN;
   }
 
-  // sleep (de)activation and menu selection (note: sleep can be activated automatically)
+  // sleep deactivation and menu selection (note: sleep can be activated automatically)
   if (display.button_long_pressed())
-    {
-      if (!brewProcess.is_awake())
-        brewProcess.wakeup();
-    }
+  {
+    if (!brewProcess.is_awake())
+      brewProcess.wakeup();
+  }
   if (!brewProcess.is_awake())
     menu = SLEEP;
-  
-
 }
+
 
 #ifdef TEST_CODE
 void test_heater_loop()
