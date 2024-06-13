@@ -31,7 +31,7 @@ double settings_vals[32];
 const setting_t settings_list[] =
 {
   { "Temperature", "\337C", &settings_vals[0], 0.5, 2 },
-  { "Default Preset", "LUNGO\0ESPRESSO\0", &settings_vals[15], SELECT_ITEM, 1 },
+  { "Default Preset", "LUNGO\0ESPRESSO\0DOUBLE LUNGO\0DOUBLE ESPRESSO\0", &settings_vals[15], SELECT_ITEM, 1 },
   { "P-Gain", "%/\337C", &settings_vals[5], 0.2, 1 },
   { "I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2 },
   { "D-Gain", "%s", &settings_vals[7], 0.2, 1 },
@@ -156,8 +156,8 @@ const char *menus[] = {
 // PRESET=11
 // 01234567890123456789
   "Select Preset:      "
-  "################### "
-  "################### "
+  " ################   "
+  " ################   "
   "    [TURN AND PRESS]",
 
 };
@@ -555,25 +555,51 @@ int menu_preset_settings()
  * 2 = Long presssed
  */
 int menu_preset() {
-  static char *arg[4];
-  static char bufs[4][32];
-  const char *presets[] = {"1. LUNGO", "2. ESPRESSO"};
+  static char *arg[2];
+  static char bufs[2][32];
+  const char *presets[] = {
+    "1. LUNGO", 
+    "2. ESPRESSO", 
+    "3. DOUBLE LUNGO", 
+    "4. DOUBLE ESPRESSO"
+  };
   const int num_presets = sizeof(presets) / sizeof(presets[0]);
+  static int preset_index = settings.defaultPreset();
+  static int last_preset_index = preset_index;
+  static long last_encoder_pos = display.encoder_value();
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 2; i++)
     arg[i] = bufs[i];
 
-  int encoder_value = display.encoder_value();
-  int preset_index = (presetIndex + encoder_value) % num_presets;
-  if (preset_index < 0) preset_index += num_presets;
+  preset_index = last_preset_index;
+  long current_encoder_pos;
+  if (display.encoder_changed())
+    current_encoder_pos = display.encoder_value();
+  else
+    current_encoder_pos = last_encoder_pos;
 
-  for (int i = 0; i < num_presets; i++) {
-    if (i == preset_index) {
-      snprintf(arg[i], 32, "> %s", presets[i]);
+  if (current_encoder_pos != last_encoder_pos) {
+    if (current_encoder_pos > last_encoder_pos) {
+      preset_index = (preset_index + 1) % num_presets;
     } else {
-      snprintf(arg[i], 32, "  %s", presets[i]);
+      preset_index = (preset_index - 1 + num_presets) % num_presets;
+    }
+    last_encoder_pos = current_encoder_pos;
+    last_preset_index = preset_index;
+  }
+
+  int page = preset_index / 2;
+  int start_index = page * 2;
+
+  for (int i = 0; i < 2; i++) {
+    int index = start_index + i;
+    if (index == preset_index) {
+      snprintf(arg[i], 32, "> %s", presets[index]);
+    } else {
+      snprintf(arg[i], 32, "  %s", presets[index]);
     }
   }
+
   display.show(menus[PRESET_MENU], arg);
 
   if (display.button_pressed()) {
@@ -588,6 +614,7 @@ int menu_preset() {
 
   return 0;
 }
+
 
 
 bool menu_state()
@@ -629,4 +656,3 @@ int get_item_count(const char *items)
   }
   return count;
 }
-

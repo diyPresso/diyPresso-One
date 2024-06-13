@@ -32,7 +32,7 @@ class DiyeSettings
                 double infusionTime;
                 double extractionTime;
                 double extractionWeight;
-            } presets[2]; // Adjust the number of presets as needed
+            } presets[4];
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -55,7 +55,7 @@ class DiyeSettings
         double extractionWeight(int index) { return settings.presets[index].extractionWeight; }
         double extractionWeight(int index, double w) { return settings.presets[index].extractionWeight = min(500.0, max(w, 1.0)); }
         int defaultPreset() { return settings.defaultPreset; }
-        int defaultPreset(int preset) { return settings.defaultPreset = min(1, max(preset, 0)); }
+        int defaultPreset(int preset) { return settings.defaultPreset = min(3, max(preset, 0)); }
         double P() { return settings.p; }
         double P(double p) { return settings.p = min(10.0, max(p, 0.0)); }
         double I() { return settings.i; }

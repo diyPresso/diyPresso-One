@@ -62,12 +62,14 @@ void DiyeSettings::defaults()
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
-    settings.commissioningDone = 1; // default is 0 (not done)
+    settings.commissioningDone = 0; // default is 0 (not done)
     
     // Default Preset Values
-    settings.defaultPreset = 0;  // Lungo
+    settings.defaultPreset = 0;  // default is 0 (Lungo)
     settings.presets[0] = {1, 3, 30, 50};  // Lungo - pre-infuse, infuse, extraction time, extraction weight.
     settings.presets[1] = {1, 3, 23, 36};  // Espresso - pre-infuse, infuse, extraction time, extraction weight.
+    settings.presets[2] = {1, 3, 60, 100}; // Double Lungo - pre-infuse, infuse, extraction time, extraction weight.
+    settings.presets[3] = {1, 3, 46, 72};  // Double Espresso - pre-infuse, infuse, extraction time, extraction weight.
 
     update_crc();
 }
