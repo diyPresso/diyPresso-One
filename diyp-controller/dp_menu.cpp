@@ -31,7 +31,7 @@ double settings_vals[32];
 const setting_t settings_list[] =
 {
   { "Temperature", "\337C", &settings_vals[0], 0.5, 2 },
-  { "Default Preset", "LUNGO\0ESPRESSO\0DOUBLE LUNGO\0DOUBLE ESPRESSO\0", &settings_vals[15], SELECT_ITEM, 1 },
+  { "Default Preset", "ESPRESSO\0Lungo\0DOUBLE ESPRESSO\0DOUBLE LUNGO\0", &settings_vals[15], SELECT_ITEM, 1 },
   { "P-Gain", "%/\337C", &settings_vals[5], 0.2, 1 },
   { "I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2 },
   { "D-Gain", "%s", &settings_vals[7], 0.2, 1 },
@@ -156,8 +156,8 @@ const char *menus[] = {
 // PRESET=11
 // 01234567890123456789
   "Select Preset:      "
-  " ################   "
-  " ################   "
+  " ################## "
+  " ################## "
   "    [TURN AND PRESS]",
 
 };
@@ -558,10 +558,10 @@ int menu_preset() {
   static char *arg[2];
   static char bufs[2][32];
   const char *presets[] = {
-    "1. LUNGO", 
-    "2. ESPRESSO", 
-    "3. DOUBLE LUNGO", 
-    "4. DOUBLE ESPRESSO"
+    "1. ESPRESSO", 
+    "2. LUNGO", 
+    "3. DOUBLE ESPRESSO", 
+    "4. DOUBLE LUNGO"
   };
   const int num_presets = sizeof(presets) / sizeof(presets[0]);
   static int preset_index = settings.defaultPreset();

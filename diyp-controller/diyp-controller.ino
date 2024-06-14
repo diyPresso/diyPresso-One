@@ -49,6 +49,7 @@
 #include "dp_display.h"
 #include "dp_menu.h"
 #include "dp_brew.h"
+#include "dp_brew_switch.h"
 #include "dp_heater.h"
 #include "dp_pump.h"
 
@@ -285,11 +286,14 @@ void loop()
 
     counter = 0;
     menu_main();
-    if (display.button_long_pressed()) {
-      menu = SETTINGS;
-    }
-    if (display.button_pressed()) {
-      menu = PRESET;
+    if(!brewProcess.is_busy()) {
+      if (display.button_long_pressed()) {
+        menu = SETTINGS;
+      }
+      if(!brewSwitch.up()) {
+        if (display.button_pressed()) 
+          menu = PRESET;
+      }
     }
     if( display.encoder_changed() )
       menu = INFO;
@@ -349,10 +353,15 @@ void loop()
     break;
   case INFO: // state info menu
     menu_state();
-    if (display.button_long_pressed())
-      menu = SETTINGS;
-    if (display.button_pressed())
-      menu = PRESET;
+    if(!brewProcess.is_busy()) {
+      if (display.button_long_pressed()) {
+        menu = SETTINGS;
+      }
+      if(!brewSwitch.up()) {
+        if (display.button_pressed()) 
+          menu = PRESET;
+      }
+    }
     if( display.encoder_changed() )
       menu = MAIN;
     break;
@@ -377,6 +386,8 @@ void loop()
     }
     break;
   case PRESET_SETTINGS:
+    if (brewProcess.is_busy())
+      menu = MAIN; // When brewing: Always show main menu
     presetMenuSettings = menu_preset_settings();
     if (presetMenuSettings == 1)
     {
