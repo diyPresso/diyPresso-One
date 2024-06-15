@@ -2,7 +2,6 @@
   menu functions
   We are non-blocking and we assume to be called ~ 2x to 4x per second
  */
-#include "dp.h"
 #include "dp_menu.h"
 #include "dp_display.h"
 #include "dp_brew.h"
@@ -13,6 +12,7 @@
 #include "dp_pump.h"
 #include "dp_settings.h"
 
+int presetIndex = 0; // what preset is selected
 double settings_vals[32];
 // the increment setting has some special values:
 #define READ_ONLY 0         // only display value, cannot modify

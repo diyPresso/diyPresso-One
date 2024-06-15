@@ -16,5 +16,4 @@
 #define PURGE_WEIGHT_DROP (50.0) // [grams] max reservoir variation during pump/maintain state
 
 #define SOFTWARE_VERSION "1.6.0"
-extern int presetIndex; // what preset is selected
 #endif // LED_H

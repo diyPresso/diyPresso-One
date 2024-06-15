@@ -39,7 +39,6 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 
-#include "dp.h"
 #include "dp_hardware.h"
 #include "dp_led.h"
 #include "dp_settings.h"
@@ -55,7 +54,6 @@
 
 #include "dp_wifi.h"
 #include "dp_mqtt.h"
-int presetIndex = 0;
 
 /**
  * @brief setup code
