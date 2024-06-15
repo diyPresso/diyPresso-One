@@ -140,7 +140,6 @@ void BrewProcess::state_pre_infuse()
     statusLed.color(ColorLed::BLUE);
     pumpDevice.on();
     boilerController.start_brew();
-    settings.incShotCounter();
   }
   ON_TIMEOUT(1000*preInfuseTime) NEXT(state_infuse);
   common_transitions();
@@ -162,10 +161,14 @@ void BrewProcess::state_extract()
 {
   ON_ENTRY()
   {
-    _start_weight = reservoir.weight();
+    if (!is_prev_state(STATE(state_finished))) {
+      _start_weight = reservoir.weight();
+    }
     statusLed.color(ColorLed::PURPLE);
     pumpDevice.on();
     boilerController.start_brew();
+    settings.incShotCounter();
+
   }
   //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle);
   ON_TIMEOUT(1000*extractTime) NEXT(state_finished);
@@ -183,7 +186,10 @@ void BrewProcess::state_finished()
     boilerController.stop_brew();
     _brewTimer.stop();
   }
-  if ( display.button_pressed() ) NEXT(state_extract);
+  if ( display.button_pressed() ) {
+    _brewTimer.start();
+    NEXT(state_extract);
+  }
   ON_TIMEOUT(1000*finishedTime) goto_error(BREW_ERROR_TIMEOUT);
   common_transitions();
 }
