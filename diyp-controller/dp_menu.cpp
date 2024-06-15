@@ -25,6 +25,7 @@ double settings_vals[32];
 #define FUNCTION_ZERO 3
 #define FUNCTION_DEFAULTS 4
 #define FUNCTION_EXIT 5
+#define FUNCTION_SLEEP 6
 
 
 // "text", "unit", pointer, increment, decimals
@@ -45,6 +46,7 @@ const setting_t settings_list[] =
   { "   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE },
   { "   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO },
   { "<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS },
+  { " <Enter sleep mode>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SLEEP },
   { "       <EXIT>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT },
   { "       <SAVE>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE }
 };
@@ -298,6 +300,7 @@ int menu_settings()
         case FUNCTION_TARE: reservoir.tare(); settings.tareWeight( reservoir.get_tare() ); settings.save(); break;
         case FUNCTION_ZERO: settings.zeroShotCounter(); break;
         case FUNCTION_DEFAULTS: settings.defaults(); break;
+        case FUNCTION_SLEEP: brewProcess.sleep(); break;
       }
       return 1;
     }
