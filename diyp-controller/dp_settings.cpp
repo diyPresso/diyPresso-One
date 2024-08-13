@@ -62,7 +62,7 @@ void DiyeSettings::defaults()
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
-    settings.commissioningDone = 0; // default is 0 (not done)
+    settings.commissioningDone = 1; // default is 0 (not done)
     
     // Default Preset Values
     settings.defaultPreset = 0;  // default is 0 (Espresso)

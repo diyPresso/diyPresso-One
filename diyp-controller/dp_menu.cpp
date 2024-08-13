@@ -145,7 +145,7 @@ const char *menus[] = {
 // STATE=9
 // 01234567890123456789
   "####### ############"
-  "B: ################ "
+  "B: ####### P: ##### "
   "E: ################ "
   "R: ################ ",
 
@@ -434,8 +434,15 @@ bool menu_error(const char *msg)
   args[0] = (char*)brewProcess.get_state_name();
   args[1] = (char*)brewProcess.get_error_text();
   args[2] = (char*)boilerController.get_state_name();
-  args[3] = (char*)boilerController.get_error_text();
-  args[4] = (char*)reservoir.get_error_text();
+  char *presets[] = {
+    "ESPRESSO", 
+    "LUNGO", 
+    "2ESPRESSO", 
+    "2LUNGO",
+  };
+  args[3] = presets[presetIndex];
+  args[4] = (char*)boilerController.get_error_text();
+  args[5] = (char*)reservoir.get_error_text();
 
   display.show(menus[MENU_STATE], args);
   return false;
@@ -626,8 +633,15 @@ bool menu_state()
   args[0] = (char*)brewProcess.get_state_name();
   args[1] = (char*)brewProcess.get_error_text();
   args[2] = (char*)boilerController.get_state_name();
-  args[3] = (char*)boilerController.get_error_text();
-  args[4] = (char*)reservoir.get_error_text();
+  char *presets[] = {
+    "ESPRESSO", 
+    "LUNGO", 
+    "2ESPRESSO", 
+    "2LUNGO",
+  };
+  args[3] = presets[presetIndex];
+  args[4] = (char*)boilerController.get_error_text();
+  args[5] = (char*)reservoir.get_error_text();
 
   display.show(menus[MENU_STATE], args);
   return false;
