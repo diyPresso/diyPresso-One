@@ -1,2 +1,3 @@
 # diyPresso-One
-diyPresso One - first espresso machine build kit
+world's first DIY espresso machine open source software
+www.diyPresso.com
