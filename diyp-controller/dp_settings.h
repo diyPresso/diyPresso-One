@@ -32,7 +32,7 @@ class DiyeSettings
                 double infusionTime;
                 double extractionTime;
                 double extractionWeight;
-            } presets[3];
+            } presets[4];
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
