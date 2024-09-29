@@ -7,7 +7,7 @@
 ![diyPresso Logo](images/diyPresso.jpg)
 
 
-# Hardwaere
+# Hardware
 
 This repository contains the code for the diyPresso One (arduino) control board with an 4x20 LCD display and rotary encoder.
 
