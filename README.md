@@ -7,7 +7,7 @@
 ![diyPresso Logo](images/diyPresso.jpg)
 
 
-# Hardware
+## Hardware
 
 This repository contains the code for the diyPresso One (arduino) control board with an 4x20 LCD display and rotary encoder.
 
@@ -16,8 +16,10 @@ This repository contains the code for the diyPresso One (arduino) control board 
 ![diyPresso Encoder button](images/encoder.png)
 
 
-# Software
-The software is written for an Arduino [mkr1010](https://docs.arduino.cc/hardware/mkr-wifi-1010/) board with WiFi. The [Arduino development environment](https://docs.arduino.cc/software/ide/) is to be used to compile and upload the software to the board. Some additional libraries need to be installed. See the [diyp-controler source](diyp-controller/diyp-controller.ino) for more information.
+## Software
+
+(Tested) releases of the firmware can be found 
+[here](https://github.com/diyPresso/diyPresso-One/releases)
 
 
 ## Functions
@@ -43,7 +45,38 @@ The software is written for an Arduino [mkr1010](https://docs.arduino.cc/hardwar
 
 ![diyPresso Wifi config](images/wifi.png)
 
+
+## Development
+
+The software is written for an Arduino [mkr1010](https://docs.arduino.cc/hardware/mkr-wifi-1010/) board with WiFi. The [Arduino development environment](https://docs.arduino.cc/software/ide/) is to be used to compile and upload the software to the board. Some additional libraries need to be installed. See the [diyp-controler source](diyp-controller/diyp-controller.ino) for more information.
+
+In addition the code should compile with [PlatformIO](https://piolabs.com/). On linux you can perform a compilation and upload with the following command:
+
+```pio run -t upload --upload-port=/dev/ttyACM0```
+
+You may also use [ArduinoCLI](https://arduino.github.io/arduino-cli/1.0/), but the recipe is not included yet...
+
+
+## Branches and tags
+
+The ```main``` branch is used for development and
+```release``` is used for tested releases. They are tagged with a semver and the releases are published [here](https://github.com/diyPresso/diyPresso-One/releases). Use [topic branches](https://git-scm.com/book/en/v2/Git-Branching-Branching-Workflows) for your work on new features and bugs. Use the name ```issue_[xx]_[description]``` for this.
+
+
+## (Code) Contributions
+
+You can clone this repo, create [topic branches](https://git-scm.com/book/en/v2/Git-Branching-Branching-Workflows) for your work and make [pull-requests](https://github.com/diyPresso/diyPresso-One/pulls). Make sure your branch merges cleanly with the main branch.
+
+## Issues
+
+If you find any bugs, or have ideas for new features, please use github [issues](https://github.com/diyPresso/diyPresso-One/issues) to submit these.
+
+Also, feel free to test topic branches, reproduce bufgs and comment on issues to assist development.
+
 ## ToDo
+* ~~Create ```platformio.ini```~~
+* Build with docker container
+* Setup CI in gitub
 * OTA updates
 * Refactor Wifi code (use other library?)
 * MQTT credentials setup
@@ -53,5 +86,3 @@ The software is written for an Arduino [mkr1010](https://docs.arduino.cc/hardwar
 * Brewing recipe storage and retrieval
 * Extracted volume weight sensor (and volume based steps)
 * Pressure sensor integration
-
-

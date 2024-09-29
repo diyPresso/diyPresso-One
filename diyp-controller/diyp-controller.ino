@@ -233,12 +233,12 @@ typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO } menus_
  */
 void loop()
 {
-  static unsigned long timer = 0;
   static unsigned long counter = 0;
   static menus_t menu = COMMISSIONING;
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
+  static unsigned long timer = 0;
   timer += 1;
   if (timer < 150)
     boilerController.set_temp(settings.temperature());
