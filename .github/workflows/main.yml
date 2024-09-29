@@ -1,6 +1,10 @@
 # .github/workflows/main.yml
 # github actions
+# See: https://github.com/takigama/platformio-docker
 # docker run -e HOME=`pwd` -u $UID -w `pwd` -v `pwd`:`pwd` --rm -it takigama/platformio platformio run
+# Further info:
+# https://github.com/sglahn/docker-platformio-core
+# https://github.com/platformio/platformio-docs/blob/develop/integration/ci/github-actions.rst
 
 name: Build
 
