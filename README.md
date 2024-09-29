@@ -75,7 +75,7 @@ Also, feel free to test topic branches, reproduce bufgs and comment on issues to
 
 ## ToDo
 * ~~Create ```platformio.ini```~~
-* Build with docker container
+* ~~Build with docker container~~
 * Setup CI in gitub
 * OTA updates
 * Refactor Wifi code (use other library?)
