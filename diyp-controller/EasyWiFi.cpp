@@ -300,7 +300,8 @@ void EasyWiFi::APSetup()
   Serial.print("* Creating access point named: ");
   Serial.println(ACCESPOINTNAME);
 #endif
-  G_APip = IPAddress((char)random(11, 172), (char)random(0, 255), (char)random(0, 255), 0x01); // Generate random IP adress in Privit IP range
+  //G_APip = IPAddress((char)random(11, 172), (char)random(0, 255), (char)random(0, 255), 0x01); // Generate random IP adress in Privit IP range
+  G_APip = IPAddress((char)192, (char)168, (char)11, (char)1); // Generate random IP adress in Privit IP range
   WiFi.end();                                                                                  // close Wifi - juist to be suire
   delay(3000);                                                                                 // Wait 3 seconds
   WiFi.config(G_APip, G_APip, G_APip, IPAddress(255, 255, 255, 0));                            // Setup config

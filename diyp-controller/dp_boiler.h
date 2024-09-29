@@ -1,4 +1,7 @@
-// BOILER.h
+/* BOILER.h
+ * Boiler
+ * (c) 2024 diyPresso
+ */
 #ifndef BOILER_H
 #define BOILER_H
 
@@ -14,11 +17,13 @@
 #define TEMP_MIN_BREW 10.0 // do not brew under this temp
 
 // Times in [msec]
-#define TIMEOUT_HEATING (1000*600) // maximum heater on time: 10 minutes
-#define TIMEOUT_BREW (1000*60*3) // maximum brew on time: 3 minutes
-#define TIMEOUT_READY (1000*60*120) // maximum time in state ready: 2 hour
-#define TIMEOUT_HEATER_SSR (1000 * 60) // maximum time the SSR is allowed to be ON
-#define TIMEOUT_CONTROL (1000 * 10) // Max time between control updates
+#define TIMEOUT_HEATING (600) // maximum heater on time: 10 minutes
+#define TIMEOUT_BREW (60*3) // maximum brew on time: 3 minutes
+#define TIMEOUT_READY (60*120) // maximum time in state ready: 2 hour
+
+
+#define TIMEOUT_CONTROL_MSEC (1000 * 10) // Max time between control updates [milliseconds]
+#define TIMEOUT_HEATER_SSR_MSEC (1000 * 60) // maximum time the SSR is allowed to be ON [milliseconds]
 
 // Various boiler errors
 typedef enum {

@@ -6,14 +6,14 @@
   the setters check the range of the values to save, to prevent incorrect data
 */
 
-#ifndef DiyeSettings_h
-#define DiyeSettings_h
+#ifndef DpSettings_h
+#define DpSettings_h
 
 #include "Arduino.h"
 
 typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP };
 
-class DiyeSettings
+class DpSettings
 {
     private:
         typedef struct __attribute__ ((packed)) settings_struct { // a packed struct has no alignment of fields
@@ -37,7 +37,7 @@ class DiyeSettings
         bool crc_is_valid(settings_t *s);
         unsigned long crc32(const unsigned char *s, size_t n);
     public:
-        DiyeSettings();
+        DpSettings();
         void defaults();
         int load();
         int save();
@@ -76,7 +76,7 @@ class DiyeSettings
         void zeroShotCounter() { settings.shotCounter = 0; }
 };
 
-extern DiyeSettings settings;
+extern DpSettings settings;
 
 
-#endif // DiyeSettings_h
+#endif // DpSettings_h

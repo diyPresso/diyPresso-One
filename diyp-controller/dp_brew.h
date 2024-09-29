@@ -12,7 +12,7 @@
 
 // Various errors
 typedef enum {
-  BREW_ERROR_NONE, BREW_ERROR_PURGE, BREW_ERROR_FILL, BREW_ERROR_TIMEOUT
+  BREW_ERROR_NONE, BREW_ERROR_PURGE, BREW_ERROR_FILL, BREW_ERROR_TIMEOUT, BREW_ERROR_NO_WATER,
 } brew_error_t;
 
 class BrewProcess : public StateMachine<BrewProcess>
@@ -33,11 +33,11 @@ class BrewProcess : public StateMachine<BrewProcess>
     bool is_finished() { return IN_STATE(finished); }
     bool is_init() { return IN_STATE(init); }
     bool is_fill() { return IN_STATE(fill); }
+    bool is_check() { return IN_STATE(check); }
     bool is_done() { return IN_STATE(done); }
     bool is_purge() { return IN_STATE(purge); }
     bool is_busy() { return IN_STATE(pre_infuse) || IN_STATE(infuse) || IN_STATE(extract); }
     double brew_time() { return _brewTimer.read() / 1000.0; }
-    double step_time() { return _state_time / 1000.0; }
     double weight() { return _start_weight - reservoir.weight(); }
     double end_weight() { return _end_weight; }
     virtual const char *get_state_name();
@@ -50,6 +50,7 @@ class BrewProcess : public StateMachine<BrewProcess>
     void state_init();
     void state_fill();
     void state_purge();
+    void state_check();
     void state_done();
     void state_idle();
     void state_empty();

@@ -141,7 +141,7 @@ const char *menus[] = {
 
 // STATE=10
 // 01234567890123456789
-  "   COMMISSIONING    "
+  "___COMMISSIONING___ "
   " ################## "
   " ################## "
   " Weight ##### gram  "
@@ -164,7 +164,7 @@ bool menu_brew()
   arg[2] = bufs[2];
 
   arg[0] = (char*)brewProcess.get_state_name();
-  format_float(arg[1], brewProcess.step_time(), 1);
+  format_float(arg[1], brewProcess.state_time(), 1);
   format_float(arg[2], brewProcess.brew_time(), 1);
 
   display.show(menus[MENU_BREW], arg);
@@ -346,9 +346,10 @@ double add_value(int n, double delta)
 
 
 bool menu_commissioning()
-{
-  static char *substate_names[] = {"Fill reservoir", "Filling boiler", "Purge", "Done!", "?"};
-  static char *substate_info[] = {"And press button", "Wait...", "Put lever UP", "Put lever DOWN", "?"};
+{ //                   sub-state:   0                    1                 2                    3                   4
+  static char *substate_names[] = {"Fill reservoir",   "Filling boiler", "Purge",             "Check water flow", "Done!", "?"};
+  static char *substate_info[]  = {"And press button", "Wait...",        "Put brew lever UP", "And press button", "Put lever DOWN", "?"};
+  char buf[32];
   char *args[3];
   char weight[10];
   int substate=4;
@@ -359,10 +360,16 @@ bool menu_commissioning()
   if ( brewProcess.is_init() ) substate = 0;
   if ( brewProcess.is_fill() ) substate = 1;
   if ( brewProcess.is_purge() ) substate = 2;
-  if ( brewProcess.is_done() ) substate = 3;
-  
+  if ( brewProcess.is_check() ) substate = 3;
+  if ( brewProcess.is_done() ) substate = 4;
+
   args[0] = (char*)substate_names[substate];
   args[1] = (char*)substate_info[substate];
+  if ( substate == 1)
+  {
+    sprintf(buf,"wait %d...", (int)brewProcess.state_time() );
+    args[1] = buf;
+  }
   display.show(menus[MENU_COMMISSIONING], args);
   if ( display.button_pressed() )
     return true;

@@ -8,15 +8,19 @@
 #include "dp_settings.h"
 #include <FlashAsEEPROM.h>
 
-DiyeSettings settings = DiyeSettings();
+DpSettings settings = DpSettings();
 
-DiyeSettings::DiyeSettings()
+DpSettings::DpSettings()
 {
     defaults();
 }
 
 
-unsigned long DiyeSettings::crc32(const unsigned char *s, size_t n)
+/// @brief  calculate crc32 of a buffer
+/// @param s pointer to start of buffer 
+/// @param n length of buffer in bytes
+/// @return  32bit crc
+unsigned long DpSettings::crc32(const unsigned char *s, size_t n)
 {
     uint32_t crc = 0xFFFFFFFF;
 
@@ -35,20 +39,25 @@ unsigned long DiyeSettings::crc32(const unsigned char *s, size_t n)
 }
 
 
-void DiyeSettings::update_crc(void)
+/// @brief  Calculate the new CRC value of the settings struct
+void DpSettings::update_crc(void)
 {
     unsigned char *s = (unsigned char*) &settings;
     settings.crc = crc32( s + 4, sizeof(settings_t) - 4);
 }
 
 
-bool DiyeSettings::crc_is_valid(settings_t *s)
+/// @brief return true if CRC of settings struct is valid
+/// @param s pointer to settings struct
+/// @return true if CRC is valid
+bool DpSettings::crc_is_valid(settings_t *s)
 {
     return crc32( ((unsigned char*)s) + 4, sizeof(settings_t) - 4 ) == s->crc;
 }
 
 
-void DiyeSettings::defaults()
+/// @brief set all values to default in settings stuct
+void DpSettings::defaults()
 {
     settings.version = 1;  // Update this if new fields are added to the settings structure to prevent incorrect reads
     settings.temperature = 98.0;
@@ -70,7 +79,9 @@ void DiyeSettings::defaults()
 }
 
 
-void DiyeSettings::read(settings_t *s)
+/// @brief read settings struct from EEPROM to memory
+/// @param s  pointer to settings struct in memory
+void DpSettings::read(settings_t *s)
 {
     unsigned char *p = (unsigned char*)s;
     for (int i=0; i<sizeof(settings_t); i++)
@@ -89,7 +100,7 @@ void DiyeSettings::read(settings_t *s)
  * -2 = CRC incorrect
  * -3 = Settings struct version incorrect
  */
-int DiyeSettings::load()
+int DpSettings::load()
 {
     settings_t set;
     if ( !EEPROM.isValid() )
@@ -119,7 +130,7 @@ int DiyeSettings::load()
  * 0 = No change
  * 1 = Changed values saved
  */
-int DiyeSettings::save()
+int DpSettings::save()
 {
     settings_t old_settings;
     update_crc();

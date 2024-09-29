@@ -1,5 +1,7 @@
 /*
- diyPresso Boiler control
+  boiler.cpp
+  diyPresso Boiler control
+  (c) 2024 DiyEspresso - PBRI - CC-BY-NC
  */
 #include "dp.h"
 #include "dp_hardware.h"
@@ -32,7 +34,7 @@ void BoilerStateMachine::state_heating()
   if ( ! _on ) NEXT(state_off);
   if ( _brew ) NEXT(state_brew);
   if ( abs(_set_temp - _act_temp) < TEMP_WINDOW) NEXT(state_ready);
-  ON_TIMEOUT(TIMEOUT_HEATING) goto_error(BOILER_ERROR_TIMEOUT_HEATING);
+  ON_TIMEOUT_SEC(TIMEOUT_HEATING) goto_error(BOILER_ERROR_TIMEOUT_HEATING);
   ON_EXIT()
   {
      _pid.setBias(0);
@@ -49,7 +51,7 @@ void BoilerStateMachine::state_ready()
   if ( ! _on ) NEXT(state_off);
   if ( _brew ) NEXT(state_brew);
   if ( abs(_set_temp - _act_temp) > TEMP_WINDOW) NEXT(state_heating);
-  ON_TIMEOUT(TIMEOUT_READY) goto_error(BOILER_ERROR_READY_TIMEOUT);
+  ON_TIMEOUT_SEC(TIMEOUT_READY) goto_error(BOILER_ERROR_READY_TIMEOUT);
 }
 
 void BoilerStateMachine::state_brew()
@@ -58,7 +60,7 @@ void BoilerStateMachine::state_brew()
   if  ( ! _brew ) NEXT(state_heating);
   _pid.setBias(_ff_brew);
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
-  ON_TIMEOUT(TIMEOUT_BREW) goto_error(BOILER_ERROR_TIMEOUT_BREW);
+  ON_TIMEOUT_SEC(TIMEOUT_BREW) goto_error(BOILER_ERROR_TIMEOUT_BREW);
   ON_EXIT() { _pid.setBias(0); _brew = false; }
 }
 
@@ -117,7 +119,7 @@ void BoilerStateMachine::control(void)
       goto_error(BOILER_ERROR_RTD);
   }
 
-  if ( _last_control_time + TIMEOUT_CONTROL < millis() )
+  if ( _last_control_time + TIMEOUT_CONTROL_MSEC < millis() )
     goto_error(BOILER_ERROR_CONTROL_TIMEOUT);
   _last_control_time = millis();
 

@@ -82,6 +82,8 @@ class StateMachine
             }
             return !no_message();
         }
+        double state_time() { unsigned long t = millis()-_state_time; if (t > 0) return t/1000.0; else return (0xFFFFFFFF-t)/1000.0; }
+
         virtual const char *get_state_name() { return "<undefined>"; }
 };
 
@@ -95,6 +97,7 @@ class StateMachine
 #define ON_ENTRY() if ( on_entry() )
 #define ON_EXIT() if ( on_exit() )
 #define ON_TIMEOUT(t) if ( on_timeout(t) )
+#define ON_TIMEOUT_SEC(t) if ( on_timeout((1000*t)) )
 #define ON_MESSAGE(m) if ( on_message(m) )
 
 // Handy macro to be used in get_state_name() implementation
