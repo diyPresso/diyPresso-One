@@ -16,8 +16,6 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
-            # ~/.platformio/.cache
             ~/.platformio
             ~/.pio
           key: ${{ runner.os }}-pio
