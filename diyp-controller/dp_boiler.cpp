@@ -140,6 +140,8 @@ void BoilerStateMachine::control(void)
 
   run();
   _pid.compute();
+  if (_act_temp > 100.0)
+    _power = 0;
   heaterDevice.power(_on ? _power : 0.0);
 #ifdef WATCHDOG_ENABLED
   wdt_reset();
