@@ -21,6 +21,19 @@ This repository contains the code for the diyPresso One (arduino) control board 
 (Tested) releases of the firmware can be found 
 [here](https://github.com/diyPresso/diyPresso-One/releases)
 
+main branch build status: [![Build](https://github.com/diyPresso/diyPresso-One/actions/workflows/main.yml/badge.svg)](https://github.com/diyPresso/diyPresso-One/actions/workflows/main.yml)
+
+
+## Safety
+
+You can break your hardware (and other things) with the software! Be careful. 
+With open-source DiY hardware and software breaking things is part of life (and of the fun!), 
+but we are working with high voltage, water, high temperature and pressurized containers, 
+so: **be careful!**
+There are some sanity checks, watchdogs and other things in the software that provide some protection, 
+but this is not failsafe. The authors of this software cannot provide any garantee on the 
+correct and safe functioning of this software. **You** are responsible for the safe usage of this software and hardware.
+
 
 ## Functions
 * Commissioning (initial filling of boiler)
@@ -28,7 +41,6 @@ This repository contains the code for the diyPresso One (arduino) control board 
 * Basic brewing
 * Wifi setup
 * MQTT communication
-
 
 ## Factory Reset
 *  Holding the rotary encoder button WHEN POWERING ON the machine will reset all settings to default values (including the "WiFo Modi" setting). Wifi credential (AP name and password are not stored on the main CPU, but on the WiFi chip, these settings are retained when the firmware is updated or a factory reset is executed.
