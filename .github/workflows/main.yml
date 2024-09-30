@@ -30,7 +30,8 @@ jobs:
       #  run: pip install --upgrade platformio
 
       #- uses: docker://takigama/platformio:latest
-      - uses: ghcr.io/pbrier/platformio:latest
+      
+      - uses: docker://ghcr.io/pbrier/platformio:latest
         with:
           args: platformio run
           options: "-e HOME=`pwd` -u $UID -w `pwd` -v `pwd`:`pwd`"
