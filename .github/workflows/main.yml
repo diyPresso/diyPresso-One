@@ -30,23 +30,16 @@ jobs:
       #  run: pip install --upgrade platformio
 
       #- uses: docker://takigama/platformio:latest
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: pbrier
-          password: ${{ secrets.GITHUB_TOKEN }}   
-      - uses: docker://ghcr.io/pbrier/platformio:latest
+      #- name: Log in to the Container registry
+      #  uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+      #  with:
+      #    registry: ghcr.io
+      #    username: pbrier
+      #    password: ${{ secrets.GITHUB_TOKEN }}   
+      - uses: docker://takigama/platformio:latest
         with:
           args: platformio run
           options: "-e HOME=`pwd` -u $UID -w `pwd` -v `pwd`:`pwd`"
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            .platformio
-            .pio
-          key: ${{ runner.os }}-pio
 
       - name: Archive firmware artifact
         uses: actions/upload-artifact@v4
