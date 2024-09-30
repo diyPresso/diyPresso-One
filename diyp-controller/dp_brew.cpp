@@ -13,18 +13,19 @@
 #include "dp_settings.h"
 #include "dp_brew.h"
 
-
 BrewProcess brewProcess = BrewProcess();
 
 // Check common state transitions (commissioning, brewing, empty)
 // Note: brew-switch DOWN = closed (circulating via OverPressure valve), UP=open (brewing)
 void BrewProcess::common_transitions()
 {
-  if ( brewSwitch.down() )
-    if ( settings.commissioningDone() )
-      NEXT( state_idle);
-  if ( reservoir.is_empty() ) NEXT(state_empty);
-  ON_MESSAGE(SLEEP) NEXT(state_sleep);
+  if (brewSwitch.down())
+    if (settings.commissioningDone())
+      NEXT(state_idle);
+  if (reservoir.is_empty())
+    NEXT(state_empty);
+  ON_MESSAGE(SLEEP)
+  NEXT(state_sleep);
 }
 
 // initial state at startup
@@ -36,14 +37,17 @@ void BrewProcess::state_init()
 {
   statusLed.color(ColorLed::BLACK);
   boilerController.off();
-  if ( settings.commissioningDone() )
+  if (settings.commissioningDone())
     NEXT(state_idle);
-  if ( display.button_pressed() )
+  else
   {
-    reservoir.tare();
-    settings.tareWeight( reservoir.get_tare() );
-    settings.save();
-    NEXT( state_fill );
+    ON_MESSAGE(MSG_BUTTON)
+    {
+      reservoir.tare();
+      settings.tareWeight(reservoir.get_tare());
+      settings.save();
+      NEXT(state_fill);
+    }
   }
 }
 
@@ -52,19 +56,19 @@ void BrewProcess::state_init()
 // Error if not, purge if it has
 void BrewProcess::state_fill()
 {
-  static int counter=0;
+  static int counter = 0;
   ON_ENTRY()
   {
     _start_weight = reservoir.weight();
     pumpDevice.on();
   }
-  statusLed.color( blink() ? ColorLed::YELLOW : ColorLed::BLACK);
+  statusLed.color(blink() ? ColorLed::YELLOW : ColorLed::BLACK);
   ON_TIMEOUT_SEC(INITIAL_PUMP_TIME)
   {
-    if( abs(_start_weight - reservoir.weight()) < FILL_WEIGHT_DROP_MINIMUM  )
+    if (abs(_start_weight - reservoir.weight()) < FILL_WEIGHT_DROP_MINIMUM)
       goto_error(BREW_ERROR_FILL);
     else
-       NEXT(state_purge);
+      NEXT(state_purge);
   }
 }
 
@@ -72,8 +76,10 @@ void BrewProcess::state_fill()
 // If the switch is not activated within timeout: goto error
 void BrewProcess::state_purge()
 {
-  if ( brewSwitch.up() ) NEXT(state_check);
-  ON_TIMEOUT_SEC(PURGE_TIMEOUT) goto_error(BREW_ERROR_PURGE);
+  if (brewSwitch.up())
+    NEXT(state_check);
+  ON_TIMEOUT_SEC(PURGE_TIMEOUT)
+  goto_error(BREW_ERROR_PURGE);
   common_transitions();
 }
 
@@ -83,42 +89,43 @@ void BrewProcess::state_purge()
 
 void BrewProcess::state_check()
 {
-  if ( display.button_pressed() )
+  ON_MESSAGE(MSG_BUTTON)
   {
-    if (abs( _start_weight - reservoir.weight()) > PURGE_WEIGHT_DROP_MINIMUM )
+    if (abs(_start_weight - reservoir.weight()) > PURGE_WEIGHT_DROP_MINIMUM)
     {
       pumpDevice.off();
       NEXT(state_done);
     }
-    else 
+    else
     {
       goto_error(BREW_ERROR_NO_WATER);
     }
   }
-  ON_TIMEOUT_SEC(PURGE_TIMEOUT) goto_error(BREW_ERROR_PURGE);
+  ON_TIMEOUT_SEC(PURGE_TIMEOUT)
+  goto_error(BREW_ERROR_PURGE);
   common_transitions();
 }
-
 
 // Done commissioning
 void BrewProcess::state_done()
 {
-  if ( brewSwitch.down() )
+  if (brewSwitch.down())
   {
     settings.commissioningDone(1);
     settings.save();
     NEXT(state_idle);
   }
- ON_TIMEOUT_SEC(PURGE_TIMEOUT) goto_error(BREW_ERROR_PURGE);
+  ON_TIMEOUT_SEC(PURGE_TIMEOUT)
+  goto_error(BREW_ERROR_PURGE);
 }
-
 
 void BrewProcess::state_sleep()
 {
   statusLed.color(ColorLed::BLACK);
   boilerController.off();
   pumpDevice.off();
-  ON_MESSAGE(WAKEUP) NEXT(state_idle);
+  ON_MESSAGE(WAKEUP)
+  NEXT(state_idle);
 }
 
 void BrewProcess::state_empty()
@@ -129,14 +136,15 @@ void BrewProcess::state_empty()
     boilerController.off();
     pumpDevice.off();
   }
-  if ( !reservoir.is_empty() && brewSwitch.down() ) NEXT(state_idle);
+  if (!reservoir.is_empty() && brewSwitch.down())
+    NEXT(state_idle);
 }
 
 void BrewProcess::state_idle()
 {
   ON_ENTRY()
   {
-    if ( !is_prev_state(STATE(state_finished)))
+    if (!is_prev_state(STATE(state_finished)))
       _end_weight = weight();
     _brewTimer.stop();
     statusLed.color(ColorLed::GREEN);
@@ -145,10 +153,13 @@ void BrewProcess::state_idle()
     boilerController.on();
     boilerController.set_temp(settings.temperature());
   }
-  if ( brewSwitch.up() ) NEXT(state_pre_infuse);
+  if (brewSwitch.up())
+    NEXT(state_pre_infuse);
   common_transitions();
-  ON_TIMEOUT_SEC(AUTOSLEEP_TIMEOUT) NEXT(state_sleep);
-  if ( !settings.commissioningDone() ) NEXT(state_init);
+  ON_TIMEOUT_SEC(AUTOSLEEP_TIMEOUT)
+  NEXT(state_sleep);
+  if (!settings.commissioningDone())
+    NEXT(state_init);
 }
 
 void BrewProcess::state_pre_infuse()
@@ -161,7 +172,8 @@ void BrewProcess::state_pre_infuse()
     pumpDevice.on();
     boilerController.start_brew();
   }
-  ON_TIMEOUT_SEC(preInfuseTime) NEXT(state_infuse);
+  ON_TIMEOUT_SEC(preInfuseTime)
+  NEXT(state_infuse);
   common_transitions();
 }
 
@@ -173,7 +185,8 @@ void BrewProcess::state_infuse()
     statusLed.color(ColorLed::YELLOW);
     pumpDevice.off();
   }
-  ON_TIMEOUT_SEC(infuseTime) NEXT(state_extract);
+  ON_TIMEOUT_SEC(infuseTime)
+  NEXT(state_extract);
   common_transitions();
 }
 
@@ -181,20 +194,20 @@ void BrewProcess::state_extract()
 {
   ON_ENTRY()
   {
-    if (!is_prev_state(STATE(state_finished))) {
+    if (!is_prev_state(STATE(state_finished)))
+    {
       _start_weight = reservoir.weight();
     }
     statusLed.color(ColorLed::PURPLE);
     pumpDevice.on();
     boilerController.start_brew();
     settings.incShotCounter();
-
   }
-  //if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle); // extra check?
-  ON_TIMEOUT_SEC(extractTime) NEXT(state_finished);
+  // if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle); // extra check?
+  ON_TIMEOUT_SEC(extractTime)
+  NEXT(state_finished);
   common_transitions();
 }
-
 
 void BrewProcess::state_finished()
 {
@@ -206,14 +219,15 @@ void BrewProcess::state_finished()
     boilerController.stop_brew();
     _brewTimer.stop();
   }
-  if ( display.button_pressed() ) {
+  ON_MESSAGE(MSG_BUTTON)
+  {
     _brewTimer.start();
     NEXT(state_extract);
   }
-  ON_TIMEOUT_SEC(finishedTime) goto_error(BREW_ERROR_TIMEOUT);
+  ON_TIMEOUT_SEC(finishedTime)
+  goto_error(BREW_ERROR_TIMEOUT);
   common_transitions();
 }
-
 
 void BrewProcess::state_error()
 {
@@ -225,7 +239,8 @@ void BrewProcess::state_error()
     boilerController.off();
   }
   common_transitions();
-  ON_MESSAGE(RESET) NEXT(state_init);
+  ON_MESSAGE(RESET)
+  NEXT(state_init);
 }
 
 void BrewProcess::goto_error(brew_error_t error)
@@ -236,31 +251,37 @@ void BrewProcess::goto_error(brew_error_t error)
 
 const char *BrewProcess::get_state_name()
 {
-    RETURN_STATE_NAME(init);
-    RETURN_STATE_NAME(fill);
-    RETURN_STATE_NAME(purge);
-    RETURN_STATE_NAME(sleep);
-    RETURN_STATE_NAME(empty);
-    RETURN_STATE_NAME(idle);
-    RETURN_STATE_NAME(check);
-    RETURN_STATE_NAME(done);
-    RETURN_STATE_NAME(pre_infuse);
-    RETURN_STATE_NAME(infuse);
-    RETURN_STATE_NAME(extract);
-    RETURN_STATE_NAME(finished);
-    RETURN_STATE_NAME(error);
-    RETURN_UNKNOWN_STATE_NAME();
+  RETURN_STATE_NAME(init);
+  RETURN_STATE_NAME(fill);
+  RETURN_STATE_NAME(purge);
+  RETURN_STATE_NAME(sleep);
+  RETURN_STATE_NAME(empty);
+  RETURN_STATE_NAME(idle);
+  RETURN_STATE_NAME(check);
+  RETURN_STATE_NAME(done);
+  RETURN_STATE_NAME(pre_infuse);
+  RETURN_STATE_NAME(infuse);
+  RETURN_STATE_NAME(extract);
+  RETURN_STATE_NAME(finished);
+  RETURN_STATE_NAME(error);
+  RETURN_UNKNOWN_STATE_NAME();
 }
 
 const char *BrewProcess::get_error_text()
 {
-  switch(_error)
+  switch (_error)
   {
-    case BREW_ERROR_NONE: return "OK";
-    case BREW_ERROR_FILL: return "NO_FILL";
-    case BREW_ERROR_PURGE: return "NO_PURGE";
-    case BREW_ERROR_NO_WATER: return "NO_WATER";
-    case BREW_ERROR_TIMEOUT: return "TIMEOUT";
-    default: return "UNKNOWN";
+  case BREW_ERROR_NONE:
+    return "OK";
+  case BREW_ERROR_FILL:
+    return "NO_FILL";
+  case BREW_ERROR_PURGE:
+    return "NO_PURGE";
+  case BREW_ERROR_NO_WATER:
+    return "NO_WATER";
+  case BREW_ERROR_TIMEOUT:
+    return "TIMEOUT";
+  default:
+    return "UNKNOWN";
   }
 }

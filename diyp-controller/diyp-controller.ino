@@ -54,7 +54,6 @@
 #include "dp_wifi.h"
 #include "dp_mqtt.h"
 
-
 /**
  * @brief setup code
  * initialize all objects and state
@@ -98,7 +97,7 @@ void setup()
   heaterDevice.pwm_period(2.0); // [sec]
   boilerController.off();
 
-  if ( settings.wifiMode() != WIFI_MODE_OFF)
+  if (settings.wifiMode() != WIFI_MODE_OFF)
   {
     if (settings.wifiMode() == WIFI_MODE_AP)
     {
@@ -189,7 +188,6 @@ void print_state()
   }
 }
 
-
 // Send the state to MQTT
 void send_state()
 {
@@ -199,34 +197,41 @@ void send_state()
     mqttDevice.write("t_set", boilerController.set_temp());
     mqttDevice.write("t_act", boilerController.act_temp());
     mqttDevice.write("h_pwr", heaterDevice.power());
-    mqttDevice.write("h_avg", heaterDevice.average() );
-    mqttDevice.write("r_lvl", reservoir.level() );
-    mqttDevice.write("r_wgt", reservoir.weight() );
-    mqttDevice.write("w_cur", brewProcess.weight() );
-    mqttDevice.write("w_end", brewProcess.end_weight() );
-    mqttDevice.write("shots", (long)settings.shotCounter() );
+    mqttDevice.write("h_avg", heaterDevice.average());
+    mqttDevice.write("r_lvl", reservoir.level());
+    mqttDevice.write("r_wgt", reservoir.weight());
+    mqttDevice.write("w_cur", brewProcess.weight());
+    mqttDevice.write("w_end", brewProcess.end_weight());
+    mqttDevice.write("shots", (long)settings.shotCounter());
 
-    mqttDevice.write("boil", (char*)boilerController.get_state_name() );
-    if ( boilerController.is_error() )
-      mqttDevice.write("boil_err", (char*)boilerController.get_error_text() );
+    mqttDevice.write("boil", (char *)boilerController.get_state_name());
+    if (boilerController.is_error())
+      mqttDevice.write("boil_err", (char *)boilerController.get_error_text());
 
-    mqttDevice.write("brew", (char*)brewProcess.get_state_name() );
-    if ( brewProcess.is_error() )
-      mqttDevice.write("brew_err", (char*)brewProcess.get_error_text() );
+    mqttDevice.write("brew", (char *)brewProcess.get_state_name());
+    if (brewProcess.is_error())
+      mqttDevice.write("brew_err", (char *)brewProcess.get_error_text());
 
-    if ( reservoir.is_error() )
-      mqttDevice.write("res_err", (char*)reservoir.get_error_text() );
+    if (reservoir.is_error())
+      mqttDevice.write("res_err", (char *)reservoir.get_error_text());
 
-    mqttDevice.write("msec", (long)millis() );
+    mqttDevice.write("msec", (long)millis());
     mqttDevice.send();
 
     prev_time = millis();
   }
 }
 
-
-typedef enum { COMMISSIONING, MAIN, SETTINGS, SLEEP, SAVED, ERROR, INFO } menus_t;
-
+typedef enum
+{
+  COMMISSIONING,
+  MAIN,
+  SETTINGS,
+  SLEEP,
+  SAVED,
+  ERROR,
+  INFO
+} menus_t;
 
 /**
  * @brief main process loop
@@ -235,6 +240,8 @@ void loop()
 {
   static unsigned long counter = 0;
   static menus_t menu = COMMISSIONING;
+
+  bool button_pressed = display.button_pressed();
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
@@ -251,7 +258,7 @@ void loop()
 
   heaterDevice.control();
   boilerController.control();
-  brewProcess.run();
+  brewProcess.run((button_pressed ? BrewProcess::MSG_BUTTON : BrewProcess::MSG_NONE));
   int menuSettings;
   send_state();
   mqttDevice.run();
@@ -259,37 +266,36 @@ void loop()
   if (true)
     print_state();
 
-  if ( brewProcess.is_error() )
+  if (brewProcess.is_error())
     menu = ERROR; // error menu
-
 
   switch (menu)
   {
   case COMMISSIONING:
-    if ( settings.commissioningDone() )
+    if (settings.commissioningDone())
       menu = MAIN;
     else
       menu_commissioning();
     break;
   case MAIN: // main menu
-    if ( !settings.commissioningDone() )
+    if (!settings.commissioningDone())
       menu = COMMISSIONING;
 
     counter = 0;
     menu_main();
-    if (display.button_pressed())
+    if (button_pressed)
       menu = SETTINGS;
-    if( display.encoder_changed() )
+    if (display.encoder_changed())
       menu = INFO;
     break;
   case SETTINGS: // settings menu
-    if ( !settings.commissioningDone() )
+    if (!settings.commissioningDone())
       menu = COMMISSIONING;
 
     if (brewProcess.is_busy())
       menu = MAIN; // When brewing: Always show main menu
 
-    menuSettings = menu_settings();
+    menuSettings = menu_settings(button_pressed);
     if (menuSettings == 1)
     {
       Serial.println("Done!");
@@ -298,7 +304,8 @@ void loop()
       apply_settings();
       display.button_pressed(); // prevent entering settings again
       menu = SAVED;
-    } else if (menuSettings == 2)
+    }
+    else if (menuSettings == 2)
     {
       Serial.println("Cancel!");
       display.button_pressed();
@@ -326,7 +333,7 @@ void loop()
     menu_error("ERROR");
     boilerController.off();
     pumpDevice.off();
-    if (display.button_pressed())
+    if (button_pressed)
     {
       boilerController.clear_error();
       reservoir.clear_error();
@@ -336,9 +343,9 @@ void loop()
     break;
   case INFO: // state info menu
     menu_state();
-    if (display.button_pressed())
+    if (button_pressed)
       menu = SETTINGS;
-    if( display.encoder_changed() )
+    if (display.encoder_changed())
       menu = MAIN;
     break;
   default:

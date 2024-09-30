@@ -6,7 +6,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-extern int menu_settings();
+extern int menu_settings(bool button_pressed);
 extern bool menu_brew();
 extern bool menu_main();
 extern bool menu_sleep();
@@ -16,8 +16,20 @@ extern bool menu_error(const char *msg);
 extern bool menu_commissioning();
 extern bool menu_state();
 
-
-typedef enum { MENU_MAIN=0, MENU_SETTING=1, MENU_MODIFY=2, MENU_ERROR=3, MENU_BREW=4, MENU_SLEEP=5, MENU_CONFIRM=6, MENU_WIFI=7, MENU_SAVED=8, MENU_STATE=9, MENU_COMMISSIONING=10 } menu_list_t;
+typedef enum
+{
+  MENU_MAIN = 0,
+  MENU_SETTING = 1,
+  MENU_MODIFY = 2,
+  MENU_ERROR = 3,
+  MENU_BREW = 4,
+  MENU_SLEEP = 5,
+  MENU_CONFIRM = 6,
+  MENU_WIFI = 7,
+  MENU_SAVED = 8,
+  MENU_STATE = 9,
+  MENU_COMMISSIONING = 10
+} menu_list_t;
 
 typedef struct setting
 {
