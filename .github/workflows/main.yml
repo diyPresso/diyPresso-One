@@ -19,9 +19,8 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: |
-            .platformio
-            .pio
+          path:
+            /tmp/pio
           key: ${{ runner.os }}-pio
       #- uses: actions/setup-python@v5
       #  with:
@@ -41,7 +40,7 @@ jobs:
         with:
           args: platformio run
           #options: "-e HOME=`pwd` -u $UID -w `pwd` -v `pwd`:`pwd`"
-          options: "-e HOME=`pwd` -w `pwd` -v `pwd`:`pwd`"
+          options: "-e HOME=`pwd` --w `pwd` -v `pwd`:`pwd`"
 
       - name: Archive firmware artifact
         uses: actions/upload-artifact@v4
