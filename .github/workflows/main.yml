@@ -36,7 +36,8 @@ jobs:
       #    registry: ghcr.io
       #    username: pbrier
       #    password: ${{ secrets.GITHUB_TOKEN }}   
-      - uses: docker://takigama/platformio:latest
+      #- uses: docker://takigama/platformio:latest
+      - uses: docker://ghcr.io/pbrier/platformio:latest
         with:
           args: platformio run
           options: "-e HOME=`pwd` -u $UID -w `pwd` -v `pwd`:`pwd`"
