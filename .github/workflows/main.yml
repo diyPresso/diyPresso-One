@@ -19,8 +19,7 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path:
-            /tmp/pio
+          path: /tmp/pio
           key: ${{ runner.os }}-pio
       #- uses: actions/setup-python@v5
       #  with:
