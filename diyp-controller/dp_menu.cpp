@@ -288,9 +288,11 @@ int menu_settings(bool button_pressed)
         break;
       case FUNCTION_ZERO:
         settings.zeroShotCounter();
+        settings.save();
         break;
       case FUNCTION_DEFAULTS:
         settings.defaults();
+        settings.save();
         break;
       }
       return 1;
