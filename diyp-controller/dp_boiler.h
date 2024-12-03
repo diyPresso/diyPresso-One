@@ -46,7 +46,7 @@ public:
   int error() { return _error; }
   void clear_error() { _error = BOILER_ERROR_NONE; }
   double set_temp() { return _set_temp; }
-  double set_temp(int temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
+  double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
   double set_ff_heat(double ff) { return _ff_heat = min(100.0, max(ff, 0.0)); }
