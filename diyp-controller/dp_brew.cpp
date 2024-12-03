@@ -52,7 +52,7 @@ void BrewProcess::state_init()
 }
 
 // Fill the boiler
-// We enable the pump, pump for 60 seconds and check if a minumum amount of water has been pumped from the reservoir
+// We enable the pump, pump for (INITIAL_PUMP_TIME) 30 seconds and check if a minumum amount of water has been pumped from the reservoir
 // Error if not, purge if it has
 void BrewProcess::state_fill()
 {
@@ -110,7 +110,7 @@ void BrewProcess::state_check()
 void BrewProcess::state_done()
 {
   if (brewSwitch.down())
-  {
+  { // Commissioning done succesfully
     settings.commissioningDone(1);
     settings.save();
     NEXT(state_idle);
@@ -239,8 +239,10 @@ void BrewProcess::state_error()
     boilerController.off();
   }
   common_transitions();
-  ON_MESSAGE(RESET)
-  NEXT(state_init);
+  ON_MESSAGE(RESET) {
+    _error = BREW_ERROR_NONE;
+    NEXT(state_init);
+  }
 }
 
 void BrewProcess::goto_error(brew_error_t error)
