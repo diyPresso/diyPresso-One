@@ -65,6 +65,11 @@ void encoder_timer_function()
     prev = cur;
 }
 
+
+/// @brief constructor for the rotary encoder
+/// @param pin_a pin number for the A signal for rotation
+/// @param pin_b pin number for the B signal for rotation
+/// @param pin_s pin number for the switch signal (button)
 Encoder::Encoder(int pin_a, int pin_b, int pin_s)
 {
     _pin_a = pin_a; _pin_b = pin_b; _pin_s = pin_s;
