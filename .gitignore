@@ -6,3 +6,5 @@ diyp-controller/.vscode/c_cpp_properties.json
 .DS
 .DS_Store
 .vscode/launch.json
+releases/macos/settings_*.txt
+releases/macos/arduino-cli

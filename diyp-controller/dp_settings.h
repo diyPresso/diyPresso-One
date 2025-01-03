@@ -10,6 +10,7 @@
 #define DpSettings_h
 
 #include "Arduino.h"
+#include <dp_serial.h>
 
 typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP };
 
@@ -41,6 +42,9 @@ class DpSettings
         void defaults();
         int load();
         int save();
+        void apply();
+        String serialize();
+        int deserialize(String input);
         double temperature() { return settings.temperature; }
         double temperature(double t) { return settings.temperature = min(110.0, max(t, 0.0)); }
         double preInfusionTime() { return settings.preInfusionTime; }
@@ -70,6 +74,7 @@ class DpSettings
         int wifiMode() { return settings.wifiMode; }
         int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
+        int shotCounter(int count) { return settings.shotCounter = min(INT32_MAX, max(count, 0)); }
         int commissioningDone() { return settings.commissioningDone; }
         int commissioningDone(int state) { return settings.commissioningDone = min(1, max(state, 0)); }
         int incShotCounter() { return settings.shotCounter += 1; }

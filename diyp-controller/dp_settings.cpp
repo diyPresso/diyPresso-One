@@ -153,3 +153,134 @@ int DpSettings::save()
     }
     return changed ? 1 : 0;
 }
+
+
+void DpSettings::apply()
+{
+  boilerController.set_temp(temperature());
+
+  boilerController.set_pid(P(), I(), D());
+  boilerController.set_ff_heat(ff_heat());
+  boilerController.set_ff_ready(ff_ready());
+  boilerController.set_ff_brew(ff_brew());
+
+  reservoir.set_trim(trimWeight());
+  reservoir.set_tare(tareWeight());
+
+  brewProcess.preInfuseTime = preInfusionTime();
+  brewProcess.infuseTime = infusionTime();
+  brewProcess.extractTime = extractionTime();
+
+  
+
+
+
+}
+
+String DpSettings::serialize() {
+    String result = "";
+    result += "version=" + String(settings.version) + "\n";
+    result += "crc=" + String(settings.crc) + "\n";
+    result += "temperature=" + String(settings.temperature) + "\n";
+    result += "preInfusionTime=" + String(settings.preInfusionTime) + "\n";
+    result += "infusionTime=" + String(settings.infusionTime) + "\n";
+    result += "extractionTime=" + String(settings.extractionTime) + "\n";
+    result += "extractionWeight=" + String(settings.extractionWeight) + "\n";
+    result += "p=" + String(settings.p) + "\n";
+    result += "i=" + String(settings.i) + "\n";
+    result += "d=" + String(settings.d) + "\n";
+    result += "ff_heat=" + String(settings.ff_heat) + "\n";
+    result += "ff_ready=" + String(settings.ff_ready) + "\n";
+    result += "ff_brew=" + String(settings.ff_brew) + "\n";
+    result += "tareWeight=" + String(settings.tareWeight) + "\n";
+    result += "trimWeight=" + String(settings.trimWeight) + "\n";
+    result += "commissioningDone=" + String(settings.commissioningDone) + "\n";
+    result += "shotCounter=" + String(settings.shotCounter) + "\n";
+    result += "wifiMode=" + String(settings.wifiMode) + "\n";    
+    return result;
+}
+
+
+/* receives a string, parses it and updates the settings. For example:
+temperature=98.50,P=7.00,I=0.30,D=80.00,ff_heat=3.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
+
+can also be a subset of these values.
+
+return value:
+  0 = OK
+ -1 = Invalid input string
+ -2 = Unknown key
+
+ Note: does not save the settings to EEPROM, call save() after changing settings. This is done on purpose to avoid unnecessary EEPROM writes.
+*/
+int DpSettings::deserialize(String serialized_settings) {
+    int error = 0;
+
+    // split the input string into key value pairs
+    int pos = 0;
+    while (pos < serialized_settings.length()) {
+        int equalPos = serialized_settings.indexOf('=', pos);
+        if (equalPos == -1) {
+            error = -1;
+            break;
+        }
+        String key = serialized_settings.substring(pos, equalPos);
+        pos = equalPos + 1;
+
+        int commaPos = serialized_settings.indexOf(',', pos);
+        String value;
+        if (commaPos == -1) {
+            value = serialized_settings.substring(pos);
+            pos = serialized_settings.length();
+        } else {
+            value = serialized_settings.substring(pos, commaPos);
+            pos = commaPos + 1;
+        }
+
+        Serial.println("key: " + key + ", value: " + value);
+
+        // Process the key-value pairs
+        if (key == "temperature") {
+            temperature(value.toDouble());
+        } else if (key == "p" || key == "P") {
+            P(value.toDouble());
+        } else if (key == "i" || key == "I") {
+            I(value.toDouble());
+        } else if (key == "d" || key == "D") {
+            D(value.toDouble());
+        } else if (key == "ff_heat") {
+            ff_heat(value.toDouble());
+        } else if (key == "ff_ready") {
+            ff_ready(value.toDouble());
+        } else if (key == "ff_brew") {
+            ff_brew(value.toDouble());
+        } else if (key == "tareWeight") {
+            tareWeight(value.toDouble());
+        } else if (key == "trimWeight") {
+            trimWeight(value.toDouble());
+        } else if (key == "preInfusionTime") {
+            preInfusionTime(value.toDouble());
+        } else if (key == "infusionTime" || key == "infuseTime") { // infuseTime is an depricated alias for infusionTime
+            infusionTime(value.toDouble());
+        } else if (key == "extractionTime" || key == "extractTime") { // extractTime is an depricated alias for extractionTime
+            extractionTime(value.toDouble());
+        } else if (key == "extractionWeight") {
+            extractionWeight(value.toDouble());
+        } else if (key == "commissioningDone") {
+            commissioningDone(value.toInt());
+        } else if (key == "shotCounter") {
+             shotCounter(value.toInt());
+        } else if (key == "wifiMode") {
+            wifiMode(value.toInt());
+        } else {
+            Serial.println("Unknown key: " + key);
+            error = -2; //unknown key
+        }
+    }
+
+    if (error < 0) {
+        load(); // discart updarte and restore settings from EEPROM on error
+    }
+
+    return error;
+}
