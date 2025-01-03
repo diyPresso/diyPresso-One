@@ -51,8 +51,10 @@
 #include "dp_heater.h"
 #include "dp_pump.h"
 
+#include "dp_serial.h"
 #include "dp_wifi.h"
 #include "dp_mqtt.h"
+
 
 /**
  * @brief setup code
@@ -61,9 +63,9 @@
 void setup()
 {
   int result = 0;
-  Serial.begin(115200);
+  
   delay(1000);
-  Serial.println(__DATE__ " " __TIME__);
+  dpSerial.send(__DATE__ " " __TIME__);
   statusLed.color(ColorLed::WHITE);
 
   encoder.start();
@@ -72,28 +74,30 @@ void setup()
 
   if ((result = settings.load()) < 0)
   {
-    Serial.println("Failed to load settings, result=");
-    Serial.println(result);
+    dpSerial.send("Failed to load settings, result=");
+    dpSerial.send(result);
     Serial.print("Save default settings, result=");
-    Serial.println(settings.save());
+    dpSerial.send(settings.save());
   }
   else
-    Serial.println("Load settings OK, result=");
-  Serial.println(result);
+    dpSerial.send("Load settings OK, result=");
+  dpSerial.send(result);
 
-  Serial.println(encoder.button_count());
+  dpSerial.send(encoder.button_count());
   if (encoder.button_count() > 3)
   {
-    Serial.println("button pressed 4x at startup: perform factory reset of settings");
+    dpSerial.send("button pressed 4x at startup: perform factory reset of settings");
     settings.defaults();
-    Serial.println(settings.save());
+    dpSerial.send(settings.save());
   }
 
+  dpSerial.send_settings();
   apply_settings();
+
 
   display.custom_chars(custom_chars_spinner);
 
-  Serial.println("INIT DONE");
+  dpSerial.send("INIT DONE");
   heaterDevice.pwm_period(2.0); // [sec]
   boilerController.off();
 
@@ -115,45 +119,7 @@ void setup()
 
 void apply_settings()
 {
-  Serial.print("temperature=");
-  Serial.println(settings.temperature());
-  boilerController.set_temp(settings.temperature());
-
-  Serial.print("P=");
-  Serial.println(settings.P());
-  Serial.print("I=");
-  Serial.println(settings.I());
-  Serial.print("D=");
-  Serial.println(settings.D());
-  Serial.print("ff_heat=");
-  Serial.println(settings.ff_heat());
-  Serial.print("ff_ready=");
-  Serial.println(settings.ff_ready());
-  Serial.print("ff_brew=");
-  Serial.println(settings.ff_brew());
-  boilerController.set_pid(settings.P(), settings.I(), settings.D());
-  boilerController.set_ff_heat(settings.ff_heat());
-  boilerController.set_ff_ready(settings.ff_ready());
-  boilerController.set_ff_brew(settings.ff_brew());
-
-  Serial.print("tareWeight=");
-  Serial.println(settings.tareWeight());
-  Serial.print("trimWeight=");
-  Serial.println(settings.trimWeight());
-  reservoir.set_trim(settings.trimWeight());
-  reservoir.set_tare(settings.tareWeight());
-
-  Serial.print("preInfusionTime=");
-  Serial.println(settings.preInfusionTime());
-  Serial.print("infuseTime=");
-  Serial.println(settings.infusionTime());
-  Serial.print("extractTime=");
-  Serial.println(settings.extractionTime());
-  Serial.print("extractionWeight=");
-  Serial.println(settings.extractionWeight());
-  brewProcess.preInfuseTime = settings.preInfusionTime();
-  brewProcess.infuseTime = settings.infusionTime();
-  brewProcess.extractTime = settings.extractionTime();
+  settings.apply();
 }
 
 // Output the state to serial port
@@ -183,7 +149,7 @@ void print_state()
     Serial.print(", reservoir_level:");
     Serial.print(reservoir.level());
 
-    Serial.println();
+    dpSerial.send("");
     prev_time = millis();
   }
 }
@@ -260,6 +226,8 @@ void loop()
   boilerController.control();
   brewProcess.run((button_pressed ? BrewProcess::MSG_BUTTON : BrewProcess::MSG_NONE));
   int menuSettings;
+
+  dpSerial.receive(); // check for incoming serial commands
   send_state();
   mqttDevice.run();
 
@@ -298,7 +266,7 @@ void loop()
     menuSettings = menu_settings(button_pressed);
     if (menuSettings == 1)
     {
-      Serial.println("Done!");
+      dpSerial.send("Done!");
       boilerController.clear_error();
       reservoir.clear_error();
       apply_settings();
@@ -307,7 +275,7 @@ void loop()
     }
     else if (menuSettings == 2)
     {
-      Serial.println("Cancel!");
+      dpSerial.send("Cancel!");
       display.button_pressed();
       display.encoder_changed();
       menu = MAIN;
