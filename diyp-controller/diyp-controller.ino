@@ -126,7 +126,7 @@ void apply_settings()
 void print_state()
 {
   static unsigned long prev_time = millis();
-  if (time_since(prev_time) > 500)
+  if (1 == 0 && time_since(prev_time) > 500) // TODO: remove 0==1
   {
     Serial.print("setpoint:");
     Serial.print(boilerController.set_temp());
