@@ -46,7 +46,7 @@ class DpSettings
         String serialize();
         int deserialize(String input);
         double temperature() { return settings.temperature; }
-        double temperature(double t) { return settings.temperature = min(110.0, max(t, 0.0)); }
+        double temperature(double t) { return settings.temperature = min(104.0, max(t, 0.0)); }
         double preInfusionTime() { return settings.preInfusionTime; }
         double preInfusionTime(double t) { return settings.preInfusionTime = min(60.0, max(t, 0.0)); }
         double infusionTime() { return settings.infusionTime; }
@@ -60,7 +60,7 @@ class DpSettings
         double I() { return settings.i; }
         double I(double i) { return settings.i = min(20.0, max(i, 0.00)); }
         double D() { return settings.d; }
-        double D(double d) { return settings.d = min(40.0, max(d, 0.0)); }
+        double D(double d) { return settings.d = min(100.0, max(d, 0.0)); }
         double ff_heat() { return settings.ff_heat; }
         double ff_heat(double ff) { return settings.ff_heat = min(100.0, max(ff, 0.0)); }
         double ff_ready() { return settings.ff_ready; }
