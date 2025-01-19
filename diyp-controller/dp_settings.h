@@ -10,7 +10,7 @@
 #define DpSettings_h
 
 #include "Arduino.h"
-#include <dp_serial.h>
+#include "dp_serial.h"
 
 typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP };
 
