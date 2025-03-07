@@ -98,10 +98,12 @@ void DpSerial::send_info() {
     send("boilerControllerState=" + String(boilerController.get_state_name()));
     send("boilerControllerError=" + String(boilerController.get_error_text()));
     send("reservoirError=" + String(reservoir.get_error_text()));
+    send("GET info OK");
 }
 
 void DpSerial::send_settings() {
     send(settings.serialize());
+    send("GET settings OK");
 }
 
 void DpSerial::put_settings(String value) {
@@ -114,19 +116,19 @@ void DpSerial::put_settings(String value) {
         int res_save = settings.save(); // all good, save the settings
 
         if (res_save = 1) {
-            send("PUT SETTINGS OK, settings saved.");
+            send("PUT settings OK, settings saved.");
             settings.apply();
         } else if (res_save = 0) {
-            send("PUT SETTINGS OK, no changes.");
+            send("PUT settings OK, no changes.");
         } else {
-            send("PUT SETTINGS NOK, unknown return code when saving settings: " + String(res_save));
+            send("PUT settings NOK, unknown return code when saving settings: " + String(res_save));
         }
     } else if (res_deserialize == -1) {
-        send("PUT SETTINGS NOK, Invalid input string format: settings not saved");
+        send("PUT settings NOK, Invalid input string format: settings not saved");
     } else if (res_deserialize == -2) {
-        send("PUT SETTINGS NOK, unknown key: settings not saved");
+        send("PUT settings NOK, unknown key: settings not saved");
     } else {
-        send("PUT SETTINGS NOK, settings not saved, unknown error code when deserializing settings: " + String(res_deserialize));
+        send("PUT settings NOK, settings not saved, unknown error code when deserializing settings: " + String(res_deserialize));
     }
 
 }
