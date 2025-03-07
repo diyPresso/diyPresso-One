@@ -90,11 +90,11 @@ void DpSerial::receive() {
 
 void DpSerial::send_info() {
     send("diyPresso");
-    send("firmwareVerion=" + String(SOFTWARE_VERSION));
+    send("firmwareVersion=" + String(SOFTWARE_VERSION));
     send("hardwareVersion=" + String(HARDWARE_REVISION));
     send("buildDate=" + String(BUILD_DATE));
-    send("brewProssessState=" + String(brewProcess.get_state_name()));
-    send("brewProssessError=" + String(brewProcess.get_error_text()));
+    send("brewProcessState=" + String(brewProcess.get_state_name()));
+    send("brewProcessError=" + String(brewProcess.get_error_text()));
     send("boilerControllerState=" + String(boilerController.get_state_name()));
     send("boilerControllerError=" + String(boilerController.get_error_text()));
     send("reservoirError=" + String(reservoir.get_error_text()));
