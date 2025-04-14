@@ -27,7 +27,7 @@
     * brewProcess - The brewing process: start(), stop()
 
     * boilerController - The boiler with heater and temp. sensor: on(), off(), setpoint(), actual(), power(), errors()
-      * thermistor -- Adafruit_MAX31865 PT1000 sensor
+      * thermistor -- Adafruit MAX31865 PT1000 sensor, using MAX31865_NonBlocking libary for non-blocking continues read-out
       * heaterControl -- PWM Control of the heater output
 
     * reservoir - The water reservoir with weight scale
@@ -38,6 +38,7 @@
 
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include <Timer.h>
 
 #include "dp_hardware.h"
 #include "dp_led.h"
@@ -81,7 +82,7 @@ void setup()
   }
   else
     dpSerial.send("Load settings OK, result=");
-  dpSerial.send(result);
+  dpSerial.send(result); 
 
   dpSerial.send(encoder.button_count());
   if (encoder.button_count() > 3)
@@ -92,13 +93,16 @@ void setup()
   }
 
   dpSerial.send_settings();
-  apply_settings();
-
 
   display.custom_chars(custom_chars_spinner);
 
+  boilerController.init(); // moved this out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
+
+  settings.apply();
+
   dpSerial.send("INIT DONE");
-  heaterDevice.pwm_period(2.0); // [sec]
+  
+  heaterDevice.pwm_period(1.0); // [sec]
   boilerController.off();
 
   if (settings.wifiMode() != WIFI_MODE_OFF)
@@ -115,11 +119,6 @@ void setup()
     delay(1000);
   }
   mqttDevice.init();
-}
-
-void apply_settings()
-{
-  settings.apply();
 }
 
 // Output the state to serial port
@@ -199,15 +198,42 @@ typedef enum
   INFO
 } menus_t;
 
+
+
+// #define LOOP_COUNT_TEST
+// #define LOOP_TIMERS // To monitor the performance of the main loop
+
 /**
  * @brief main process loop
  */
 void loop()
 {
-  static unsigned long counter = 0;
+  #ifdef LOOP_COUNT_TEST
+    static unsigned long loopCounter = 0;
+    static unsigned long lastTime = millis();
+    unsigned long now = millis();
+
+    loopCounter++;
+    if (now - lastTime > 1000)
+    {
+      dpSerial.send("Loop counter: " + String(loopCounter) + " time elapsed: " + String(now - lastTime) + "ms");
+      loopCounter = 0;
+      lastTime = now;
+    }
+  #endif
+  
+  #ifdef LOOP_TIMERS
+    unsigned long tstart = millis();
+
+    unsigned long t1, t2, t3, t4;
+  #endif
+
+  static Timer menu_saved_timer = Timer(MILLIS);
   static menus_t menu = COMMISSIONING;
 
   bool button_pressed = display.button_pressed();
+
+
 
 /// BEGIN Test code to simulate heater
 #ifdef SIMULATE
@@ -222,17 +248,27 @@ void loop()
 #endif
   /// END Test code to simulate heater
 
+
+
   heaterDevice.control();
-  boilerController.control();
+  boilerController.control(); 
+
   brewProcess.run((button_pressed ? BrewProcess::MSG_BUTTON : BrewProcess::MSG_NONE));
   int menuSettings;
 
   dpSerial.receive(); // check for incoming serial commands
+
   send_state();
   mqttDevice.run();
 
+  #ifdef LOOP_TIMERS
+    t1 = millis();
+  #endif
+  
+
   if (true)
     print_state();
+
 
   if (brewProcess.is_error())
     menu = ERROR; // error menu
@@ -249,8 +285,14 @@ void loop()
     if (!settings.commissioningDone())
       menu = COMMISSIONING;
 
-    counter = 0;
+#ifdef LOOP_TIMERS
+    t2 = millis();
+#endif
     menu_main();
+#ifdef LOOP_TIMERS
+    t3 = millis();
+#endif
+
     if (button_pressed)
       menu = SETTINGS;
     if (display.encoder_changed())
@@ -269,7 +311,7 @@ void loop()
       dpSerial.send("Done!");
       boilerController.clear_error();
       reservoir.clear_error();
-      apply_settings();
+      settings.apply();
       display.button_pressed(); // prevent entering settings again
       menu = SAVED;
     }
@@ -294,8 +336,13 @@ void loop()
     menu_saved();
     display.button_pressed();
     display.encoder_changed();
-    if (counter++ > 5)
+
+    if (menu_saved_timer.state() != status_t::RUNNING) {
+      menu_saved_timer.start(); // start timer if not running
+    } else if (menu_saved_timer.read() > 1000) {
+      menu_saved_timer.stop(); // stop timer when time is up (1s) and go back to main menu
       menu = MAIN;
+    }
     break;
   case ERROR: // error menu
     menu_error("ERROR");
@@ -320,6 +367,11 @@ void loop()
     menu = MAIN;
   }
 
+#ifdef LOOP_TIMERS
+  t4 = millis();
+#endif
+
+
   // sleep (de)activation and menu selection (note: sleep can be activated automatically)
   if (display.button_long_pressed())
   {
@@ -330,6 +382,12 @@ void loop()
   }
   if (!brewProcess.is_awake())
     menu = SLEEP;
+
+  #ifdef LOOP_TIMERS
+    unsigned long tend = millis();
+
+    dpSerial.send("loop: " + String(tend - tstart) + "ms, t0: " + String(t1 - tstart) + "ms, t1: " + String(t2 - t1) + "ms, t2: " + String(t3 - t2) + "ms, t3: " + String(t4 - t3) + "ms, t4: " + String(tend - t4) + "ms");
+  #endif
 }
 
 #ifdef TEST_CODE

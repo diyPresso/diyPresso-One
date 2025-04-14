@@ -2,11 +2,6 @@
 #define DPSERIAL_H
 
 #include <Arduino.h>
-#include "dp.h"
-#include "dp_hardware.h"
-#include "dp_brew.h"
-#include "dp_boiler.h"
-#include "dp_reservoir.h"
 #include "dp_settings.h"
 
 

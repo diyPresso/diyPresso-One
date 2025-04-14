@@ -106,7 +106,7 @@ const char *menus[] = {
     "                    ",
     // SLEEP=5
     // 01234567890123456789
-    "    ###########     "
+    "     ##########     "
     "   I AM SLEEPING!   "
     " LONG PRESS BUTTON  "
     "   TO WAKE ME...    ",
@@ -171,15 +171,24 @@ bool menu_brew()
 // Main menu
 bool menu_main()
 {
-  static int count = 0;
+  static unsigned int animation_counter = 0;
   char bufs[10][32];
   char *arg[10];
   char pump_spinner[2], heater_spinner[2], level_spinner[2];
 
-  count += 1;
+  static unsigned long last_count_increment_t = 0;
+  unsigned long delta_t = millis() - last_count_increment_t;
+
+  if (delta_t > ANIMATION_REFRESH_RATE_MS) //increment animation_counter for animations every X msec
+  {
+    last_count_increment_t = millis();
+    animation_counter++;
+  }
+
+  // Animations
   if (pumpDevice.is_on())
   {
-    pump_spinner[0] = spinner_chars[count % 8];
+    pump_spinner[0] = spinner_chars[animation_counter % 8];
     pump_spinner[1] = 0;
   }
   else
@@ -195,7 +204,7 @@ bool menu_main()
 
   if (reservoir.is_empty())
   {
-    level_spinner[0] = spinner_chars[(count % 2) ? 7 : 0]; // flash empty
+    level_spinner[0] = spinner_chars[(animation_counter % 2) ? 7 : 0]; // flash empty
   }
   else
   {
@@ -415,36 +424,38 @@ bool menu_commissioning()
 
 bool menu_sleep()
 {
-  char *sleep_spinner[] =
+  char *sleep_spinner[] = 
       {
-          "         ",
-          "Z        ",
-          "Zz       ",
-          "Zzz      ",
-          "Zzzz     ",
-          "Zzzzz    ",
-          "Zzzzzz   ",
-          " Zzzzzzz ",
-          "  Zzzzzzz",
-          "   Zzzzzz",
-          "    Zzzzz",
-          "     Zzzz",
-          "      Zzz",
-          "       Zz",
-          "        Z",
-          "         ",
+          "          ",
+          "Z         ",
+          "Zz        ",
+          "Zzz       ",
+          "Zzzz      ",
+          "Zzzzz     ",
+          "Zzzzzz    ",
+          " Zzzzzzz  ",
+          "  Zzzzzzz ",
+          "   Zzzzzzz",
+          "    Zzzzzz",
+          "     Zzzzz",
+          "      Zzzz",
+          "       Zzz",
+          "        Zz",
+          "         Z",
+          "          ",
       };
-  static unsigned int spinner = 0;
-  static unsigned int counter = 0;
-  counter += 1;
-  if (counter == 5)
+  static unsigned int animation_counter = 0;
+  static unsigned long last_count_increment_t = 0;
+
+  unsigned long delta_t = millis() - last_count_increment_t;
+  if (delta_t > SLEEP_SPINNER_REFRESH_RATE_MS) //increment animation_counter for animations every X msec
   {
-    counter = 0;
-    spinner += 1;
+    last_count_increment_t = millis();
+    animation_counter += 1;
   }
-  if (spinner >= sizeof(sleep_spinner) / sizeof(const char *))
-    spinner = 0;
-  display.show(menus[MENU_SLEEP], &sleep_spinner[spinner]);
+  if (animation_counter >= sizeof(sleep_spinner) / sizeof(const char *))
+    animation_counter = 0;
+  display.show(menus[MENU_SLEEP], &sleep_spinner[animation_counter]);
   return false;
 }
 
@@ -461,7 +472,7 @@ bool menu_error(const char *msg)
   display.show(menus[MENU_STATE], args);
   return false;
 
-  /*static unsigned int counter=0;
+  /*static unsigned int animation_counter=0;
   static char *arg[10];
   arg[0] = (char*)msg;
   display.show(menus[MENU_ERROR], arg);

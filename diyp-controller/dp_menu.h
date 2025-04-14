@@ -6,6 +6,9 @@
 #ifndef MENU_H
 #define MENU_H
 
+#define ANIMATION_REFRESH_RATE_MS 100 // in msec, the base rate for animation updates
+#define SLEEP_SPINNER_REFRESH_RATE_MS 500 // in msec, the base rate for sleep spinner updates
+
 extern int menu_settings(bool button_pressed);
 extern bool menu_brew();
 extern bool menu_main();
