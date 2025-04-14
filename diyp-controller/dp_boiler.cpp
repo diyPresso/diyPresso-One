@@ -7,15 +7,13 @@
 #include "dp_hardware.h"
 #include "dp_boiler.h"
 #include "dp_heater.h"
+#include "dp_settings.h"
 
-#include <Adafruit_MAX31865.h>
-#include "ArduPID.h"
+//#include <Adafruit_MAX31865.h>
 
 #ifdef WATCHDOG_ENABLED
 #include <wdt_samd21.h>
 #endif
-
-Adafruit_MAX31865 thermistor = Adafruit_MAX31865(PIN_THERM_CS, PIN_THERM_MOSI, PIN_THERM_MISO, PIN_THEM_SCLK);
 
 BoilerStateMachine boilerController = BoilerStateMachine();
 
@@ -30,7 +28,7 @@ void BoilerStateMachine::state_heating()
 {
   ON_ENTRY()
   {
-    _pid.setBias(_ff_heat);
+    _pid.setFeedForward(_ff_heat);
   }
   if (!_on)
     NEXT(state_off);
@@ -42,7 +40,7 @@ void BoilerStateMachine::state_heating()
   goto_error(BOILER_ERROR_TIMEOUT_HEATING);
   ON_EXIT()
   {
-    _pid.setBias(0);
+    _pid.setFeedForward(0);
   }
 }
 
@@ -50,7 +48,7 @@ void BoilerStateMachine::state_ready()
 {
   ON_ENTRY()
   {
-    _pid.setBias(_ff_ready);
+    _pid.setFeedForward(_ff_ready);
   }
   if (!_on)
     NEXT(state_off);
@@ -68,13 +66,17 @@ void BoilerStateMachine::state_brew()
     NEXT(state_off);
   if (!_brew)
     NEXT(state_heating);
-  _pid.setBias(_ff_brew);
+  ON_ENTRY()
+  {
+    _pid.setFeedForward(_ff_brew);
+  }
+
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
   ON_TIMEOUT_SEC(TIMEOUT_BREW)
   goto_error(BOILER_ERROR_TIMEOUT_BREW);
   ON_EXIT()
   {
-    _pid.setBias(0);
+    _pid.setFeedForward(0);
     _brew = false;
   }
 }
@@ -96,31 +98,42 @@ void BoilerStateMachine::goto_error(boiler_error_t error)
 
 void BoilerStateMachine::init()
 {
-  double p = 10, i = 0.2, d = 0.2; // default controller values
-  _pid.begin(&_act_temp, &_power, &_set_temp, p, i, d);
+  _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ff_ready(), 1000); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
-  _pid.setBias(3);
-  _pid.setWindUpLimits(-100.0, 5.0); // bounds for the integral term to prevent integral wind-up
+  _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
   _pid.start();
-  thermistor.begin(MAX31865_2WIRE); // set to 2WIRE or 4WIRE as necessary
+
+  begin();  // start the thermistor.
+  delay(500); // wait for the thermistor to start up. TODO: wait in loop?
   _error = BOILER_ERROR_NONE;
   _rtd_error = 0;
+  _on = true;
   _last_control_time = millis();
 #ifdef WATCHDOG_ENABLED
   wdt_init(WDT_CONFIG_PER_16K);
 #endif
 }
 
-// boiler control loop: read RTD, check errors, run state machine, set outputs
+void BoilerStateMachine::begin()
+{
+  thermistor.begin(MAX31865::RTD_2WIRE, MAX31865::FILTER_50HZ, MAX31865:: CONV_MODE_CONTINUOUS); // set to 2WIRE, default filter and continuous conversion mode.
+}
+
+
+
 void BoilerStateMachine::control(void)
 {
-  _act_temp = thermistor.temperature(RNOMINAL, RREF);
+
+  //unsigned long start_time = millis();
+  //_act_temp = thermistor.temperature(RNOMINAL, RREF);
+  _act_temp = thermistor.getTemperature(RNOMINAL, RREF);
 
 #ifdef SIMULATE
   _act_temp = heaterDevice.average(); // hack for testing, read average power as actual temperature
 #endif
 
-  _rtd_error = thermistor.readFault();
+  //_rtd_error = thermistor.readFault();
+  _rtd_error = thermistor.getFault();
   if (_rtd_error)
   {
     thermistor.clearFault();
@@ -139,13 +152,43 @@ void BoilerStateMachine::control(void)
   _last_control_time = millis();
 
   run();
+
   _pid.compute();
-  if (_act_temp > 100.0)
+
+  // char buffer[10];
+  // Serial.print("Diff: ");
+  // snprintf(buffer, sizeof(buffer), "%6.1f", _power2 - _power);
+  // Serial.print(buffer);
+  // Serial.print("PID1: ");
+  // snprintf(buffer, sizeof(buffer), "%6.1f", _power);
+  // Serial.print(buffer);
+  // Serial.print(" PID2: ");
+  // snprintf(buffer, sizeof(buffer), "%6.1f", _power2);
+  // Serial.print(buffer);
+  // Serial.print(" Temp: ");
+  // Serial.print(_act_temp);
+  // Serial.print("/");
+  // Serial.print(_set_temp);
+  // Serial.print(" P: ");
+  // Serial.print(_pid.P());
+  // Serial.print("/");
+  // Serial.print(_pid2.P());
+  // Serial.print(" I: ");
+  // Serial.print(_pid.I());
+  // Serial.print("/");
+  // Serial.print(_pid2.I());
+  // Serial.print(" D: ");
+  // Serial.print(_pid.D());
+  // Serial.print("/");
+  // Serial.println(_pid2.D());
+
+  if (_act_temp > (TEMP_LIMIT_HIGH + 2.0))
     _power = 0;
   heaterDevice.power(_on ? _power : 0.0);
 #ifdef WATCHDOG_ENABLED
   wdt_reset();
 #endif
+
 }
 
 const char *BoilerStateMachine::get_error_text()

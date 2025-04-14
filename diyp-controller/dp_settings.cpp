@@ -7,6 +7,10 @@
 
 #include "dp_settings.h"
 #include <FlashAsEEPROM.h>
+#include "dp_boiler.h"
+#include "dp_reservoir.h"
+#include "dp_brew.h"
+
 
 DpSettings settings = DpSettings();
 
@@ -64,12 +68,12 @@ void DpSettings::defaults()
     settings.preInfusionTime = 3;
     settings.infusionTime = 1;
     settings.extractionTime = 25;
-    settings.p = 7.0;
-    settings.i = 0.3;
-    settings.d = 80.0;
-    settings.ff_heat = 3.0;
-    settings.ff_ready = 10.0;
-    settings.ff_brew = 80.0;
+    settings.p = 6.2;
+    settings.i = 0.08;
+    settings.d = 70.0;
+    settings.ff_heat = 6.0;
+    settings.ff_ready = 6.0;
+    settings.ff_brew = 33.4;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
