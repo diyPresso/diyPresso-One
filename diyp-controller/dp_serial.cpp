@@ -18,6 +18,11 @@
 */
 
 #include "dp_serial.h"
+#include "dp.h"
+#include "dp_hardware.h"
+#include "dp_brew.h"
+#include "dp_boiler.h"
+#include "dp_reservoir.h"
 
 //initialize the class
 DpSerial dpSerial(115200);

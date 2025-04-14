@@ -5,12 +5,19 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <LiquidCrystal_I2C.h>
+//#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <hd44780.h>                       // main hd44780 header
+#include <hd44780ioClass/hd44780_I2Cexp.h> // i2c expander i/o class header
+
+#ifndef WIRECLOCK
+#define WIRECLOCK 400000L
+#endif
 
 extern const unsigned char custom_chars_spinner[];
 extern void format_float(char *dest, double f, int digits=0, int len=0);
 
-extern LiquidCrystal_I2C lcd;
+extern hd44780_I2Cexp lcd; // switched to hd44780 library as it is way faster, espcially with 400kHz I2C clock
 
 class Display
 {

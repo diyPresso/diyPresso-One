@@ -1,5 +1,5 @@
-/* Heater control with PWM 
- (c) 2024 - CC-BY-NC - diyEspresso - PBRI
+/* Heater control with PWM (Pulse Width Modulation)
+ (c) 2025 - CC-BY-NC - diyPresso
 */
 #include "dp_heater.h"
 #include "dp_time.h"
@@ -15,7 +15,8 @@ TODO: Remove float calculations from loop
 
 void HeaterDevice::control(void)
 {
-  unsigned long on_period = (_power/100.0) * _pwm_period, delta = usec_since(_time);
+  unsigned long on_period = (_power/100.0) * _pwm_period;
+  unsigned long delta = usec_since(_time);
 
   _period += delta;  
   if ( _period >= _pwm_period )
@@ -30,7 +31,7 @@ void HeaterDevice::control(void)
     digitalWrite(PIN_SSR_HEATER, LOW); 
     _on=false;
   }
-  _average = LPF_FACTOR * _power + (1.0-LPF_FACTOR) * _average; 
-  if ( delta )
+  _average = LPF_FACTOR * _power + (1.0-LPF_FACTOR) * _average; //TODO: need delta in here
+  if ( delta ) // update time if not zero
     _time = micros();
 }
