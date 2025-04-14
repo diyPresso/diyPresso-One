@@ -1,7 +1,0 @@
-board_manager:
-    additional_urls: []
-
-directories:
-    data: ./arduino-cli-files
-    downloads: ./arduino-cli-files
-    user: ./arduino-cli-files
