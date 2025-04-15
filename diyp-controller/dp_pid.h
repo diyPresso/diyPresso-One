@@ -10,7 +10,7 @@ Loosely based on the powerbroker2/ArduPID libary
 
 #include <Arduino.h>
 
-#define PID_DEBUG
+//#define PID_DEBUG
 
 class DpPID
 {

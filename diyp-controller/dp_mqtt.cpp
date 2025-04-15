@@ -45,7 +45,13 @@ void MqttDevice::init()
     Serial.println(mqttClient.connectError());
   }
   on();
-  Serial.println("You're connected to the MQTT broker!");
+  
+  Serial.println("You're connected to the MQTT broker! Subscribe using mosquitto with this command:");
+  
+  Serial.print("mosquitto_sub -h ");
+  Serial.print(broker);
+  Serial.print(" -t ");
+  Serial.println(topic);
 }
 
 
