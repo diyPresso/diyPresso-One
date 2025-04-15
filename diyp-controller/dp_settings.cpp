@@ -73,7 +73,7 @@ void DpSettings::defaults()
     settings.d = 70.0;
     settings.ff_heat = 6.0;
     settings.ff_ready = 6.0;
-    settings.ff_brew = 33.4;
+    settings.ff_brew = 35.0;
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
