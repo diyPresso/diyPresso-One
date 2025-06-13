@@ -267,7 +267,7 @@ void loop()
   #endif
   
 
-  if (false) // TODO: turn ON.
+  if (true)
     print_state();
 
 
