@@ -50,6 +50,7 @@ public:
   bool is_done() { return IN_STATE(done); }
   bool is_purge() { return IN_STATE(purge); }
   bool is_busy() { return IN_STATE(pre_infuse) || IN_STATE(infuse) || IN_STATE(extract); }
+  bool is_warning_almost_empty() { return IN_STATE(warning_pre_brew); }
   double brew_time() { return _brewTimer.read() / 1000.0; }
   double weight() { return _start_weight - reservoir.weight(); }
   double end_weight() { return _end_weight; }
@@ -73,6 +74,7 @@ protected:
   void state_idle();
   void state_empty();
   void state_error();
+  void state_warning_pre_brew();
   void state_pre_infuse();
   void state_infuse();
   void state_extract();
