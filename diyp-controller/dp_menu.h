@@ -10,8 +10,9 @@
 #define SLEEP_SPINNER_REFRESH_RATE_MS 500 // in msec, the base rate for sleep spinner updates
 
 extern int menu_settings(bool button_pressed);
-extern bool menu_brew();
+extern bool menu_brew(); // not used?
 extern bool menu_main();
+extern bool menu_warning_almost_empty();
 extern bool menu_sleep();
 extern bool menu_wifi(char *msg);
 extern bool menu_saved();
@@ -31,7 +32,8 @@ typedef enum
   MENU_WIFI = 7,
   MENU_SAVED = 8,
   MENU_STATE = 9,
-  MENU_COMMISSIONING = 10
+  MENU_COMMISSIONING = 10,
+  MENU_WARNING_ALMOST_EMPTY = 11
 } menu_list_t;
 
 typedef struct setting
@@ -48,3 +50,5 @@ extern const setting_t settings_list[];
 extern const int num_settings;
 
 #endif // MENU_H
+
+char reservoir_level_indicator();

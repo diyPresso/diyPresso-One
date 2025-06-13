@@ -154,13 +154,37 @@ void BrewProcess::state_idle()
     boilerController.set_temp(settings.temperature());
   }
   if (brewSwitch.up())
-    NEXT(state_pre_infuse);
+    if (reservoir.is_almost_empty())
+      NEXT(state_warning_pre_brew);
+    else
+      NEXT(state_pre_infuse);
   common_transitions();
   ON_TIMEOUT_SEC(AUTOSLEEP_TIMEOUT)
   NEXT(state_sleep);
   if (!settings.commissioningDone())
     NEXT(state_init);
 }
+
+void BrewProcess::state_warning_pre_brew()
+{
+  ON_ENTRY()
+  {
+    statusLed.color(ColorLed::RED);
+  }
+
+  if (brewSwitch.down())
+  {
+    NEXT(state_idle);
+  }
+
+  ON_MESSAGE(MSG_BUTTON)
+  {
+    NEXT(state_pre_infuse);
+  }
+  common_transitions();
+}
+
+
 
 void BrewProcess::state_pre_infuse()
 {
@@ -261,6 +285,7 @@ const char *BrewProcess::get_state_name()
   RETURN_STATE_NAME(idle);
   RETURN_STATE_NAME(check);
   RETURN_STATE_NAME(done);
+  RETURN_STATE_NAME(warning_pre_brew);
   RETURN_STATE_NAME(pre_infuse);
   RETURN_STATE_NAME(infuse);
   RETURN_STATE_NAME(extract);

@@ -68,7 +68,7 @@ void Display::show(const char *screen, char *args[])
     memcpy((void*)l, &buf[20*i], 20);
     l[20] = 0;
     lcd.setCursor(0,i);
-    lcd.print(l); // [Done] used to be: slowwwww 27ms for 20 chars > switch to https://github.com/duinoWitchery/hd44780/tree/master
+    lcd.print(l); // [Done] used to be: slowwwww 27ms for 20 chars > switched to https://github.com/duinoWitchery/hd44780/tree/master
   }
 }
 

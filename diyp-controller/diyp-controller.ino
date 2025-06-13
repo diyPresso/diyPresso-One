@@ -195,7 +195,8 @@ typedef enum
   SLEEP,
   SAVED,
   ERROR,
-  INFO
+  INFO,
+  WARNING_ALMOST_EMPTY
 } menus_t;
 
 
@@ -266,7 +267,7 @@ void loop()
   #endif
   
 
-  if (true)
+  if (false) // TODO: turn ON.
     print_state();
 
 
@@ -282,8 +283,12 @@ void loop()
       menu_commissioning();
     break;
   case MAIN: // main menu
-    if (!settings.commissioningDone())
+    if (!settings.commissioningDone()) {
       menu = COMMISSIONING;
+      break;
+    } else if (brewProcess.is_warning_almost_empty()) {
+      menu = WARNING_ALMOST_EMPTY;
+    }
 
 #ifdef LOOP_TIMERS
     t2 = millis();
@@ -293,10 +298,11 @@ void loop()
     t3 = millis();
 #endif
 
-    if (button_pressed)
+    if (button_pressed) {
       menu = SETTINGS;
-    if (display.encoder_changed())
+    } else if (display.encoder_changed()) {
       menu = INFO;
+    }
     break;
   case SETTINGS: // settings menu
     if (!settings.commissioningDone())
@@ -308,7 +314,6 @@ void loop()
     menuSettings = menu_settings(button_pressed);
     if (menuSettings == 1)
     {
-      dpSerial.send("Done!");
       boilerController.clear_error();
       reservoir.clear_error();
       settings.apply();
@@ -362,6 +367,13 @@ void loop()
       menu = SETTINGS;
     if (display.encoder_changed())
       menu = MAIN;
+    break;
+  case WARNING_ALMOST_EMPTY: // warning menu
+
+    if (brewProcess.is_warning_almost_empty())
+      menu_warning_almost_empty();
+    else
+      menu = MAIN; // go back to main menu if not almost empty anymore
     break;
   default:
     menu = MAIN;

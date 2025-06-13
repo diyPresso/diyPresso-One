@@ -137,12 +137,19 @@ const char *menus[] = {
     "E: ################ "
     "R: ################ ",
 
-    // STATE=10
+    // COMMISSIONING=10
     // 01234567890123456789
     "___COMMISSIONING___ "
     " ################## "
     " ################## "
-    " Weight ##### gram  "
+    " Weight ##### gram  ",
+
+    // WARNING_ALMOST_EMPTY=11
+  // 01234567890123456789
+    "       Warning!     "
+    "     Almost empty   "
+    " Push to start brew "
+    "Weight ##### gram # " // [0:Weight] [1:level]
 
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
@@ -151,7 +158,7 @@ const char *get_string_item(const char *items, int index);
 int get_item_count(const char *items);
 double add_value(int n, double delta);
 
-bool menu_brew()
+bool menu_brew() // not used?
 {
   char bufs[10][32];
   char *arg[10];
@@ -202,18 +209,13 @@ bool menu_main()
   else
     heater_spinner[0] = 0;
 
-  if (reservoir.is_empty())
+  if (reservoir.is_empty() or reservoir.is_almost_empty()) 
   {
-    level_spinner[0] = spinner_chars[(animation_counter % 2) ? 7 : 0]; // flash empty
+    level_spinner[0] = spinner_chars[((animation_counter % 8) > 4) ? 7 : 0]; // flash empty with a period of 8
   }
   else
   {
-    int level = (8 * reservoir.level()) / 100.0;
-    if (level < 0)
-      level = 0;
-    if (level > 7)
-      level = 7;
-    level_spinner[0] = spinner_chars[level];
+    level_spinner[0] = reservoir_level_indicator();
     level_spinner[1] = 0;
   }
 
@@ -244,6 +246,25 @@ bool menu_main()
   arg[8] = level_spinner;
 
   display.show(menus[MENU_MAIN], arg);
+  return false;
+}
+
+// Reservoir almost empty warning menu
+bool menu_warning_almost_empty()
+{
+  char bufs[10][32];
+  char *arg[10];
+
+  for (int i = 0; i < 10; i++)
+    arg[i] = bufs[i];
+
+  // [0:Weight]
+  format_float(bufs[0], reservoir.weight(), 0, 5);
+
+  // [1:level]
+  bufs[1][0] = reservoir_level_indicator();
+ 
+  display.show(menus[MENU_WARNING_ALMOST_EMPTY], arg);
   return false;
 }
 
@@ -519,6 +540,12 @@ bool menu_state()
 
   display.show(menus[MENU_STATE], args);
   return false;
+}
+
+char reservoir_level_indicator()
+{
+  int level_index =  (sizeof(spinner_chars) * reservoir.level()) / 100.0;
+  return spinner_chars[min(max(0, level_index), sizeof(spinner_chars) - 1)];
 }
 
 /// @brief Get a string from a list of strings
