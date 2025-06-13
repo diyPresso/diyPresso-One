@@ -5,7 +5,8 @@
 #ifndef RESERVOIR_H
 #define RESERVOIR_H
 
-#define RESERVOIR_EMPTY_LEVEL 10.0 // empty level threshold [%]
+#define RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL 10.0 // empty level threshold [%], triggers a warning to refill upon brew start. Can be overwritten by press. - 10% = 150 grams
+#define RESERVOIR_EMPTY_LEVEL 2.0 // empty level threshold [%] - 2% = 30 grams
 #define RESERVOIR_CAPACITY 1500.0 // capacity of reservoir in [grams]
 
 typedef enum {
@@ -34,6 +35,7 @@ class Reservoir
       void set_trim(double t) { _trim = t; }
       void tare() { read(); _tare = _weight - RESERVOIR_CAPACITY; clear_error(); } // note: tare when reservoir is full
       bool is_empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
+      bool is_almost_empty() { return level() < RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL; } // return true if under warning limit
       bool is_error() { return _error != RESERVOIR_ERROR_NONE; }
       reservoir_error_t error() { return _error; }
       const char *get_error_text();
