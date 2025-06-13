@@ -5,8 +5,8 @@
 #ifndef RESERVOIR_H
 #define RESERVOIR_H
 
-#define RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL 10.0 // empty level threshold [%], triggers a warning to refill upon brew start. Can be overwritten by press. - 10% = 150 grams
-#define RESERVOIR_EMPTY_LEVEL 2.0 // empty level threshold [%] - 2% = 30 grams
+#define RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL 12.0 // empty level threshold [%], triggers a warning to refill upon brew start. Can be overwritten by press. - 12% = 180 grams
+#define RESERVOIR_EMPTY_LEVEL 3.34 // empty level threshold [%] - 3.34% = ~50 grams
 #define RESERVOIR_CAPACITY 1500.0 // capacity of reservoir in [grams]
 
 typedef enum {
