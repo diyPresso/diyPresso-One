@@ -15,7 +15,7 @@
 #define PURGE_TIMEOUT (30.0)
 #define PURGE_WEIGHT_DROP_MINIMUM (50.0) // Minimum weight drop after purging [gram]
 
-#define SOFTWARE_VERSION "1.7.1-dev"
+#define SOFTWARE_VERSION "1.7.1"
 #define BUILD_DATE __DATE__ " " __TIME__
 
 #endif // DP_H
