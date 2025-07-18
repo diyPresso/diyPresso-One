@@ -16,7 +16,7 @@ void wifi_setup()
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
   }
-  WiFi.setHostname("diyPresso-One-bla");
+  WiFi.setHostname("diyPresso-One");
   MyEasyWiFi.apname(MyAPName);
   MyEasyWiFi.seed(5);
 }
