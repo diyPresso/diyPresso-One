@@ -147,8 +147,10 @@ void print_state()
     Serial.print(brewProcess.end_weight());
     Serial.print(", reservoir_level:");
     Serial.print(reservoir.level());
+    Serial.print(", reservoir_weight:");
+    Serial.print(reservoir.weight());
 
-    dpSerial.send("");
+    Serial.println("");
     prev_time = millis();
   }
 }

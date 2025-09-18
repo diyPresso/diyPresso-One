@@ -19,21 +19,24 @@ class Reservoir
     private:
       double _level = 0.0;  // level [0..100%]
       double _tare = 0.0;   // tare weight (when empty) [gr]
-      double _weight = 0.0; // current gross weight [gr]
+      double _weight_gross = 0.0; // current gross weight [gr]
+      double _weight_net = 0.0; // current net weight [gr]
       double _offset = 240000.0; // zero level offset [adc_units]
       double _scale = 427.4;     // scale [adc_units/gram]
       double _trim = 0.0;        // scale trim to match calibrated weight [%]
       int _readings = 0;         // number of readings without measurement
+      double _glitch_limit = 50.0; // maximum change in weight between readings to be accepted [grams]
+      int _deglitched = -1;      // number of deglitched readings, -1 to indicate first reading
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
       void read();  // update the internal state, based on weight measurement
     public:
       Reservoir();
       double level() { return max(0, min(100.0 * ( weight() / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
-      double weight() { read(); return _weight - _tare; } // net weight
+      double weight() { read(); return _weight_net; } // net weight
       double get_tare() { return _tare; }
       void set_tare(double t) { _tare = t; clear_error(); }
       void set_trim(double t) { _trim = t; }
-      void tare() { read(); _tare = _weight - RESERVOIR_CAPACITY; clear_error(); } // note: tare when reservoir is full
+      void tare() { read(); _tare = _weight_gross - RESERVOIR_CAPACITY; clear_error(); } // note: tare when reservoir is full
       bool is_empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
       bool is_almost_empty() { return level() < RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL; } // return true if under warning limit
       bool is_error() { return _error != RESERVOIR_ERROR_NONE; }
