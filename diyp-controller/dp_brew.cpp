@@ -13,6 +13,7 @@
 #include "dp_settings.h"
 #include "dp_brew.h"
 
+#define _DP_FSM_TYPE BrewProcess
 BrewProcess brewProcess = BrewProcess();
 
 // Check common state transitions (commissioning, brewing, empty)
@@ -165,6 +166,7 @@ void BrewProcess::state_idle()
     NEXT(state_init);
 }
 
+// Warning state before brewing when reservoir is almost empty
 void BrewProcess::state_warning_pre_brew()
 {
   ON_ENTRY()

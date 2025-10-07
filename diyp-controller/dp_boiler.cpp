@@ -8,13 +8,14 @@
 #include "dp_boiler.h"
 #include "dp_heater.h"
 #include "dp_settings.h"
-
+#include "dp_brew.h"
 //#include <Adafruit_MAX31865.h>
 
 #ifdef WATCHDOG_ENABLED
 #include <wdt_samd21.h>
 #endif
 
+#define _DP_FSM_TYPE BoilerStateMachine
 BoilerStateMachine boilerController = BoilerStateMachine();
 
 void BoilerStateMachine::state_off()
@@ -28,7 +29,7 @@ void BoilerStateMachine::state_heating()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_heat);
+    _pid.setFeedForward(_ff_heat, false);
   }
   if (!_on)
     NEXT(state_off);
@@ -40,7 +41,7 @@ void BoilerStateMachine::state_heating()
   goto_error(BOILER_ERROR_TIMEOUT_HEATING);
   ON_EXIT()
   {
-    _pid.setFeedForward(0);
+    _pid.setFeedForward(0, false);
   }
 }
 
@@ -48,7 +49,7 @@ void BoilerStateMachine::state_ready()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_ready);
+    _pid.setFeedForward(_ff_ready, false);
   }
   if (!_on)
     NEXT(state_off);
@@ -68,7 +69,7 @@ void BoilerStateMachine::state_brew()
     NEXT(state_heating);
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_brew);
+    _pid.setFeedForward(_ff_ready, true); // TODO: ff_brew if dynamic feed forward disabled
   }
 
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
@@ -76,7 +77,7 @@ void BoilerStateMachine::state_brew()
   goto_error(BOILER_ERROR_TIMEOUT_BREW);
   ON_EXIT()
   {
-    _pid.setFeedForward(0);
+    _pid.setFeedForward(0, false);
     _brew = false;
   }
 }
@@ -98,7 +99,7 @@ void BoilerStateMachine::goto_error(boiler_error_t error)
 
 void BoilerStateMachine::init()
 {
-  _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ff_ready(), 1000); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
+  _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ff_ready(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
   _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
   _pid.start();
