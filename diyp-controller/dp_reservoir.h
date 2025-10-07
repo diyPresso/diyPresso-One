@@ -27,6 +27,7 @@ class Reservoir
       int _readings = 0;         // number of readings without measurement
       double _glitch_limit = 50.0; // maximum change in weight between readings to be accepted [grams]
       int _deglitched = -1;      // number of deglitched readings, -1 to indicate first reading
+      double _outflow_temp = 35.0; // temperature of the water leaving the reservoir in °C
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
       void read();  // update the internal state, based on weight measurement
     public:
@@ -39,6 +40,8 @@ class Reservoir
       void tare() { read(); _tare = _weight_gross - RESERVOIR_CAPACITY; clear_error(); } // note: tare when reservoir is full
       bool is_empty() { return level() < RESERVOIR_EMPTY_LEVEL; } // return true if under empty limit
       bool is_almost_empty() { return level() < RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL; } // return true if under warning limit
+      double outflowTemp() { return _outflow_temp; } // get outflow temperature
+      void setOutflowTemp(double temp) { _outflow_temp = temp; } // set outflow temperature
       bool is_error() { return _error != RESERVOIR_ERROR_NONE; }
       reservoir_error_t error() { return _error; }
       const char *get_error_text();

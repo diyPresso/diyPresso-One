@@ -5,11 +5,13 @@
 #ifndef BOILER_H
 #define BOILER_H
 
-#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_hardware.h"
+
+#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 #include "dp_pid.h"
 #include "dp_heater.h"
+#include "dp_reservoir.h"
 #include <Arduino.h>
 
 #include <MAX31865_NonBlocking.h> 
@@ -64,6 +66,8 @@ public:
   double set_ff_brew(double ff) { return _ff_brew = min(100.0, max(ff, 0.0)); }
   double get_ff_brew(void) { return _ff_brew; }
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  bool get_serial_output() const { return _pid.getSerialOutput(); }
+  void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
   void on() { _on = true; }
   void off()
   {

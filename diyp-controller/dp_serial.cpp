@@ -14,6 +14,8 @@
     - GET settings
     - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,ff_heat=3.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
+    - GET serialOutputConfig
+    - PUT serialOutputConfig DP_PID_STATE=1
 
 */
 
@@ -79,18 +81,19 @@ void DpSerial::receive() {
 
     receivedData = Serial.readStringUntil('\n');
 
-    //GET info
     if (receivedData.startsWith("GET info")) {
         send_info();
     } else if (receivedData.startsWith("GET settings")) {
         send_settings();
-    } else if (receivedData.startsWith("PUT settings "))
-    {
-        put_settings(receivedData.substring(String("SET settings ").length()));
+    } else if (receivedData.startsWith("PUT settings ")) {
+        put_settings(receivedData.substring(String("PUT settings ").length()));
+    } else if (receivedData.startsWith("GET serialOutputConfig")) {
+        get_serial_output_config();
+    } else if (receivedData.startsWith("PUT serialOutputConfig ")) {
+        put_serial_output_config(receivedData.substring(String("PUT serialOutputConfig ").length()));
+    } else {
+        send("unknown command: " + receivedData);
     }
-    
-
-    send("echo: " + receivedData);
 }
 
 void DpSerial::send_info() {
@@ -135,5 +138,27 @@ void DpSerial::put_settings(String value) {
     } else {
         send("PUT settings NOK, settings not saved, unknown error code when deserializing settings: " + String(res_deserialize));
     }
+}
 
+void DpSerial::get_serial_output_config() {
+    send("DP_PID_STATE=" + String(boilerController.get_serial_output() ? "1" : "0"));
+    send("GET serialOutputConfig OK");
+}
+
+void DpSerial::put_serial_output_config(String value) {
+    // Expecting a string like "DP_PID_STATE=1" or "DP_PID_STATE=0"
+    if (value.startsWith("DP_PID_STATE=")) {
+        String stateStr = value.substring(String("DP_PID_STATE=").length());
+        if (stateStr == "1") {
+            boilerController.set_serial_output(true);
+            send("PUT serialOutputConfig OK");
+        } else if (stateStr == "0") {
+            boilerController.set_serial_output(false);
+            send("PUT serialOutputConfig OK");
+        } else {
+            send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + stateStr);
+        }
+    } else {
+        send("PUT serialOutputConfig NOK, unknown key: " + value);
+    }
 }
