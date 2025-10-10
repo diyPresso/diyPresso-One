@@ -129,10 +129,10 @@ double DpPID::calculateFeedForward()
             // Serial.println(deltaWeight, 2);
 
             // Update the energy stock pile
-            dffEnergyStockPile += deltaWeight * SPECIFIC_HEAT_CAPACITY_WATER * ( *setpoint - reservoir->outflowTemp()) * dffRatio; // in Joules
+            dffEnergyStockPile += deltaWeight * SPECIFIC_HEAT_CAPACITY_WATER * ( *setpoint - reservoir->outflowTemp()) * dffFactor; // in Joules
             dffEnergyStockPile = constrain(dffEnergyStockPile, 0.0, DFF_ENERGY_STOCK_PILE_MAX_MS * boilerPowerKiloWatt); // limit the energy stock pile
 
-            Serial.print("energy stock pile (kJ): ");
+            // Serial.print("energy stock pile (kJ): ");
             // Serial.println(dffEnergyStockPile / 1000.0, 2);
         }
 
