@@ -18,7 +18,7 @@ the energy needed to heat this water to the set temperature is calculated (ΔE i
 Δw must be greater than 0 and is limited to 12 grams per second to avoid excessive power requests.
 There is a ratio factor to adjust the amount of dynamic feed forward used.
 
-ΔE = Δw * c * (T_set - T_inflow) * dffRatio
+ΔE = Δw * c * (T_set - T_inflow) * dffFactor
 
 2) The energy needed (ΔE) is added to the Energy stock pile (E_ff in Joules).
 E_ff = E_ff + ΔE
@@ -103,7 +103,7 @@ protected:
     Reservoir* reservoir; // reservoir object for dynamic feed forward
     double previousReservoirWeight = 0; // previous weight for dynamic feed forward in grams
     double boilerPowerKiloWatt = 1.250; // boiler power (in kilowatt as it will be multiplied with sample time in ms)
-    double dffRatio = 0.8; // Adjustable ratio for dynamic feed forward
+    double dffFactor = 0.90; // Adjustable factor for dynamic feed forward
     double dffEnergyStockPile = 0; // Energy stock pile for dynamic feed forward in Joules
 
 };
