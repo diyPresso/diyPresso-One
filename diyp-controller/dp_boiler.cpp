@@ -124,14 +124,22 @@ void BoilerStateMachine::begin()
 
 void BoilerStateMachine::control(void)
 {
-
-  //unsigned long start_time = millis();
-  //_act_temp = thermistor.temperature(RNOMINAL, RREF);
-  _act_temp = thermistor.getTemperature(RNOMINAL, RREF);
+  double raw_temp = thermistor.getTemperature(RNOMINAL, RREF);
 
 #ifdef SIMULATE
-  _act_temp = heaterDevice.average(); // hack for testing, read average power as actual temperature
+  raw_temp = heaterDevice.average(); // hack for testing, read average power as actual temperature
 #endif
+
+  // Apply Exponential Moving Average filter to filter out noise and smooth the temperature readings.
+  if (!_temp_initialized) {
+    _act_temp = raw_temp;
+    _temp_initialized = true;
+  } else {
+    _act_temp = (TEMP_FILTER_ALPHA * raw_temp) + ((1.0 - TEMP_FILTER_ALPHA) * _act_temp);
+  }
+
+  // Serial.print("Raw Temp: "); Serial.print(raw_temp);
+  // Serial.print(" °C, Filtered Temp: "); Serial.print(_act_temp); Serial.println(" °C");
 
   //_rtd_error = thermistor.readFault();
   _rtd_error = thermistor.getFault();
@@ -155,33 +163,6 @@ void BoilerStateMachine::control(void)
   run();
 
   _pid.compute();
-
-  // char buffer[10];
-  // Serial.print("Diff: ");
-  // snprintf(buffer, sizeof(buffer), "%6.1f", _power2 - _power);
-  // Serial.print(buffer);
-  // Serial.print("PID1: ");
-  // snprintf(buffer, sizeof(buffer), "%6.1f", _power);
-  // Serial.print(buffer);
-  // Serial.print(" PID2: ");
-  // snprintf(buffer, sizeof(buffer), "%6.1f", _power2);
-  // Serial.print(buffer);
-  // Serial.print(" Temp: ");
-  // Serial.print(_act_temp);
-  // Serial.print("/");
-  // Serial.print(_set_temp);
-  // Serial.print(" P: ");
-  // Serial.print(_pid.P());
-  // Serial.print("/");
-  // Serial.print(_pid2.P());
-  // Serial.print(" I: ");
-  // Serial.print(_pid.I());
-  // Serial.print("/");
-  // Serial.print(_pid2.I());
-  // Serial.print(" D: ");
-  // Serial.print(_pid.D());
-  // Serial.print("/");
-  // Serial.println(_pid2.D());
 
   if (_power_control_mode == POWER_CONTROL_STATIC) {
     _power = _power_static;
