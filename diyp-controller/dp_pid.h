@@ -50,6 +50,35 @@ E_ff = E_ff - (P_ff * Δt_actual)
 #define DFF_ENERGY_STOCK_PILE_MAX_MS 60000 // maximum energy stock pile in milliseconds (times boiler power)
 #define DFF_ENERGY_STOCK_PILE_DECAY 0.90 // decay factor for energy stock pile per cycle
 
+// Auto-tune parameters
+#define AUTOTUNE_RELAY_OUTPUT 10.0 // Relay output amplitude (% of max power)
+#define AUTOTUNE_MIN_CYCLES 3 // Minimum number of oscillation cycles to measure
+#define AUTOTUNE_TIMEOUT_MS 1800000 // Auto-tune timeout (30 minutes)
+#define AUTOTUNE_SETPOINT_BAND 0.3 // Band around setpoint for relay switching (+/- degC)
+#define AUTOTUNE_PEAK_NOISE_BAND 0.08 // Noise band for peak detection (+/- degC)
+#define AUTOTUNE_SETTLING_TIME_MS 25000 // Initial settling time before peak detection (25 seconds)
+
+// Auto-tune results structure
+struct AutoTuneResults {
+    double Kp;
+    double Ki;
+    double Kd;
+    double Ku;  // Ultimate gain (for reference)
+    double Pu;  // Ultimate period in seconds (for reference)
+    bool isValid;
+    
+    AutoTuneResults() : Kp(0), Ki(0), Kd(0), Ku(0), Pu(0), isValid(false) {}
+};
+
+typedef enum {
+    AUTOTUNE_IDLE,
+    AUTOTUNE_RUNNING,
+    AUTOTUNE_SUCCESS,
+    AUTOTUNE_FAILED_TIMEOUT,
+    AUTOTUNE_FAILED_NO_OSCILLATION
+} autotune_state_t;
+
+
 class DpPID
 {
 public:
@@ -62,13 +91,19 @@ public:
     void compute();
     void setOutputLimits(const double& min, const double& max);
     void setWindUpLimits(const double& min, const double& max);
-    //void setDeadBand(const double& min, const double& max);
     void setCoefficients(const double& p, const double& i, const double& d);
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
     void setSampleTime(const unsigned int& minSamplePeriodMs);
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
     bool getSerialOutput() const { return serialOutput; }
+
+    // Auto-tune functions
+    void startAutoTune();
+    void cancelAutoTune();
+    autotune_state_t getAutoTuneState() const { return autotuneState; }
+    bool isAutoTuning() const { return autotuneState == AUTOTUNE_RUNNING; }
+    AutoTuneResults getAutoTuneResults() const;
 
     double P() {return termP;}
     double I() {return termI;}
@@ -78,6 +113,7 @@ public:
 
 protected:
     double calculateFeedForward();
+    void processAutoTune();
 
     bool serialOutput = false; // enable/disable serial debug output
 
@@ -105,6 +141,21 @@ protected:
     double boilerPowerKiloWatt = 1.250; // boiler power (in kilowatt as it will be multiplied with sample time in ms)
     double dffFactor = 0.90; // Adjustable factor for dynamic feed forward
     double dffEnergyStockPile = 0; // Energy stock pile for dynamic feed forward in Joules
+
+    // Auto-tune variables
+    autotune_state_t autotuneState = AUTOTUNE_IDLE;
+    unsigned long autotuneStartTime = 0;
+    AutoTuneResults autotuneResults;
+    
+    bool atRelayState = false;      // Current relay state (high/low)
+    double atPeakHigh = 0;          // Highest peak temperature
+    double atPeakLow = 0;           // Lowest peak temperature  
+    unsigned long atPeakTimes[10];  // Store times of peaks
+    int atPeakCount = 0;            // Number of peaks detected
+    double atLastValue = 0;         // Previous input value
+    bool atRisingEdge = true;       // Tracking if we're rising or falling
+
+
 
 };
 
