@@ -8,7 +8,8 @@
         "vector": "cpp",
         "string_view": "cpp",
         "memory": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "cmath": "cpp"
     },
     "search.exclude": {
         "./src": true
