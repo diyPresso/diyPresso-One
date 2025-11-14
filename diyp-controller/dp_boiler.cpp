@@ -183,8 +183,13 @@ void BoilerStateMachine::control(void)
   // Serial.print("/");
   // Serial.println(_pid2.D());
 
+  if (_power_control_mode == POWER_CONTROL_STATIC) {
+    _power = _power_static;
+  }
+
   if (_act_temp > (TEMP_LIMIT_HIGH + 2.0))
     _power = 0;
+
   heaterDevice.power(_on ? _power : 0.0);
 #ifdef WATCHDOG_ENABLED
   wdt_reset();
@@ -228,4 +233,31 @@ const char *BoilerStateMachine::get_state_name()
   RETURN_STATE_NAME(error);
   RETURN_NONE_STATE_NAME()
   RETURN_UNKNOWN_STATE_NAME();
+}
+
+bool BoilerStateMachine::set_power_control_mode_str(String mode)
+{
+  mode.trim();
+  mode.toUpperCase();
+  
+  if (mode == "PID") {
+    _power_control_mode = POWER_CONTROL_PID;
+    return true;
+  } else if (mode == "STATIC") {
+    _power_control_mode = POWER_CONTROL_STATIC;
+    return true;
+  }
+  return false; // Invalid mode
+}
+
+String BoilerStateMachine::get_power_control_mode_str() const
+{
+  switch (_power_control_mode) {
+    case POWER_CONTROL_PID:
+      return "PID";
+    case POWER_CONTROL_STATIC:
+      return "STATIC";
+    default:
+      return "UNKNOWN";
+  }
 }

@@ -69,11 +69,18 @@ void DpPID::reset()
 }
 
 void DpPID::compute()
-{
+{  
     unsigned long now = millis();
     curSampleTimeMs = now - lastTime;
     if (curSampleTimeMs >= minSamplePeriodMs) // check if enough time has passed, minSamplePeriodMs can't be < 1ms
     {
+        // If auto-tuning is running, process auto-tune instead of normal PID
+        if (autotuneState == AUTOTUNE_RUNNING) {
+            processAutoTune();
+            lastTime = now; // Update lastTime to avoid large jumps after autotune
+            return;
+        }
+
         curError = *setpoint - *input; // temp diff between setpoint and actual
         double dInput = *input - lastInput; // the change in temperature
 
@@ -215,7 +222,7 @@ void DpPID::printToSerial()
     Serial.print(", Kp: ");
     Serial.print(Kp);
     Serial.print(", Ki: ");
-    Serial.print(Ki);
+    Serial.print(Ki, 4);
     Serial.print(", Kd: ");
     Serial.print(Kd);
     Serial.print(", windupMin: ");
@@ -228,3 +235,251 @@ void DpPID::printToSerial()
     Serial.println(previousReservoirWeight);
     
 }
+
+// ============================================================================
+// Auto-Tune Implementation (Relay Method / Ziegler-Nichols)
+// ============================================================================
+
+void DpPID::startAutoTune()
+{
+
+    Serial.println("=== Starting Auto-tune ===");
+    Serial.print("Auto-tune Setpoint: ");
+    Serial.print(*setpoint);
+    Serial.println("°C");
+    Serial.print("Relay amplitude: ");
+    Serial.print(AUTOTUNE_RELAY_OUTPUT);
+    Serial.println("%");
+    Serial.print("Setpoint band: ");
+    Serial.print(AUTOTUNE_SETPOINT_BAND);
+    Serial.println("°C");
+    Serial.print("Peak detection noise band: ");
+    Serial.print(AUTOTUNE_PEAK_NOISE_BAND);
+    Serial.println("°C");
+
+    //TODO: only start if temperature is within the band of the setpoint
+
+    autotuneState = AUTOTUNE_RUNNING;
+    autotuneStartTime = millis();
+    
+    // Initialize auto-tune results
+    autotuneResults = AutoTuneResults(); // Reset to defaults
+    
+    // Initialize tracking variables
+    atRelayState = false;
+    atPeakHigh = *input;
+    atPeakLow = *input;
+    atPeakCount = 0;
+    atLastValue = *input;
+    atRisingEdge = true;
+    
+    // Clear peak times array
+    for (int i = 0; i < 10; i++) {
+        atPeakTimes[i] = 0;
+    }
+    
+    // Start with relay ON to begin oscillations
+    *output = AUTOTUNE_RELAY_OUTPUT;
+    atRelayState = true;
+    
+    if (serialOutput) {
+        Serial.println("Auto-tune initialized successfully");
+    }
+}
+
+void DpPID::cancelAutoTune()
+{
+    if (serialOutput) {
+        Serial.println("Auto-tune cancelled");
+    }
+    
+    autotuneState = AUTOTUNE_IDLE;
+    *output = 0; // Turn power off
+
+    Serial.println("=== Auto-tune cancelled ===");
+}
+
+AutoTuneResults DpPID::getAutoTuneResults() const
+{
+    return autotuneResults;
+}
+
+void DpPID::processAutoTune()
+{
+    // Check for timeout
+    if ((millis() - autotuneStartTime) > AUTOTUNE_TIMEOUT_MS) {
+        autotuneState = AUTOTUNE_FAILED_TIMEOUT;
+        *output = 0;
+        if (serialOutput) {
+            Serial.println("=== Auto-tune FAILED: Timeout ===");
+        }
+        return;
+    }
+
+    double inputValue = *input;
+    double error = *setpoint - inputValue;
+    
+    // Check if we're still in settling time (skip peak detection)
+    bool inSettlingTime = (millis() - autotuneStartTime) < AUTOTUNE_SETTLING_TIME_MS;
+    
+    // Detect peaks (local maxima and minima) with noise band
+    bool isPeak = false;
+    
+    Serial.print("inSettlingTime: ");
+    Serial.print(inSettlingTime); 
+    Serial.print(", LastValue: ");
+    Serial.print(atLastValue);
+    Serial.print(", inputValue: ");
+    Serial.print(inputValue);
+    Serial.print(", risingEdge: ");
+    Serial.println(atRisingEdge);
+
+
+    if (inSettlingTime) { // during initial settling time, just update last value
+        atLastValue = inputValue;
+    } else {
+        if (atRisingEdge) {
+            // Looking for a maximum (peak high)
+            if (inputValue < (atLastValue - AUTOTUNE_PEAK_NOISE_BAND)) {
+                // Started falling, we just passed a peak
+                isPeak = true;
+                if (atLastValue > atPeakHigh) {
+                    atPeakHigh = atLastValue;
+                }
+                atRisingEdge = false;
+                
+                if (serialOutput) {
+                    Serial.print("Peak HIGH detected: ");
+                    Serial.print(atLastValue);
+                    Serial.println("°C");
+                }
+            }
+
+            if (inputValue > atLastValue) {
+                // Only update on higher values
+                atLastValue = inputValue;
+            }
+
+        } else {
+            // Looking for a minimum (peak low)
+            if (inputValue > (atLastValue + AUTOTUNE_PEAK_NOISE_BAND)) {
+                // Started rising, we just passed a valley
+                isPeak = true;
+                if (atLastValue < atPeakLow || atPeakLow == 0) {
+                    atPeakLow = atLastValue;
+                }
+                atRisingEdge = true;
+                
+                if (serialOutput) {
+                    Serial.print("Peak LOW detected: ");
+                    Serial.print(atLastValue);
+                    Serial.println("°C");
+                }
+            }
+
+            if (inputValue < atLastValue) {
+                // Only update on lower values
+                atLastValue = inputValue;
+            }
+        }
+    }
+    
+    // Record peak time
+    if (isPeak && atPeakCount < 10) {
+        atPeakTimes[atPeakCount] = millis();
+        atPeakCount++;
+    }
+    
+    // Relay control: switch output based on error
+    if (error > AUTOTUNE_SETPOINT_BAND) {
+        // Below setpoint - turn ON
+        atRelayState = true;
+        *output = AUTOTUNE_RELAY_OUTPUT;
+    } else if (error < -AUTOTUNE_SETPOINT_BAND) {
+        // Above setpoint - turn OFF or reduce
+        atRelayState = false;
+        *output = 0.0;
+    }
+    // Within noise band - maintain current state
+    
+    
+    // After enough cycles, calculate PID parameters
+    if (atPeakCount >= (AUTOTUNE_MIN_CYCLES * 2)) {
+        // Calculate average period (time between same-type peaks)
+        // Need at least 2 complete cycles (4 peaks minimum)
+        double totalPeriod = 0;
+        int periodCount = 0;
+        
+        // Calculate periods between alternating peaks (full oscillation cycles)
+        for (int i = 2; i < atPeakCount; i++) {
+            unsigned long period = atPeakTimes[i] - atPeakTimes[i-2];
+            totalPeriod += period;
+            periodCount++;
+        }
+        
+        if (periodCount > 0) {
+            autotuneResults.Pu = (totalPeriod / periodCount) / 1000.0; // Convert to seconds
+            
+            // Calculate amplitude of oscillation
+            double amplitude = (atPeakHigh - atPeakLow) / 2.0;
+            
+            if (amplitude < AUTOTUNE_SETPOINT_BAND) {
+                autotuneState = AUTOTUNE_FAILED_NO_OSCILLATION;
+                *output = 0;
+                if (serialOutput) {
+                    Serial.println("Auto-tune FAILED: Insufficient oscillation amplitude");
+                    Serial.print("Amplitude: ");
+                    Serial.print(amplitude);
+                    Serial.print("°C (need > ");
+                    Serial.print(AUTOTUNE_SETPOINT_BAND);
+                    Serial.println("°C)");
+                }
+                return;
+            }
+            
+            // Calculate ultimate gain (Ku)
+            // Ku = (4 * d) / (π * a)
+            // where d = relay output amplitude (half the peak-to-peak swing), a = oscillation amplitude
+            autotuneResults.Ku = (2.0 * AUTOTUNE_RELAY_OUTPUT ) / (3.14159 * amplitude);
+            
+            // Ziegler-Nichols PID tuning rules (classic)
+            // Kp = 0.6 * Ku
+            // Ki = 1.2 * Ku / Pu
+            // Kd = 0.075 * Ku * Pu
+            autotuneResults.Kp = 0.6 * autotuneResults.Ku;
+            autotuneResults.Ki = 1.2 * autotuneResults.Ku / autotuneResults.Pu;
+            autotuneResults.Kd = 0.075 * autotuneResults.Ku * autotuneResults.Pu;
+            autotuneResults.isValid = true;
+            
+            autotuneState = AUTOTUNE_SUCCESS;
+            *output = 0;
+            
+            if (serialOutput) {
+                Serial.println("\n=== Auto-Tune COMPLETE ===");
+                Serial.print("Ultimate Gain (Ku): ");
+                Serial.println(autotuneResults.Ku, 4);
+                Serial.print("Ultimate Period (Pu): ");
+                Serial.print(autotuneResults.Pu, 2);
+                Serial.println(" seconds");
+                Serial.print("Oscillation amplitude: ");
+                Serial.print(amplitude, 2);
+                Serial.println("°C");
+                Serial.print("Peak High: ");
+                Serial.print(atPeakHigh, 2);
+                Serial.println("°C");
+                Serial.print("Peak Low: ");
+                Serial.print(atPeakLow, 2);
+                Serial.println("°C");
+                Serial.println("\nCalculated PID parameters (Ziegler-Nichols):");
+                Serial.print("Kp: ");
+                Serial.println(autotuneResults.Kp, 4);
+                Serial.print("Ki: ");
+                Serial.println(autotuneResults.Ki, 4);
+                Serial.print("Kd: ");
+                Serial.println(autotuneResults.Kd, 4);
+                Serial.println("=========================\n");
+            }
+        }
+    }
+}
+

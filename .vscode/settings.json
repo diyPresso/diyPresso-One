@@ -9,5 +9,11 @@
         "string_view": "cpp",
         "memory": "cpp",
         "initializer_list": "cpp"
+    },
+    "search.exclude": {
+        "./src": true
+    },
+    "C_Cpp.files.exclude" : {
+        "./src": true
     }
 }

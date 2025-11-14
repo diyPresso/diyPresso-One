@@ -49,6 +49,13 @@ typedef enum
   BOILER_ERROR_UNKNOWN,
 } boiler_error_t;
 
+// Power control modes
+typedef enum
+{
+  POWER_CONTROL_PID,    // PID controller (default)
+  POWER_CONTROL_STATIC, // Static power output
+} power_control_mode_t;
+
 class BoilerStateMachine : public StateMachine<BoilerStateMachine>
 {
 public:
@@ -68,6 +75,22 @@ public:
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
+
+  void set_power_control_mode(power_control_mode_t mode) { _power_control_mode = mode; }
+  bool set_power_control_mode_str(String mode);
+  power_control_mode_t get_power_control_mode() const { return _power_control_mode; }
+  String get_power_control_mode_str() const;
+  void reset_power_control_mode() { _power_control_mode = POWER_CONTROL_PID; }
+
+  void set_power_static(double power) { _power_static = min(100.0, max(power, 0.0)); };
+  double get_power_static() const { return _power_static; };
+
+  // Auto-tune methods
+  void startAutoTune() { return _pid.startAutoTune(); }
+  void cancelAutoTune() { _pid.cancelAutoTune(); }
+  autotune_state_t getAutoTuneState() const { return _pid.getAutoTuneState(); }
+  AutoTuneResults getAutoTuneResults() const { return _pid.getAutoTuneResults(); }
+  
   void on() { _on = true; }
   void off()
   {
@@ -90,6 +113,8 @@ private:
   DpPID _pid;
   double _act_temp = 0, _set_temp = 0, _ff_heat = 0, _ff_ready = 0, _ff_brew = 0, _power = 0;
   bool _on = false, _brew = false;
+  power_control_mode_t _power_control_mode = POWER_CONTROL_PID;
+  double _power_static = 0.0;
   unsigned long _last_control_time = 0;
   boiler_error_t _error = BOILER_ERROR_NONE;
   int _rtd_error = 0;   // current RTD errors
