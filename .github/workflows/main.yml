@@ -8,7 +8,9 @@
 
 name: Build
 
-on: [push]
+# on: [push]
+on:
+  workflow_dispatch:  # Only run manually
 
 jobs:
   build:
