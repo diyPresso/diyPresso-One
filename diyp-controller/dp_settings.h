@@ -25,7 +25,7 @@ class DpSettings
             double infusionTime;
             double extractionTime;
             double extractionWeight;
-            double p, i, d, ff_heat, ff_ready, ff_brew;
+            double p, i, d, dffFactorPct, ffHeat, ffReady;
             double tareWeight;
             double trimWeight;
             int commissioningDone;
@@ -61,12 +61,13 @@ class DpSettings
         double I(double i) { return settings.i = min(20.0, max(i, 0.00)); }
         double D() { return settings.d; }
         double D(double d) { return settings.d = min(999.0, max(d, 0.0)); }
-        double ff_heat() { return settings.ff_heat; }
-        double ff_heat(double ff) { return settings.ff_heat = min(100.0, max(ff, 0.0)); }
-        double ff_ready() { return settings.ff_ready; }
-        double ff_ready(double ff) { return settings.ff_ready = min(100.0, max(ff, 0.0)); }
-        double ff_brew() { return settings.ff_brew; }
-        double ff_brew(double ff) { return settings.ff_brew = min(100.0, max(ff, 0.0)); }
+        double ffHeat() { return settings.ffHeat; }
+        double ffHeat(double ff) { return settings.ffHeat = min(100.0, max(ff, 0.0)); }
+        double ffReady() { return settings.ffReady; }
+        double ffReady(double ff) { return settings.ffReady = min(100.0, max(ff, 0.0)); }
+        double dffFactorPct() { return settings.dffFactorPct; }
+        double dffFactorPct(double dff) { return settings.dffFactorPct = min(200.0, max(dff, 0.0)); }
+
         double tareWeight() { return settings.tareWeight; }
         double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
         double trimWeight() { return settings.trimWeight; }

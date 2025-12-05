@@ -12,7 +12,7 @@
     supported commands:
     - GET info
     - GET settings
-    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,ff_heat=3.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
+    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffHeat=3.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
     - GET serialOutputConfig
     - PUT serialOutputConfig DP_PID_STATE=1

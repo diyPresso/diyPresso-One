@@ -66,12 +66,11 @@ public:
   double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
-  double set_ff_heat(double ff) { return _ff_heat = min(100.0, max(ff, 0.0)); }
-  double get_ff_heat(void) { return _ff_heat; }
-  double set_ff_ready(double ff) { return _ff_ready = min(100.0, max(ff, 0.0)); }
-  double get_ff_ready(void) { return _ff_ready; }
-  double set_ff_brew(double ff) { return _ff_brew = min(100.0, max(ff, 0.0)); }
-  double get_ff_brew(void) { return _ff_brew; }
+  double set_ffHeat(double ff) { return _ffHeat = min(100.0, max(ff, 0.0)); }
+  double get_ffHeat(void) { return _ffHeat; }
+  double set_ffReady(double ff) { return _ffReady = min(100.0, max(ff, 0.0)); }
+  double get_ffReady(void) { return _ffReady; }
+  void set_dffFactorPct(double factorPct) { _pid.setDynamicFeedForwardFactorPct(factorPct); } 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
@@ -111,7 +110,7 @@ public:
 
 private:
   DpPID _pid;
-  double _act_temp = 0, _set_temp = 0, _ff_heat = 0, _ff_ready = 0, _ff_brew = 0, _power = 0;
+  double _act_temp = 0, _set_temp = 0, _ffHeat = 0, _ffReady = 0, _power = 0;
   bool _on = false, _brew = false;
   power_control_mode_t _power_control_mode = POWER_CONTROL_PID;
   double _power_static = 0.0;

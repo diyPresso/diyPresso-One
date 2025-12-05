@@ -191,6 +191,20 @@ void DpPID::setFeedForward(const double &staticFeedForward, const bool &dynamicF
     this->dynamicFeedForwardEnabled = dynamicFeedForwardEnabled;
 }
 
+/**
+ * @brief Sets the dynamic feed-forward factor for the PID controller. 
+ * This factor influences how aggressively the controller responds to changes in
+ * reservoir weight and can be used to prevent overshoot.
+ * This method converts a percentage value to a normalized factor and stores it.
+ * 
+ * @param factor The feed-forward factor as a percentage (0-100).
+ *               Values outside this range will be clamped to the nearest valid value.
+ */
+void DpPID::setDynamicFeedForwardFactorPct(const double &factor)
+{
+    dffFactor = constrain(factor / 100.0, 0.0, 2.0); // convert percentage to factor
+}
+
 /// @brief Set the sample time for the PID controller
 /// @param minSamplePeriodMs the minimum sample period in milliseconds
 void DpPID::setSampleTime(const unsigned int &minSamplePeriodMs)

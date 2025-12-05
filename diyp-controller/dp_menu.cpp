@@ -38,11 +38,11 @@ const setting_t settings_list[] =
         {"P-Gain", "%/\337C", &settings_vals[5], 0.2, 1},
         {"I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2},
         {"D-Gain", "%s", &settings_vals[7], 1, 0},
-        {"FF-heat Value", "%", &settings_vals[8], 0.2, 1},
-        {"FF-ready Value", "%", &settings_vals[9], 0.2, 1},
-        {"FF-brew Value", "%", &settings_vals[10], 0.2, 1},
+        {"DFF Factor", "%", &settings_vals[8], 0.5, 1},
+        {"FF heat Value", "%", &settings_vals[9], 0.2, 1},
+        {"FF ready Value", "%", &settings_vals[10], 0.2, 1},
         {"Shot counter", "shots", &settings_vals[11], READ_ONLY, 0},
-        {"WIFI Mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
+        {"WIFI mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
         {"Weight trim", "%", &settings_vals[13], 0.05, 2},
         {"Commissioning done", "NO\0YES\0", &settings_vals[14], SELECT_ITEM, 1},
         {"   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE},
@@ -365,9 +365,9 @@ int menu_settings(bool button_pressed)
 double add_value(int n, double delta)
 {
   double result;
-  if (delta != 0)
-    Serial.print("delta:");
-  Serial.print(delta);
+  // if (delta != 0)
+  //   Serial.print("delta:");
+  // Serial.print(delta);
 
   switch (n)
   {
@@ -388,11 +388,11 @@ double add_value(int n, double delta)
   case 7:
     return settings.D(settings.D() + delta);
   case 8:
-    return settings.ff_heat(settings.ff_heat() + delta);
+    return settings.dffFactorPct(settings.dffFactorPct() + delta);
   case 9:
-    return settings.ff_ready(settings.ff_ready() + delta);
+    return settings.ffHeat(settings.ffHeat() + delta);
   case 10:
-    return settings.ff_brew(settings.ff_brew() + delta);
+    return settings.ffReady(settings.ffReady() + delta);
   case 11:
     return settings.shotCounter();
   case 12:

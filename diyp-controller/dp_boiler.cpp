@@ -29,7 +29,7 @@ void BoilerStateMachine::state_heating()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_heat, false);
+    _pid.setFeedForward(_ffHeat, false);
   }
   if (!_on)
     NEXT(state_off);
@@ -49,7 +49,7 @@ void BoilerStateMachine::state_ready()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_ready, false);
+    _pid.setFeedForward(_ffReady, false);
   }
   if (!_on)
     NEXT(state_off);
@@ -69,7 +69,7 @@ void BoilerStateMachine::state_brew()
     NEXT(state_heating);
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ff_ready, true); // TODO: ff_brew if dynamic feed forward disabled
+    _pid.setFeedForward(_ffReady, true);
   }
 
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
@@ -99,7 +99,7 @@ void BoilerStateMachine::goto_error(boiler_error_t error)
 
 void BoilerStateMachine::init()
 {
-  _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ff_ready(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
+  _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ffReady(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
   _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
   _pid.start();

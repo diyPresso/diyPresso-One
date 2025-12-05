@@ -16,7 +16,7 @@ The temperature difference between the (assumed) reservoir/inflow temperature an
 temperature is calculated. Using the specific heat capacity of water at 95°C (c = 4.21 J/g°C)
 the energy needed to heat this water to the set temperature is calculated (ΔE in Joules).
 Δw must be greater than 0 and is limited to 12 grams per second to avoid excessive power requests.
-There is a ratio factor to adjust the amount of dynamic feed forward used.
+There is a factor (dffFactor) to adjust the amount of dynamic feed forward, to tune and to prevent overshoot.
 
 ΔE = Δw * c * (T_set - T_inflow) * dffFactor
 
@@ -93,6 +93,7 @@ public:
     void setWindUpLimits(const double& min, const double& max);
     void setCoefficients(const double& p, const double& i, const double& d);
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
+    void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
@@ -146,7 +147,6 @@ protected:
     autotune_state_t autotuneState = AUTOTUNE_IDLE;
     unsigned long autotuneStartTime = 0;
     AutoTuneResults autotuneResults;
-    
     bool atRelayState = false;      // Current relay state (high/low)
     double atPeakHigh = 0;          // Highest peak temperature
     double atPeakLow = 0;           // Lowest peak temperature  
@@ -154,9 +154,6 @@ protected:
     int atPeakCount = 0;            // Number of peaks detected
     double atLastValue = 0;         // Previous input value
     bool atRisingEdge = true;       // Tracking if we're rising or falling
-
-
-
 };
 
 
