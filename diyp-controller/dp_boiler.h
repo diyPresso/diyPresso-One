@@ -120,7 +120,7 @@ private:
   int _rtd_error = 0;   // current RTD errors
   
   // Temperature filter (EMA)
-  static constexpr double TEMP_FILTER_ALPHA = 0.25; // 0-1, lower = more filtering
+  static constexpr double TEMP_FILTER_ALPHA = 0.15; // 0-1, lower = more filtering
   bool _temp_initialized = false;
   void state_off();     // SSR is forced OFF
   void state_heating(); // Temperature control, but not yet on target temperature

@@ -60,7 +60,7 @@ class DpSettings
         double I() { return settings.i; }
         double I(double i) { return settings.i = min(20.0, max(i, 0.00)); }
         double D() { return settings.d; }
-        double D(double d) { return settings.d = min(200.0, max(d, 0.0)); }
+        double D(double d) { return settings.d = min(999.0, max(d, 0.0)); }
         double ff_heat() { return settings.ff_heat; }
         double ff_heat(double ff) { return settings.ff_heat = min(100.0, max(ff, 0.0)); }
         double ff_ready() { return settings.ff_ready; }

@@ -37,7 +37,7 @@ const setting_t settings_list[] =
         {"Extraction weight", "gram", &settings_vals[4], 0.5, 2},
         {"P-Gain", "%/\337C", &settings_vals[5], 0.2, 1},
         {"I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2},
-        {"D-Gain", "%s", &settings_vals[7], 0.2, 1},
+        {"D-Gain", "%s", &settings_vals[7], 1, 0},
         {"FF-heat Value", "%", &settings_vals[8], 0.2, 1},
         {"FF-ready Value", "%", &settings_vals[9], 0.2, 1},
         {"FF-brew Value", "%", &settings_vals[10], 0.2, 1},
