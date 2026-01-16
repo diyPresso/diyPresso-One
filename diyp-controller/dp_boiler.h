@@ -23,8 +23,8 @@
 #define TEMP_LIMIT_LOW 1.0    // < is TOO LOW
 #define TEMP_MIN_BREW 10.0    // do not brew under this temp
 
-#define WINDUP_LIMIT_MIN -7.0 // windup limits in %
-#define WINDUP_LIMIT_MAX 7.0  // 
+#define WINDUP_LIMIT_MIN -2.0 // windup limits in %
+#define WINDUP_LIMIT_MAX 2.0  // 
 
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes
