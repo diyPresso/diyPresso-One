@@ -66,7 +66,7 @@ class DpSettings
         double ffReady() { return settings.ffReady; }
         double ffReady(double ff) { return settings.ffReady = min(100.0, max(ff, 0.0)); }
         double dffFactorPct() { return settings.dffFactorPct; }
-        double dffFactorPct(double dff) { return settings.dffFactorPct = min(200.0, max(dff, 0.0)); }
+        double dffFactorPct(double dff) { return settings.dffFactorPct = min(150.0, max(dff, 0.0)); }
 
         double tareWeight() { return settings.tareWeight; }
         double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
