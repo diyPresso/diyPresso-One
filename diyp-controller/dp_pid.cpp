@@ -197,12 +197,12 @@ void DpPID::setFeedForward(const double &staticFeedForward, const bool &dynamicF
  * reservoir weight and can be used to prevent overshoot.
  * This method converts a percentage value to a normalized factor and stores it.
  * 
- * @param factor The feed-forward factor as a percentage (0-100).
+ * @param factor The feed-forward factor as a percentage (0-150%).
  *               Values outside this range will be clamped to the nearest valid value.
  */
 void DpPID::setDynamicFeedForwardFactorPct(const double &factor)
 {
-    dffFactor = constrain(factor / 100.0, 0.0, 2.0); // convert percentage to factor
+    dffFactor = constrain(factor / 100.0, 0.0, 1.5); // convert percentage to factor
 }
 
 /// @brief Set the sample time for the PID controller
