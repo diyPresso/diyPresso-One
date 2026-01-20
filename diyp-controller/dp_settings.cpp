@@ -63,7 +63,7 @@ bool DpSettings::crc_is_valid(settings_t *s)
 /// @brief set all values to default in settings stuct
 void DpSettings::defaults()
 {
-    settings.version = 1;  // Update this if new fields are added to the settings structure to prevent incorrect reads
+    settings.version = 2;  // bumped: ff_brew removed, dff_factor added to struct
     settings.temperature = 98.0;
     settings.preInfusionTime = 3;
     settings.infusionTime = 1;
@@ -71,9 +71,9 @@ void DpSettings::defaults()
     settings.p = 6.2;
     settings.i = 0.08;
     settings.d = 70.0;
-    settings.ff_heat = 6.0;
-    settings.ff_ready = 6.0;
-    settings.ff_brew = 35.0;
+    settings.ffHeat = 6.0;
+    settings.ffReady = 6.0;
+    settings.dffFactorPct = 70.0;  // 70%
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
     settings.wifiMode = 0; // off=0
@@ -164,21 +164,15 @@ void DpSettings::apply()
   boilerController.set_temp(temperature());
 
   boilerController.set_pid(P(), I(), D());
-  boilerController.set_ff_heat(ff_heat());
-  boilerController.set_ff_ready(ff_ready());
-  boilerController.set_ff_brew(ff_brew());
+  boilerController.set_ffHeat(ffHeat());
+  boilerController.set_ffReady(ffReady());
+  boilerController.set_dffFactorPct(dffFactorPct());
 
   reservoir.set_trim(trimWeight());
   reservoir.set_tare(tareWeight());
-
   brewProcess.preInfuseTime = preInfusionTime();
   brewProcess.infuseTime = infusionTime();
   brewProcess.extractTime = extractionTime();
-
-  
-
-
-
 }
 
 String DpSettings::serialize() {
@@ -193,9 +187,9 @@ String DpSettings::serialize() {
     result += "p=" + String(settings.p) + "\n";
     result += "i=" + String(settings.i) + "\n";
     result += "d=" + String(settings.d) + "\n";
-    result += "ff_heat=" + String(settings.ff_heat) + "\n";
-    result += "ff_ready=" + String(settings.ff_ready) + "\n";
-    result += "ff_brew=" + String(settings.ff_brew) + "\n";
+    result += "dffFactorPct=" + String(settings.dffFactorPct) + "\n";
+    result += "ffHeat=" + String(settings.ffHeat) + "\n";
+    result += "ffReady=" + String(settings.ffReady) + "\n";
     result += "tareWeight=" + String(settings.tareWeight) + "\n";
     result += "trimWeight=" + String(settings.trimWeight) + "\n";
     result += "commissioningDone=" + String(settings.commissioningDone) + "\n";
@@ -206,7 +200,7 @@ String DpSettings::serialize() {
 
 
 /* receives a string, parses it and updates the settings. For example:
-temperature=98.50,P=7.00,I=0.30,D=80.00,ff_heat=3.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
+temperature=98.50,P=7.00,I=0.30,D=80.00,dff_factor=90.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
 
 can also be a subset of these values.
 
@@ -252,21 +246,24 @@ int DpSettings::deserialize(String serialized_settings) {
             I(value.toDouble());
         } else if (key == "d" || key == "D") {
             D(value.toDouble());
-        } else if (key == "ff_heat") {
-            ff_heat(value.toDouble());
-        } else if (key == "ff_ready") {
-            ff_ready(value.toDouble());
-        } else if (key == "ff_brew") {
-            ff_brew(value.toDouble());
+        } else if (key == "dffFactorPct") {
+            dffFactorPct(value.toDouble());
+        } else if (key == "ffHeat" || key == "ff_heat") {
+            ffHeat(value.toDouble());
+        } else if (key == "ffReady" || key == "ff_ready") {
+            ffReady(value.toDouble());
+        } else if (key == "ffBrew" || key == "ff_brew") {
+            // Deprecated: ignored
+            Serial.println("WARNING: ff_brew / ffBrew is deprecated and will be ignored.");
         } else if (key == "tareWeight") {
             tareWeight(value.toDouble());
         } else if (key == "trimWeight") {
             trimWeight(value.toDouble());
         } else if (key == "preInfusionTime") {
             preInfusionTime(value.toDouble());
-        } else if (key == "infusionTime" || key == "infuseTime") { // infuseTime is an depricated alias for infusionTime
+        } else if (key == "infusionTime" || key == "infuseTime") { // infuseTime is a deprecated alias for infusionTime
             infusionTime(value.toDouble());
-        } else if (key == "extractionTime" || key == "extractTime") { // extractTime is an depricated alias for extractionTime
+        } else if (key == "extractionTime" || key == "extractTime") { // extractTime is a deprecated alias for extractionTime
             extractionTime(value.toDouble());
         } else if (key == "extractionWeight") {
             extractionWeight(value.toDouble());
@@ -283,7 +280,7 @@ int DpSettings::deserialize(String serialized_settings) {
     }
 
     if (error < 0) {
-        load(); // discart updarte and restore settings from EEPROM on error
+        load(); // discard update and restore settings from EEPROM on error
     }
 
     return error;

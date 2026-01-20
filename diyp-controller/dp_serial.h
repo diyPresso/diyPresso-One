@@ -21,6 +21,12 @@ class DpSerial {
     private:
         unsigned long _baudRate;
         void put_settings(String value);
+        void get_serial_output_config();
+        void put_serial_output_config(String value);
+        void get_boiler();
+        void put_boiler(String value);
+        void get_boiler_pid_autotune();
+        void put_boiler_pid_autotune(String value);
 };
 
 extern DpSerial dpSerial;

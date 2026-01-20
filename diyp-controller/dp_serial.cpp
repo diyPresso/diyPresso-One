@@ -12,8 +12,18 @@
     supported commands:
     - GET info
     - GET settings
-    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,ff_heat=3.00,ff_ready=10.00,ff_brew=80.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infuseTime=1.00,extractTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
+    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffHeat=3.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
+    - GET serialOutputConfig
+    - PUT serialOutputConfig DP_PID_STATE=1
+    - GET boiler
+    - PUT boiler powerControlMode=STATIC,staticPower=5.0
+    - PUT boiler powerControlMode=PID
+    - GET boilerPidAutotune
+    - PUT boilerPidAutotune start
+    - PUT boilerPidAutotune cancel
+    - PUT boilerPidAutotune apply
+
 
 */
 
@@ -23,6 +33,7 @@
 #include "dp_brew.h"
 #include "dp_boiler.h"
 #include "dp_reservoir.h"
+#include "dp_pid.h"
 
 //initialize the class
 DpSerial dpSerial(115200);
@@ -79,18 +90,27 @@ void DpSerial::receive() {
 
     receivedData = Serial.readStringUntil('\n');
 
-    //GET info
     if (receivedData.startsWith("GET info")) {
         send_info();
     } else if (receivedData.startsWith("GET settings")) {
         send_settings();
-    } else if (receivedData.startsWith("PUT settings "))
-    {
-        put_settings(receivedData.substring(String("SET settings ").length()));
+    } else if (receivedData.startsWith("PUT settings ")) {
+        put_settings(receivedData.substring(String("PUT settings ").length()));
+    } else if (receivedData.startsWith("GET serialOutputConfig")) {
+        get_serial_output_config();
+    } else if (receivedData.startsWith("PUT serialOutputConfig ")) {
+        put_serial_output_config(receivedData.substring(String("PUT serialOutputConfig ").length()));
+    } else if (receivedData.startsWith("GET boilerPidAutotune")) {
+        get_boiler_pid_autotune();
+    } else if (receivedData.startsWith("PUT boilerPidAutotune ")) {
+        put_boiler_pid_autotune(receivedData.substring(String("PUT boilerPidAutotune ").length()));
+    } else if (receivedData.startsWith("GET boiler")) {
+        get_boiler();
+    } else if (receivedData.startsWith("PUT boiler ")) {
+        put_boiler(receivedData.substring(String("PUT boiler ").length()));
+    } else {
+        send("unknown command: " + receivedData);
     }
-    
-
-    send("echo: " + receivedData);
 }
 
 void DpSerial::send_info() {
@@ -135,5 +155,151 @@ void DpSerial::put_settings(String value) {
     } else {
         send("PUT settings NOK, settings not saved, unknown error code when deserializing settings: " + String(res_deserialize));
     }
+}
 
+void DpSerial::get_serial_output_config() {
+    send("DP_PID_STATE=" + String(boilerController.get_serial_output() ? "1" : "0"));
+    send("GET serialOutputConfig OK");
+}
+
+void DpSerial::put_serial_output_config(String value) {
+    // Expecting a string like "DP_PID_STATE=1" or "DP_PID_STATE=0"
+    if (value.startsWith("DP_PID_STATE=")) {
+        String stateStr = value.substring(String("DP_PID_STATE=").length());
+        if (stateStr == "1") {
+            boilerController.set_serial_output(true);
+            send("PUT serialOutputConfig OK");
+        } else if (stateStr == "0") {
+            boilerController.set_serial_output(false);
+            send("PUT serialOutputConfig OK");
+        } else {
+            send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + stateStr);
+        }
+    } else {
+        send("PUT serialOutputConfig NOK, unknown key: " + value);
+    }
+}
+
+void DpSerial::get_boiler() {
+    send("powerControlMode=" + boilerController.get_power_control_mode_str());
+    send("staticPower=" + String(boilerController.get_power_static(), 2));
+    send("GET boiler OK");
+}
+
+void DpSerial::put_boiler(String value) {
+    // Parse key-value pairs separated by commas
+    // Example: "powerControlMode=STATIC,staticPower=5.0"
+    
+    value.trim();
+    bool success = true;
+    String errorMsg = "";
+    
+    int startPos = 0;
+    while (startPos < value.length()) {
+        int commaPos = value.indexOf(',', startPos);
+        if (commaPos == -1) {
+            commaPos = value.length();
+        }
+        
+        String pair = value.substring(startPos, commaPos);
+        pair.trim();
+        
+        int equalsPos = pair.indexOf('=');
+        if (equalsPos == -1) {
+            success = false;
+            errorMsg = "Invalid format, missing '=' in: " + pair;
+            break;
+        }
+        
+        String key = pair.substring(0, equalsPos);
+        String val = pair.substring(equalsPos + 1);
+        key.trim();
+        val.trim();
+        key.toLowerCase();
+        
+        if (key == "powercontrolmode") {
+            if (!boilerController.set_power_control_mode_str(val)) {
+                success = false;
+                errorMsg = "Invalid powerControlMode value: " + val;
+                break;
+            }
+        } else if (key == "staticpower") {
+            double power = val.toDouble();
+            if (power < 0.0 || power > 100.0) {
+                success = false;
+                errorMsg = "staticPower must be between 0.0 and 100.0, got: " + val;
+                break;
+            }
+            boilerController.set_power_static(power);
+        } else {
+            success = false;
+            errorMsg = "Unknown key: " + key;
+            break;
+        }
+        
+        startPos = commaPos + 1;
+    }
+    
+    if (success) {
+        send("PUT boiler OK");
+    } else {
+        send("PUT boiler NOK, " + errorMsg);
+    }
+}
+
+void DpSerial::get_boiler_pid_autotune() {
+    autotune_state_t state = boilerController.getAutoTuneState();
+    String stateStr;
+    
+    switch(state) {
+        case AUTOTUNE_IDLE: stateStr = "IDLE"; break;
+        case AUTOTUNE_RUNNING: stateStr = "RUNNING"; break;
+        case AUTOTUNE_SUCCESS: stateStr = "SUCCESS"; break;
+        case AUTOTUNE_FAILED_TIMEOUT: stateStr = "FAILED_TIMEOUT"; break;
+        case AUTOTUNE_FAILED_NO_OSCILLATION: stateStr = "FAILED_NO_OSCILLATION"; break;
+        default: stateStr = "UNKNOWN"; break;
+    }
+    
+    send("state=" + stateStr);
+    
+    // If complete, also send the results
+    if (state == AUTOTUNE_SUCCESS) {
+        AutoTuneResults results = boilerController.getAutoTuneResults();
+        if (results.isValid) {
+            send("Kp=" + String(results.Kp, 3));
+            send("Ki=" + String(results.Ki, 3));
+            send("Kd=" + String(results.Kd, 3));
+            send("Ku=" + String(results.Ku, 3));
+            send("Pu=" + String(results.Pu, 3));
+        } else {
+            send("isValid=false");
+        }
+    }
+    
+    send("GET boilerPidAutotune OK");
+}
+
+void DpSerial::put_boiler_pid_autotune(String value) {
+    value.trim();
+    value.toLowerCase();
+    
+    if (value == "start") {
+        // Start auto-tune with default relay amplitude
+        boilerController.startAutoTune();
+        send("PUT boilerPidAutotune OK, Auto-tune started");
+    } else if (value == "cancel") {
+        boilerController.cancelAutoTune();
+        send("PUT boilerPidAutotune OK, Auto-tune cancelled");
+    } else if (value == "apply") {
+        AutoTuneResults results = boilerController.getAutoTuneResults();
+        if (results.isValid) {
+            boilerController.set_pid(results.Kp, results.Ki, results.Kd); //TODO: store in settings.
+            send("PUT boilerPidAutotune OK, Applied Kp=" + String(results.Kp, 3) + 
+                 " Ki=" + String(results.Ki, 3) + " Kd=" + String(results.Kd, 3));
+        } else {
+            send("PUT boilerPidAutotune NOK, No valid results to apply");
+        }
+    } else {
+        send("PUT boilerPidAutotune NOK, Unknown command (use: start/cancel/apply)");
+    }
 }

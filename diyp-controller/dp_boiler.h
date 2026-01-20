@@ -5,11 +5,13 @@
 #ifndef BOILER_H
 #define BOILER_H
 
-#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_hardware.h"
+
+#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 #include "dp_pid.h"
 #include "dp_heater.h"
+#include "dp_reservoir.h"
 #include <Arduino.h>
 
 #include <MAX31865_NonBlocking.h> 
@@ -21,8 +23,8 @@
 #define TEMP_LIMIT_LOW 1.0    // < is TOO LOW
 #define TEMP_MIN_BREW 10.0    // do not brew under this temp
 
-#define WINDUP_LIMIT_MIN -7.0 // windup limits in %
-#define WINDUP_LIMIT_MAX 7.0  // 
+#define WINDUP_LIMIT_MIN -2.0 // windup limits in %
+#define WINDUP_LIMIT_MAX 2.0  // 
 
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes
@@ -47,6 +49,13 @@ typedef enum
   BOILER_ERROR_UNKNOWN,
 } boiler_error_t;
 
+// Power control modes
+typedef enum
+{
+  POWER_CONTROL_PID,    // PID controller (default)
+  POWER_CONTROL_STATIC, // Static power output
+} power_control_mode_t;
+
 class BoilerStateMachine : public StateMachine<BoilerStateMachine>
 {
 public:
@@ -57,13 +66,30 @@ public:
   double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
-  double set_ff_heat(double ff) { return _ff_heat = min(100.0, max(ff, 0.0)); }
-  double get_ff_heat(void) { return _ff_heat; }
-  double set_ff_ready(double ff) { return _ff_ready = min(100.0, max(ff, 0.0)); }
-  double get_ff_ready(void) { return _ff_ready; }
-  double set_ff_brew(double ff) { return _ff_brew = min(100.0, max(ff, 0.0)); }
-  double get_ff_brew(void) { return _ff_brew; }
+  double set_ffHeat(double ff) { return _ffHeat = min(100.0, max(ff, 0.0)); }
+  double get_ffHeat(void) { return _ffHeat; }
+  double set_ffReady(double ff) { return _ffReady = min(100.0, max(ff, 0.0)); }
+  double get_ffReady(void) { return _ffReady; }
+  void set_dffFactorPct(double factorPct) { _pid.setDynamicFeedForwardFactorPct(factorPct); } 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  bool get_serial_output() const { return _pid.getSerialOutput(); }
+  void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
+
+  void set_power_control_mode(power_control_mode_t mode) { _power_control_mode = mode; }
+  bool set_power_control_mode_str(String mode);
+  power_control_mode_t get_power_control_mode() const { return _power_control_mode; }
+  String get_power_control_mode_str() const;
+  void reset_power_control_mode() { _power_control_mode = POWER_CONTROL_PID; }
+
+  void set_power_static(double power) { _power_static = min(100.0, max(power, 0.0)); };
+  double get_power_static() const { return _power_static; };
+
+  // Auto-tune methods
+  void startAutoTune() { return _pid.startAutoTune(); }
+  void cancelAutoTune() { _pid.cancelAutoTune(); }
+  autotune_state_t getAutoTuneState() const { return _pid.getAutoTuneState(); }
+  AutoTuneResults getAutoTuneResults() const { return _pid.getAutoTuneResults(); }
+  
   void on() { _on = true; }
   void off()
   {
@@ -84,11 +110,17 @@ public:
 
 private:
   DpPID _pid;
-  double _act_temp = 0, _set_temp = 0, _ff_heat = 0, _ff_ready = 0, _ff_brew = 0, _power = 0;
+  double _act_temp = 0, _set_temp = 0, _ffHeat = 0, _ffReady = 0, _power = 0;
   bool _on = false, _brew = false;
+  power_control_mode_t _power_control_mode = POWER_CONTROL_PID;
+  double _power_static = 0.0;
   unsigned long _last_control_time = 0;
   boiler_error_t _error = BOILER_ERROR_NONE;
   int _rtd_error = 0;   // current RTD errors
+  
+  // Temperature filter (EMA)
+  static constexpr double TEMP_FILTER_ALPHA = 0.15; // 0-1, lower = more filtering
+  bool _temp_initialized = false;
   void state_off();     // SSR is forced OFF
   void state_heating(); // Temperature control, but not yet on target temperature
   void state_ready();   // temperature control, within range of target temperature

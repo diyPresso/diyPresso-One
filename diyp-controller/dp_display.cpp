@@ -76,6 +76,11 @@ void format_float(char *dest, double f, int digits, int len)
 {
   bool neg = f < 0;
   if ( neg ) f *= -1.0;
+  
+  // Round to the specified number of decimal places
+  double multiplier = pow(10.0, digits);
+  f = round(f * multiplier) / multiplier;
+  
   char sign[2] = {'-', 0};
   if ( !neg )
     sign[0] = 0;
