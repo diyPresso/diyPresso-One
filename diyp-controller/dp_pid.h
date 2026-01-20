@@ -48,7 +48,7 @@ E_ff = E_ff - (P_ff * Δt_actual)
 #define MAX_FLOW_RATE_G_PER_MS 0.012 // maximum flow rate in grams per millisecond for dynamic feed forward calculation (12 g/s)
 #define SPECIFIC_HEAT_CAPACITY_WATER 4.21 // specific heat capacity of water in J/g°C, 95 °C
 #define DFF_ENERGY_STOCK_PILE_MAX_MS 60000 // maximum energy stock pile in milliseconds (times boiler power)
-#define DFF_ENERGY_STOCK_PILE_DECAY 0.90 // decay factor for energy stock pile per cycle
+#define DFF_ENERGY_STOCK_PILE_DECAY 0.97 // decay factor for energy stock pile per cycle
 
 // Auto-tune parameters
 #define AUTOTUNE_RELAY_OUTPUT 10.0 // Relay output amplitude (% of max power)
@@ -140,7 +140,7 @@ protected:
     Reservoir* reservoir; // reservoir object for dynamic feed forward
     double previousReservoirWeight = 0; // previous weight for dynamic feed forward in grams
     double boilerPowerKiloWatt = 1.250; // boiler power (in kilowatt as it will be multiplied with sample time in ms)
-    double dffFactor = 0.90; // Adjustable factor for dynamic feed forward
+    double dffFactor = 0.70; // Adjustable factor for dynamic feed forward
     double dffEnergyStockPile = 0; // Energy stock pile for dynamic feed forward in Joules
 
     // Auto-tune variables

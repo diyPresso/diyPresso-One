@@ -27,7 +27,7 @@ class Reservoir
       int _readings = 0;         // number of readings without measurement
       double _glitch_limit = 50.0; // maximum change in weight between readings to be accepted [grams]
       int _deglitched = -1;      // number of deglitched readings, -1 to indicate first reading
-      double _outflow_temp = 35.0; // temperature of the water leaving the reservoir in °C
+      double _outflow_temp = 29.0; // temperature of the water leaving the reservoir in °C
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
       void read();  // update the internal state, based on weight measurement
     public:
