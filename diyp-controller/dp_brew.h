@@ -34,7 +34,7 @@ private:
   brew_error_t _error;
 
 public:
-  double preInfuseTime = 3, infuseTime = 4, extractTime = 10, finishedTime = 60;
+  double preInfuseTime = 3, infuseTime = 4, extractTime = 10, extractWeight = 100, finishedTime = 60;
   BrewProcess() : StateMachine(STATE(state_init)) {};
   void start() { run(START); }
   void stop() { run(STOP); }

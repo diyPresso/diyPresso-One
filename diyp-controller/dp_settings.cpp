@@ -173,6 +173,7 @@ void DpSettings::apply()
   brewProcess.preInfuseTime = preInfusionTime();
   brewProcess.infuseTime = infusionTime();
   brewProcess.extractTime = extractionTime();
+  brewProcess.extractWeight = extractionWeight();
 }
 
 String DpSettings::serialize() {

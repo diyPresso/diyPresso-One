@@ -229,9 +229,15 @@ void BrewProcess::state_extract()
     boilerController.start_brew();
     settings.incShotCounter();
   }
-  // if ( boiler.act_temp() < BREW_MIN_TEMP) NEXT(idle); // extra check?
+
+  // Weigth-based extraction stop
+  if (weight() >= extractWeight)
+    NEXT(state_finished);
+
+  // Time-based extraction stop
   ON_TIMEOUT_SEC(extractTime)
-  NEXT(state_finished);
+    NEXT(state_finished);
+  
   common_transitions();
 }
 
