@@ -35,6 +35,8 @@
 #include "dp_reservoir.h"
 #include "dp_pid.h"
 #include "dp_heater.h"
+#include "dp_machine.h"
+#include "dp_commission.h"
 
 //initialize the class
 DpSerial dpSerial(115200);
@@ -120,6 +122,9 @@ void DpSerial::send_info() {
     send("firmwareVersion=" + String(SOFTWARE_VERSION));
     send("hardwareVersion=" + String(HARDWARE_REVISION));
     send("buildDate=" + String(BUILD_DATE));
+    send("machineState=" + String(machineController.get_state_name()));
+    send("commissioningState=" + String(commissioningProcess.get_state_name()));
+    send("commissioningError=" + String(commissioningProcess.get_error_text()));
     send("brewProcessState=" + String(brewProcess.get_state_name()));
     send("brewProcessError=" + String(brewProcess.get_error_text()));
     send("boilerControllerState=" + String(boilerController.get_state_name()));
