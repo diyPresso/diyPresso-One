@@ -1,5 +1,10 @@
 #include "dp_mqtt.h"
 #include <WiFiNINA.h>
+#include "dp_boiler.h"
+#include "dp_brew.h"
+#include "dp_reservoir.h"
+#include "dp_heater.h"
+#include "dp_settings.h"
 
 
 MqttDevice mqttDevice;
@@ -119,4 +124,37 @@ void MqttDevice::send()
 {
     mqttClient.endMessage();
     _state = MSG_START;
+}
+
+void MqttDevice::send_state()
+{
+  static unsigned long prev_time = millis();
+  if (millis() - prev_time > 5000)
+  {
+    write("t_set", boilerController.set_temp());
+    write("t_act", boilerController.act_temp());
+    write("h_pwr", heaterDevice.power());
+    write("h_avg", heaterDevice.average());
+    write("r_lvl", reservoir.level());
+    write("r_wgt", reservoir.weight());
+    write("w_cur", brewProcess.weight());
+    write("w_end", brewProcess.end_weight());
+    write("shots", (long)settings.shotCounter());
+
+    write("boil", (char *)boilerController.get_state_name());
+    if (boilerController.is_error())
+      write("boil_err", (char *)boilerController.get_error_text());
+
+    write("brew", (char *)brewProcess.get_state_name());
+    if (brewProcess.is_error())
+      write("brew_err", (char *)brewProcess.get_error_text());
+
+    if (reservoir.is_error())
+      write("res_err", (char *)reservoir.get_error_text());
+
+    write("msec", (long)millis());
+    send();
+
+    prev_time = millis();
+  }
 }

@@ -15,6 +15,7 @@ class DpSerial {
         void send(char data);
         void send(const char *data);
         void receive();
+        void print_state();
         void send_info();
         void send_settings();
 

@@ -10,20 +10,20 @@
     class MyStateMachine : public StateMachine<MyStateMachine>
     {
         private:
-            void state1();
-            void state2();
-            void state3();
+            void state_1();
+            void state_2();
+            void state_3();
+        public:
+            MyStateMachine() : StateMachine(&MyStateMachine::state_1) {}
     };
 
-
     // a prototype state handler function
-    MyStateMachine::state_function()
+    MyStateMachine::state_1()
     {
-        if ( on_entry() ) ON_ENTRY_CODE ...  // Executed once, if we enter this state
-        if ( on_timeout(10.0) ) next(error_state_function); // Executed when we are longer in this state than timeout [seconds]
-        if ( on_message(MSG_A) ) next(state_function1); // Executed when we receive a message
-        else if ( on_message(MSG_B) ) next(state_function2); // Note: only 1 message per handler execution is received
-        if ( on_exit() ) ON_EXIT_CODE ... // use as last statement in function, executed once if we leave this state
+        ON_ENTRY() { ON_ENTRY_CODE ... }  // Executed once, if we enter this state. Also sets state name via __func__.
+        ON_TIMEOUT_SEC(10) next(&MyStateMachine::state_3); // Executed when we are longer in this state than timeout [seconds]
+        ON_MESSAGE(MSG_A) next(&MyStateMachine::state_2); // Executed when we receive a message
+        ON_EXIT() { ON_EXIT_CODE ... } // use as last statement in function, executed once if we leave this state
     }
 
     To execute the state machine:
@@ -33,11 +33,14 @@
         error("Unhandled message [msg] in state [state]");
     }
 
+    Note: Every state function MUST use ON_ENTRY() to ensure the state name is set correctly.
+
 */
 
 #ifndef _DP_FSM_H
 #define _DP_FSM_H
 
+#include <string.h>
 
 template<typename T>
 class StateMachine
@@ -47,10 +50,16 @@ class StateMachine
 
     protected:
         state_function_ptr _cur_state, _next_state, _prev_state;
+        const char* _state_name = "<none>";
         int _message = 0;
         unsigned long _state_time = 0;
         void next(state_function_ptr state) { _next_state = state; };
-        bool on_entry() { return _cur_state != _prev_state; }
+        bool on_entry(const char* func_name) {
+            // Strip "state_" prefix (6 chars) if present
+            if (strncmp(func_name, "state_", 6) == 0) func_name += 6;
+            _state_name = func_name;
+            return _cur_state != _prev_state;
+        }
         bool on_exit() { return _cur_state != _next_state; }
         bool on_timeout( unsigned long duration ) { return (_state_time+duration) < millis(); }
         bool on_message(int msg) { if ( msg == _message) { _message = 0; return true; } return false; }
@@ -62,13 +71,11 @@ class StateMachine
 
     public:
         StateMachine(state_function_ptr initial_state)
-        {
-            _cur_state = initial_state;
-            _next_state = initial_state;
-            _prev_state = &StateMachine::state_none;
-        }
+            : _cur_state(initial_state), _next_state(initial_state),
+              _prev_state(&StateMachine::state_none) {}
+
         bool in_state(state_function_ptr state) { return _cur_state == state; }
-        bool run() { run(0); }
+        bool run() { return run(0); }
         bool run(int msg)
         {
             _message = msg;
@@ -84,23 +91,15 @@ class StateMachine
         }
         double state_time() { unsigned long t = millis()-_state_time; if (t > 0) return t/1000.0; else return (0xFFFFFFFF-t)/1000.0; }
 
-        virtual const char *get_state_name() { return "<undefined>"; }
+        const char *get_state_name() { return _state_name; }
 };
 
-#endif // _DP_FSM_H
-
-// Some convenient macros (note: set _DP_FSM_TYPE to the Class name of your state machine before including <dp_fsm.h> header to use them)
-#define STATE(state) (&_DP_FSM_TYPE::state)
-#define IN_STATE(state) (in_state(STATE(state_ ##state)))
-
-#define NEXT(state) next(STATE(state))
-#define ON_ENTRY() if ( on_entry() )
+// Convenience macros
+// ON_ENTRY() automatically sets the state name from __func__ (stripping "state_" prefix)
+#define ON_ENTRY() if ( on_entry(__func__) )
 #define ON_EXIT() if ( on_exit() )
 #define ON_TIMEOUT(t) if ( on_timeout(t) )
 #define ON_TIMEOUT_SEC(t) if ( on_timeout((1000*t)) )
 #define ON_MESSAGE(m) if ( on_message(m) )
 
-// Handy macro to be used in get_state_name() implementation
-#define RETURN_STATE_NAME(state) if (IN_STATE(state)) return #state;
-#define RETURN_NONE_STATE_NAME() if (IN_STATE(none)) return "<none>";
-#define RETURN_UNKNOWN_STATE_NAME() return  "<unknown>";
+#endif // _DP_FSM_H

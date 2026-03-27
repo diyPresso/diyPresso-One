@@ -34,6 +34,7 @@
 #include "dp_boiler.h"
 #include "dp_reservoir.h"
 #include "dp_pid.h"
+#include "dp_heater.h"
 
 //initialize the class
 DpSerial dpSerial(115200);
@@ -114,7 +115,8 @@ void DpSerial::receive() {
 }
 
 void DpSerial::send_info() {
-    send("diyPresso");
+    send("diyPresso " + String(model_name()));
+    send("model=" + String(model_name()));
     send("firmwareVersion=" + String(SOFTWARE_VERSION));
     send("hardwareVersion=" + String(HARDWARE_REVISION));
     send("buildDate=" + String(BUILD_DATE));
@@ -302,4 +304,36 @@ void DpSerial::put_boiler_pid_autotune(String value) {
     } else {
         send("PUT boilerPidAutotune NOK, Unknown command (use: start/cancel/apply)");
     }
+}
+
+void DpSerial::print_state()
+{
+  static unsigned long prev_time = millis();
+  if (millis() - prev_time > 500)
+  {
+    Serial.print("setpoint:");
+    Serial.print(boilerController.set_temp());
+    Serial.print(", power:");
+    Serial.print(heaterDevice.power());
+    Serial.print(", average:");
+    Serial.print(heaterDevice.average());
+    Serial.print(", act_temp:");
+    Serial.print(boilerController.act_temp());
+    Serial.print(", boiler-state:");
+    Serial.print(boilerController.get_state_name());
+    Serial.print(", boiler-error:");
+    Serial.print(boilerController.get_error_text());
+    Serial.print(", brew-state:");
+    Serial.print(brewProcess.get_state_name());
+    Serial.print(", weight:");
+    Serial.print(brewProcess.weight());
+    Serial.print(", end_weight:");
+    Serial.print(brewProcess.end_weight());
+    Serial.print(", reservoir_level:");
+    Serial.print(reservoir.level());
+    Serial.print(", reservoir_weight:");
+    Serial.print(reservoir.weight());
+    Serial.println("");
+    prev_time = millis();
+  }
 }

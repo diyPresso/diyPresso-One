@@ -19,6 +19,7 @@ extern bool menu_saved();
 extern bool menu_error(const char *msg);
 extern bool menu_commissioning();
 extern bool menu_state();
+extern void update_display(bool button_pressed);
 
 typedef enum
 {

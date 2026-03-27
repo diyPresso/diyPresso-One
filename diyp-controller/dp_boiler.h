@@ -6,8 +6,6 @@
 #define BOILER_H
 
 #include "dp_hardware.h"
-
-#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 #include "dp_pid.h"
 #include "dp_heater.h"
@@ -59,7 +57,7 @@ typedef enum
 class BoilerStateMachine : public StateMachine<BoilerStateMachine>
 {
 public:
-  BoilerStateMachine() : StateMachine(&BoilerStateMachine::state_off) {}; // moved intit() out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
+  BoilerStateMachine() : StateMachine(&BoilerStateMachine::state_off) {};
   int error() { return _error; }
   void clear_error() { _error = BOILER_ERROR_NONE; }
   double set_temp() { return _set_temp; }
@@ -99,11 +97,11 @@ public:
   void start_brew() { _brew = true; }
   void stop_brew() { _brew = false; }
   bool is_on() { return _on; }
-  bool is_ready() { return _cur_state == &BoilerStateMachine::state_ready; }
-  bool is_error() { return _cur_state == &BoilerStateMachine::state_error; }
+  bool is_ready() { return in_state(&BoilerStateMachine::state_ready); }
+  bool is_error() { return in_state(&BoilerStateMachine::state_error); }
   const char *get_error_text();
-  const char *get_state_name();
-  void control();
+  void read_sensor();
+  void run();
   void begin();
   void init(); 
 
@@ -121,13 +119,13 @@ private:
   // Temperature filter (EMA)
   static constexpr double TEMP_FILTER_ALPHA = 0.15; // 0-1, lower = more filtering
   bool _temp_initialized = false;
+  void goto_error(boiler_error_t err);
+  MAX31865 thermistor = MAX31865(PIN_THERM_CS);
   void state_off();     // SSR is forced OFF
   void state_heating(); // Temperature control, but not yet on target temperature
   void state_ready();   // temperature control, within range of target temperature
   void state_brew();    // temperature control in brewing mode with feed-forward active
   void state_error();   // heater is forced OFF, error code is set, set state to OFF to clear error
-  void goto_error(boiler_error_t err);
-  MAX31865 thermistor = MAX31865(PIN_THERM_CS);
 };
 
 extern BoilerStateMachine boilerController;

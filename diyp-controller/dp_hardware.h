@@ -6,6 +6,12 @@
 
 #define HARDWARE_REVISION "1"
 
+// Machine model (detected at runtime via GPIO jumper)
+typedef enum { MODEL_ONE = 1, MODEL_TWO = 2 } machine_model_t;
+extern machine_model_t machineModel;
+extern const char* model_name();
+void detect_model();
+
 // GPIO
 #define PIN_BREW_SWITCH 1
 #define PIN_SSR_PUMP 2
