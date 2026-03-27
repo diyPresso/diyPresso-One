@@ -1,6 +1,8 @@
 /* 
   reservoir.h
   measure weight and level of reservoir
+
+  TODO: call read once in main loop, not on every usage.
 */
 #ifndef RESERVOIR_H
 #define RESERVOIR_H
@@ -8,6 +10,8 @@
 #define RESERVOIR_ALMOST_EMPTY_WARNING_LEVEL 12.0 // empty level threshold [%], triggers a warning to refill upon brew start. Can be overwritten by press. - 12% = 180 grams
 #define RESERVOIR_EMPTY_LEVEL 3.34 // empty level threshold [%] - 3.34% = ~50 grams
 #define RESERVOIR_CAPACITY 1500.0 // capacity of reservoir in [grams]
+
+#define RESERVOIR_FLOW_CALC_INTERVAL_MIN_MS 230 // minimum interval for calculating flow rate.
 
 typedef enum {
   RESERVOIR_ERROR_NONE, RESERVOIR_ERROR_SENSOR, RESERVOIR_ERROR_NO_READINGS,
@@ -28,12 +32,19 @@ class Reservoir
       double _glitch_limit = 50.0; // maximum change in weight between readings to be accepted [grams]
       int _deglitched = -1;      // number of deglitched readings, -1 to indicate first reading
       double _outflow_temp = 29.0; // temperature of the water leaving the reservoir in °C
+      
+      double _outflow_gr = 0.0; // calculated outflow in grams per second
+      double _outflow_last_net_weight = 0.0; // last weight used for flow calculation
+      unsigned long _outflow_last_time_ms = 0; // last time used for flow calculation
+
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
+
       void read();  // update the internal state, based on weight measurement
     public:
       Reservoir();
       double level() { return max(0, min(100.0 * ( weight() / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
       double weight() { read(); return _weight_net; } // net weight
+      double outflow() { read(); return _outflow_gr; } // outflow in grams per second, outflow is positive when water is flowing out of the reservoir.
       double get_tare() { return _tare; }
       void set_tare(double t) { _tare = t; clear_error(); }
       void set_trim(double t) { _trim = t; }

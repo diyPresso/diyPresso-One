@@ -1,7 +1,8 @@
 #ifndef BREW_H
 #define BREW_H
 
-#define BREW_MIN_TEMP 93
+#define BREW_SHOT_DETECTION_FLOW_THRESHOLD 6.0 // maximum flow in grams per second to detect start of shot. Higher is mechanical pre-infusion or just pulling water.
+
 #include <Arduino.h>
 #include <Timer.h>
 #include "dp_time.h"
@@ -52,7 +53,7 @@ public:
   bool is_busy() { return IN_STATE(pre_infuse) || IN_STATE(infuse) || IN_STATE(extract); }
   bool is_warning_almost_empty() { return IN_STATE(warning_pre_brew); }
   double brew_time() { return _brewTimer.read() / 1000.0; }
-  double weight() { return _start_weight - reservoir.weight(); }
+  double weight() { return _start_weight_initialized ? _start_weight - reservoir.weight() : 0.0; }
   double end_weight() { return _end_weight; }
   virtual const char *get_state_name();
   const char *get_error_text();
@@ -64,6 +65,7 @@ public:
 
 protected:
   double _start_weight = 0.0, _end_weight = 0.0;
+  bool _start_weight_initialized = false;
   Timer _brewTimer = Timer();
   void state_sleep();
   void state_init();

@@ -240,7 +240,7 @@ void Display::logo(const char *date, const char*time)
   lcd.write (1);
   delay(textDelay);
 
-  delay(1000);
+  delay(500);
   lcd.setCursor(0,3);
   lcd.print("r" HARDWARE_REVISION);
   lcd.setCursor(20-strlen("v" SOFTWARE_VERSION), 3);
@@ -257,5 +257,5 @@ void Display::logo(const char *date, const char*time)
 #endif
 
 
-  delay(3000);
+  delay(1500);
 }

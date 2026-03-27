@@ -74,8 +74,8 @@ const char *menus[] = {
     // 01234567890123456789
     "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
     "Power    ### % ## # "    // [2:percentage] [3:ON_OFF] [4:PUMP]
-    "############# #####s"    // [5:state] [6:time]
-    "Weight ##### gram # ",   // [7:Weight] [8:level]
+    "######## ####s/####g"    // [5:state] [6:time] [7:brew weight]
+    "Reservoir   #####g #",   // [8:Reservoir weight] [9:level]
 
     // SETTING=1
     // 01234567890123456789
@@ -142,14 +142,14 @@ const char *menus[] = {
     "___COMMISSIONING___ "
     " ################## "
     " ################## "
-    " Weight ##### gram  ",
+    "Reservoir   #####g #",
 
     // WARNING_ALMOST_EMPTY=11
   // 01234567890123456789
     "       Warning!     "
     "     Almost empty   "
     " Push to start brew "
-    "Weight ##### gram # " // [0:Weight] [1:level]
+    "Reservoir   #####g #", // [0:Weight] [1:level]
 
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
@@ -181,7 +181,7 @@ bool menu_main()
   static unsigned int animation_counter = 0;
   char bufs[10][32];
   char *arg[10];
-  char pump_spinner[2], heater_spinner[2], level_spinner[2];
+  char pump_spinner[1], level_spinner[1];
 
   static unsigned long last_count_increment_t = 0;
   unsigned long delta_t = millis() - last_count_increment_t;
@@ -196,18 +196,9 @@ bool menu_main()
   if (pumpDevice.is_on())
   {
     pump_spinner[0] = spinner_chars[animation_counter % 8];
-    pump_spinner[1] = 0;
   }
   else
     pump_spinner[0] = 0;
-
-  if (heaterDevice.is_on())
-  {
-    heater_spinner[0] = spinner_chars[7];
-    heater_spinner[1] = 0;
-  }
-  else
-    heater_spinner[0] = 0;
 
   if (reservoir.is_empty() or reservoir.is_almost_empty()) 
   {
@@ -216,7 +207,6 @@ bool menu_main()
   else
   {
     level_spinner[0] = reservoir_level_indicator();
-    level_spinner[1] = 0;
   }
 
   for (int i = 0; i < 10; i++)
@@ -231,19 +221,25 @@ bool menu_main()
   strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
   arg[4] = pump_spinner;
 
-  // [5:state] [6:time]
+  // // [5:state] [6:time] [7:brew weight]
   arg[5] = (char *)brewProcess.get_state_name();
-  format_float(arg[6], brewProcess.brew_time(), 1, 5);
+  format_float(arg[6], brewProcess.brew_time(), 1, 4);
 
-  // [7:Weight] [8:level]
-  if (brewProcess.is_busy())
-    format_float(arg[7], brewProcess.weight(), 0, 5);
-  else if (brewProcess.is_finished())
-    format_float(arg[7], brewProcess.end_weight(), 0, 5);
-  else
-    format_float(arg[7], reservoir.weight(), 0, 5);
+  double w;
+  if (brewProcess.is_busy()) w = brewProcess.weight();
+  else w = brewProcess.end_weight();
 
-  arg[8] = level_spinner;
+  if (w < 99.95 and w > -9.95) format_float(arg[7], w, 1, 4); // show one decimal if under 100g, e.g 99.8g
+  else format_float(arg[7], w, 0, 4); //  otherwise show no decimals, e.g. 120g
+  
+  // [8:Reservoir weight] [9:level]
+  // 
+  //   format_float(arg[8], brewProcess.weight(), 0, 5);
+  // else if (brewProcess.is_finished())
+  //   format_float(arg[8], brewProcess.end_weight(), 0, 5);
+  // else
+  format_float(arg[8], reservoir.weight(), 0, 5);
+  arg[9] = level_spinner;
 
   display.show(menus[MENU_MAIN], arg);
   return false;
@@ -544,8 +540,8 @@ bool menu_state()
 
 char reservoir_level_indicator()
 {
-  int level_index =  (sizeof(spinner_chars) * reservoir.level()) / 100.0;
-  return spinner_chars[min(max(0, level_index), sizeof(spinner_chars) - 1)];
+  int level_index =  ((sizeof(spinner_chars) - 1) * reservoir.level()) / 100.0;
+  return spinner_chars[min(max(0, level_index), sizeof(spinner_chars) - 2)];
 }
 
 /// @brief Get a string from a list of strings

@@ -62,9 +62,22 @@ void Reservoir::read()
     _weight_net = (_weight_gross / (1.0 + _trim / 100.0)) - _tare;
     if ( _weight_net > RESERVOIR_CAPACITY + 100.0 ) _error = RESERVOIR_ERROR_OUT_OF_RANGE;
     if ( _weight_net < -100.0 ) _error = RESERVOIR_ERROR_NEGATIVE;
-  } 
-  
 
+    // Calculate outflow in grams per second, if enough time has passed since last calculation
+    unsigned long currentTime = millis();
+    if (currentTime - _outflow_last_time_ms >= RESERVOIR_FLOW_CALC_INTERVAL_MIN_MS) {
+        _outflow_gr = (_outflow_last_net_weight - _weight_net) / ((currentTime - _outflow_last_time_ms) / 1000.0); // in grams per second
+        _outflow_last_net_weight = _weight_net;
+        _outflow_last_time_ms = currentTime; 
+
+        Serial.print("Reservoir net weight: ");
+        Serial.print(_weight_net);
+        Serial.print(" g");
+        Serial.print(", outflow: ");
+        Serial.print(_outflow_gr, 2);
+        Serial.println(" g/s");
+    }
+  }   
 }
 
 const char *Reservoir::get_error_text()

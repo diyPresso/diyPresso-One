@@ -65,7 +65,7 @@ void setup()
 {
   int result = 0;
   
-  delay(1000);
+  delay(500);
   dpSerial.send(__DATE__ " " __TIME__);
   statusLed.color(ColorLed::WHITE);
 

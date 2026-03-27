@@ -61,6 +61,7 @@ void BrewProcess::state_fill()
   ON_ENTRY()
   {
     _start_weight = reservoir.weight();
+    _start_weight_initialized = true;
     pumpDevice.on();
   }
   statusLed.color(blink() ? ColorLed::YELLOW : ColorLed::BLACK);
@@ -192,7 +193,8 @@ void BrewProcess::state_pre_infuse()
 {
   ON_ENTRY()
   {
-    _start_weight = reservoir.weight();
+    _start_weight = 0.0;
+    _start_weight_initialized = false; // clear start weight.
     _brewTimer.start();
     statusLed.color(ColorLed::BLUE);
     pumpDevice.on();
@@ -220,14 +222,18 @@ void BrewProcess::state_extract()
 {
   ON_ENTRY()
   {
-    if (!is_prev_state(STATE(state_finished)))
-    {
-      _start_weight = reservoir.weight();
-    }
     statusLed.color(ColorLed::PURPLE);
     pumpDevice.on();
     boilerController.start_brew();
     settings.incShotCounter();
+    _start_weight_initialized = false;
+  }
+
+  // Detect start of shot: after 1 second in this state and flow is below threshold
+  if (!_start_weight_initialized && on_timeout(1000) && reservoir.outflow() < BREW_SHOT_DETECTION_FLOW_THRESHOLD)
+  {
+    _start_weight = reservoir.weight();
+    _start_weight_initialized = true;
   }
 
   // Weigth-based extraction stop
