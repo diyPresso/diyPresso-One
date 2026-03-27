@@ -26,6 +26,7 @@ class MqttDevice
       void write(char *measurement, double value);
       void write(char *measurement, char *value);
       void send();
+      void send_state();
 
 };
 

@@ -12,6 +12,10 @@
 #include "dp_heater.h"
 #include "dp_pump.h"
 #include "dp_settings.h"
+#include "dp_commission.h"
+#include "dp_machine.h"
+#include "dp_serial.h"
+#include <Timer.h>
 
 double settings_vals[32];
 
@@ -108,8 +112,8 @@ const char *menus[] = {
     // 01234567890123456789
     "     ##########     "
     "   I AM SLEEPING!   "
-    " LONG PRESS BUTTON  "
-    "   TO WAKE ME...    ",
+    "  PRESS BUTTON TO   "
+    "     WAKE ME...     ",
 
     // CONFIRM=6
     // 01234567890123456789
@@ -408,38 +412,42 @@ double add_value(int n, double delta)
 }
 
 bool menu_commissioning()
-{ //                   sub-state:   0                    1                 2                    3                     4
-  static char *substate_names[] = {"Fill reservoir", "Filling boiler", "Purge", "Press button when", "Done!", "?"};
-  static char *substate_info[] = {"And press button", "Wait...", "Put brew lever UP", "Water pours out", "Put lever DOWN", "?"};
+{
+  struct { const char *state; const char *name; const char *info; } substates[] = {
+    { "init",    "Fill reservoir",    "And press button" },
+    { "fill",    "Filling boiler",    "Wait..." },
+    { "purge",   "Purge",             "Put brew lever UP" },
+    { "check",   "Press button when", "Water pours out" },
+    { "confirm", "Done!",             "Put lever DOWN" },
+    { "done",    "Done!",             "" },
+  };
   char buf[32];
   char *args[3];
   char weight[10];
-  int substate = 4;
 
-  format_float(weight, brewProcess.weight(), 0, 5);
+  format_float(weight, reservoir.weight(), 0, 5);
   args[2] = weight;
 
-  if (brewProcess.is_init())
-    substate = 0;
-  if (brewProcess.is_fill())
-    substate = 1;
-  if (brewProcess.is_purge())
-    substate = 2;
-  if (brewProcess.is_check())
-    substate = 3;
-  if (brewProcess.is_done())
-    substate = 4;
+  const char *state = commissioningProcess.get_state_name();
+  const char *name = "?";
+  const char *info = "?";
 
-  args[0] = (char *)substate_names[substate];
-  args[1] = (char *)substate_info[substate];
-  if (substate == 1)
+  for (auto &s : substates) {
+    if (strcmp(state, s.state) == 0) {
+      name = s.name;
+      info = s.info;
+      break;
+    }
+  }
+
+  args[0] = (char *)name;
+  args[1] = (char *)info;
+  if (strcmp(state, "fill") == 0)
   {
-    sprintf(buf, "Wait %d...", (int)INITIAL_PUMP_TIME - (int)brewProcess.state_time());
+    sprintf(buf, "Wait %d...", (int)INITIAL_PUMP_TIME - (int)commissioningProcess.state_time());
     args[1] = buf;
   }
   display.show(menus[MENU_COMMISSIONING], args);
-  // if (display.button_pressed())
-  //   return true;
   return false;
 }
 
@@ -573,4 +581,92 @@ int get_item_count(const char *items)
     count++;
   }
   return count;
+}
+
+bool menu_ready(bool button_pressed)
+{
+  typedef enum { MAIN, SETTINGS, SAVED, INFO, WARNING } ready_menu_t;
+  static ready_menu_t ready_menu = MAIN;
+  static Timer saved_timer = Timer(MILLIS);
+
+  if (brewProcess.is_warning_almost_empty() && ready_menu != WARNING)
+    ready_menu = WARNING;
+
+  switch (ready_menu)
+  {
+  case WARNING:
+    menu_warning_almost_empty();
+    if (!brewProcess.is_warning_almost_empty())
+      ready_menu = MAIN;
+    break;
+
+  case MAIN:
+    menu_main();
+    if (button_pressed)
+      ready_menu = SETTINGS;
+    else if (display.encoder_changed())
+      ready_menu = INFO;
+    break;
+
+  case SETTINGS:
+    if (brewProcess.is_busy()) {
+      ready_menu = MAIN;
+      break;
+    }
+    {
+      int result = menu_settings(button_pressed);
+      if (result == 1) {
+        boilerController.clear_error();
+        reservoir.clear_error();
+        settings.apply();
+        display.button_pressed();
+        ready_menu = SAVED;
+      } else if (result == 2) {
+        dpSerial.send("Cancel!");
+        display.button_pressed();
+        display.encoder_changed();
+        ready_menu = MAIN;
+      }
+    }
+    break;
+
+  case SAVED:
+    menu_saved();
+    display.button_pressed();
+    display.encoder_changed();
+    if (saved_timer.state() != status_t::RUNNING) {
+      saved_timer.start();
+    } else if (saved_timer.read() > 1000) {
+      saved_timer.stop();
+      ready_menu = MAIN;
+    }
+    break;
+
+  case INFO:
+    menu_state();
+    if (button_pressed)
+      ready_menu = SETTINGS;
+    if (display.encoder_changed())
+      ready_menu = MAIN;
+    break;
+
+  default:
+    ready_menu = MAIN;
+  }
+  return false;
+}
+
+// Display update: pick the right menu based on machine state
+void update_display(bool button_pressed)
+{
+  const char *machine_state = machineController.get_state_name();
+
+  if (strcmp(machine_state, "commissioning") == 0)
+    menu_commissioning();
+  else if (strcmp(machine_state, "sleep") == 0)
+    menu_sleep();
+  else if (strcmp(machine_state, "error") == 0)
+    menu_error("ERROR");
+  else
+    menu_ready(button_pressed);
 }
