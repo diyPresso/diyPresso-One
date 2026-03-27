@@ -150,6 +150,8 @@ void simulate_heater()
     timer = 0;
 }
 
+
+
 /**
  * @brief main process loop
  * Structured as: 1) Read inputs  2) Run FSMs  3) Update outputs

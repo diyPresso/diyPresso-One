@@ -112,8 +112,8 @@ const char *menus[] = {
     // 01234567890123456789
     "     ##########     "
     "   I AM SLEEPING!   "
-    "    PRESS BUTTON    "
-    "   TO WAKE ME...   ",
+    "  PRESS BUTTON TO   "
+    "     WAKE ME...     ",
 
     // CONFIRM=6
     // 01234567890123456789
