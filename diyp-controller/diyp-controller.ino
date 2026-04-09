@@ -58,6 +58,12 @@
 #include "dp_mqtt.h"
 #include "dp_commission.h"
 
+#include "dp_steam_process.h"
+#include "dp_steam_thermoblock.h"
+#include "dp_steam_switch.h"
+
+
+
 /**
  * @brief setup code
  * initialize all objects and state
@@ -67,8 +73,9 @@ void setup()
   int result = 0;
 
   delay(1000);
-  detect_model();
+  hardware.detect_model();
   dpSerial.send(__DATE__ " " __TIME__);
+  dpSerial.send("diyPresso " + String(hardware.model_name()) + " starting up...");
   statusLed.color(ColorLed::WHITE);
 
   encoder.start();
@@ -99,6 +106,12 @@ void setup()
   display.custom_chars(custom_chars_spinner);
 
   boilerController.init(); // moved this out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
+  if(hardware.has_steam_group()) 
+  { 
+    steamThermoblock.init();
+    steamProcess.init();
+  }
+
 
   settings.apply();
 
@@ -165,8 +178,14 @@ void loop()
 // --- 1. READ INPUTS --- //
   bool button_pressed = display.button_pressed();
   bool long_pressed = display.button_long_pressed();
+  if (hardware.has_steam_group()) {
+    steamSwitch.read();
+    if (steamSwitch.pressed()) dpSerial.send("Steam button pressed, steam process state: " + String(steamProcess.get_state_name()));
+    if (steamSwitch.long_pressed()) dpSerial.send("Steam button long pressed");
+  }
   dpSerial.receive();
   boilerController.read_sensor(); // read temperature sensor
+  if (hardware.has_steam_group()) steamThermoblock.read_sensor(); // read steam thermoblock temperature sensor
   reservoir.read();               // read load cell
 
   #ifdef SIMULATE
@@ -176,8 +195,12 @@ void loop()
 // --- 2. RUN FSMs --- //
   machineController.run(long_pressed ? MachineController::MSG_LONG_PRESS
                       : button_pressed ? MachineController::MSG_BUTTON
+                      : steamSwitch.long_pressed() ? MachineController::MSG_STEAM_LONG_PRESS
+                      : steamSwitch.pressed() ? MachineController::MSG_STEAM_BUTTON
                       : MachineController::MSG_NONE);
+  
   boilerController.run();
+  if (hardware.has_steam_group()) steamThermoblock.run();
 
 // --- 3. UPDATE OUTPUTS --- //
   heaterDevice.control(); // drive heater PWM

@@ -13,7 +13,7 @@
 class MachineController : public StateMachine<MachineController>
 {
 public:
-  typedef enum { MSG_NONE = 0, MSG_BUTTON = 1, MSG_LONG_PRESS = 2 };
+  typedef enum { MSG_NONE = 0, MSG_BUTTON = 1, MSG_LONG_PRESS = 2, MSG_STEAM_BUTTON = 3, MSG_STEAM_LONG_PRESS = 4 };
 
   MachineController() : StateMachine(&MachineController::state_commissioning) {};
 

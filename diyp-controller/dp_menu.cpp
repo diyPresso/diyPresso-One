@@ -15,6 +15,8 @@
 #include "dp_commission.h"
 #include "dp_machine.h"
 #include "dp_serial.h"
+#include "dp_steam_process.h"
+#include "dp_steam_thermoblock.h"
 #include <Timer.h>
 
 double settings_vals[32];
@@ -45,6 +47,10 @@ const setting_t settings_list[] =
         {"DFF Factor", "%", &settings_vals[8], 0.5, 1},
         {"FF heat Value", "%", &settings_vals[9], 0.2, 1},
         {"FF ready Value", "%", &settings_vals[10], 0.2, 1},
+        {"Steam Temp", "\337C", &settings_vals[15], 0.5, 1},
+        {"Steam P-Gain", "%/\337C", &settings_vals[16], 0.2, 1},
+        {"Steam I-Gain", "%/\337C/s", &settings_vals[17], 0.01, 2},
+        {"Steam D-Gain", "%s", &settings_vals[18], 1, 0},
         {"Shot counter", "shots", &settings_vals[11], READ_ONLY, 0},
         {"WIFI mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
         {"Weight trim", "%", &settings_vals[13], 0.05, 2},
@@ -77,7 +83,7 @@ const char *menus[] = {
     // MAIN=0
     // 01234567890123456789
     "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
-    "Power    ### % ## # "    // [2:percentage] [3:ON_OFF] [4:PUMP]
+    "Steam #### ###/###\337C" // [2:steam_state] [3:steam_temp]/[4:steam_set_temp]   "Power    ### % ## # " [2:percentage] [3:ON_OFF] [4:PUMP]
     "############# #####s"    // [5:state] [6:time]
     "Weight ##### gram # ",   // [7:Weight] [8:level]
 
@@ -230,10 +236,20 @@ bool menu_main()
   format_float(arg[0], boilerController.act_temp(), 1, 5);
   format_float(arg[1], boilerController.set_temp(), 1);
 
-  // [2:percentage] [3:ON_OFF] [4:PUMP]
-  format_float(arg[2], heaterDevice.power(), 0, 3);
-  strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
-  arg[4] = pump_spinner;
+  // Steam [2:steam_state] [3:steam_temp]/[4:steam_set_temp]
+  if (hardware.has_steam_group())
+  {
+    arg[2] = (char *)steamProcess.get_short_state();
+    format_float(arg[3], steamThermoblock.act_temp(), 1, 5);
+    format_float(arg[4], steamThermoblock.set_temp(), 1);
+  }
+  else
+  { arg[2] = ""; arg[3] = ""; arg[4] = "";}
+
+  // Non-steam [2:percentage] [3:ON_OFF] [4:PUMP]
+  // format_float(arg[2], heaterDevice.power(), 0, 3);
+  // strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
+  // arg[4] = pump_spinner;
 
   // [5:state] [6:time]
   arg[5] = (char *)brewProcess.get_state_name();
@@ -405,6 +421,14 @@ double add_value(int n, double delta)
     return settings.trimWeight(settings.trimWeight() + delta);
   case 14:
     return settings.commissioningDone(settings.commissioningDone() + (delta / 2.0));
+  case 15:
+    return settings.steamTemperature(settings.steamTemperature() + delta);
+  case 16:
+    return settings.steamP(settings.steamP() + delta);
+  case 17:
+    return settings.steamI(settings.steamI() + delta);
+  case 18:
+    return settings.steamD(settings.steamD() + delta);
 
   default:
     return 0;
@@ -583,10 +607,16 @@ int get_item_count(const char *items)
   return count;
 }
 
+typedef enum { MAIN, SETTINGS, SAVED, INFO, WARNING } ready_menu_t;
+static ready_menu_t ready_menu = MAIN;
+
+void menu_ready_reset()
+{
+  ready_menu = MAIN;
+}
+
 bool menu_ready(bool button_pressed)
 {
-  typedef enum { MAIN, SETTINGS, SAVED, INFO, WARNING } ready_menu_t;
-  static ready_menu_t ready_menu = MAIN;
   static Timer saved_timer = Timer(MILLIS);
 
   if (brewProcess.is_warning_almost_empty() && ready_menu != WARNING)

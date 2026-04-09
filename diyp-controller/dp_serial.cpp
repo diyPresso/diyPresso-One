@@ -37,6 +37,8 @@
 #include "dp_heater.h"
 #include "dp_machine.h"
 #include "dp_commission.h"
+#include "dp_steam_process.h"
+#include "dp_steam_thermoblock.h"
 
 //initialize the class
 DpSerial dpSerial(115200);
@@ -117,8 +119,8 @@ void DpSerial::receive() {
 }
 
 void DpSerial::send_info() {
-    send("diyPresso " + String(model_name()));
-    send("model=" + String(model_name()));
+    send("diyPresso " + String(hardware.model_name()));
+    send("model=" + String(hardware.model_name()));
     send("firmwareVersion=" + String(SOFTWARE_VERSION));
     send("hardwareVersion=" + String(HARDWARE_REVISION));
     send("buildDate=" + String(BUILD_DATE));
@@ -130,6 +132,10 @@ void DpSerial::send_info() {
     send("boilerControllerState=" + String(boilerController.get_state_name()));
     send("boilerControllerError=" + String(boilerController.get_error_text()));
     send("reservoirError=" + String(reservoir.get_error_text()));
+    send("steamProcessState=" + String(steamProcess.get_state_name()));
+    send("steamProcessError=" + String(steamProcess.get_error_text()));
+    send("steamThermoblockState=" + String(steamThermoblock.get_state_name()));
+    send("steamThermoblockError=" + String(steamThermoblock.get_error_text()));
     send("GET info OK");
 }
 
@@ -144,13 +150,12 @@ void DpSerial::put_settings(String value) {
 
     if (res_deserialize == 0) {
 
-        send(settings.temperature());
         int res_save = settings.save(); // all good, save the settings
 
-        if (res_save = 1) {
+        if (res_save == 1) {
             send("PUT settings OK, settings saved.");
             settings.apply();
-        } else if (res_save = 0) {
+        } else if (res_save == 0) {
             send("PUT settings OK, no changes.");
         } else {
             send("PUT settings NOK, unknown return code when saving settings: " + String(res_save));

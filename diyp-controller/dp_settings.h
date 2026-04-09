@@ -31,6 +31,8 @@ class DpSettings
             int commissioningDone;
             int shotCounter;
             int wifiMode;
+            double steamTemperature;
+            double steamP, steamI, steamD;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -80,6 +82,15 @@ class DpSettings
         int commissioningDone(int state) { return settings.commissioningDone = min(1, max(state, 0)); }
         int incShotCounter() { return settings.shotCounter += 1; }
         void zeroShotCounter() { settings.shotCounter = 0; }
+
+        double steamTemperature() { return settings.steamTemperature; }
+        double steamTemperature(double t) { return settings.steamTemperature = min(165.0, max(t, 0.0)); }
+        double steamP() { return settings.steamP; }
+        double steamP(double p) { return settings.steamP = min(10.0, max(p, 0.0)); }
+        double steamI() { return settings.steamI; }
+        double steamI(double i) { return settings.steamI = min(20.0, max(i, 0.0)); }
+        double steamD() { return settings.steamD; }
+        double steamD(double d) { return settings.steamD = min(999.0, max(d, 0.0)); }
 };
 
 extern DpSettings settings;

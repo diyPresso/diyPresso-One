@@ -8,6 +8,7 @@
 #include "dp_settings.h"
 #include <FlashAsEEPROM.h>
 #include "dp_boiler.h"
+#include "dp_steam_thermoblock.h"
 #include "dp_reservoir.h"
 #include "dp_brew.h"
 
@@ -63,7 +64,7 @@ bool DpSettings::crc_is_valid(settings_t *s)
 /// @brief set all values to default in settings stuct
 void DpSettings::defaults()
 {
-    settings.version = 2;  // bumped: ff_brew removed, dff_factor added to struct
+    settings.version = 3;  // bumped: added steam settings
     settings.temperature = 98.0;
     settings.preInfusionTime = 3;
     settings.infusionTime = 1;
@@ -79,6 +80,10 @@ void DpSettings::defaults()
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
     settings.commissioningDone = 0; // default is 0 (not done)
+    settings.steamTemperature = 145.0;
+    settings.steamP = 5.0;
+    settings.steamI = 0.1;
+    settings.steamD = 50.0;
     update_crc();
 }
 
@@ -173,6 +178,9 @@ void DpSettings::apply()
   brewProcess.preInfuseTime = preInfusionTime();
   brewProcess.infuseTime = infusionTime();
   brewProcess.extractTime = extractionTime();
+
+  steamThermoblock.set_temp(steamTemperature());
+  steamThermoblock.set_pid(steamP(), steamI(), steamD());
 }
 
 String DpSettings::serialize() {
@@ -194,7 +202,11 @@ String DpSettings::serialize() {
     result += "trimWeight=" + String(settings.trimWeight) + "\n";
     result += "commissioningDone=" + String(settings.commissioningDone) + "\n";
     result += "shotCounter=" + String(settings.shotCounter) + "\n";
-    result += "wifiMode=" + String(settings.wifiMode) + "\n";    
+    result += "wifiMode=" + String(settings.wifiMode) + "\n";
+    result += "steamTemperature=" + String(settings.steamTemperature) + "\n";
+    result += "steamP=" + String(settings.steamP) + "\n";
+    result += "steamI=" + String(settings.steamI) + "\n";
+    result += "steamD=" + String(settings.steamD) + "\n";
     return result;
 }
 
@@ -273,6 +285,14 @@ int DpSettings::deserialize(String serialized_settings) {
              shotCounter(value.toInt());
         } else if (key == "wifiMode") {
             wifiMode(value.toInt());
+        } else if (key == "steamTemperature") {
+            steamTemperature(value.toDouble());
+        } else if (key == "steamP") {
+            steamP(value.toDouble());
+        } else if (key == "steamI") {
+            steamI(value.toDouble());
+        } else if (key == "steamD") {
+            steamD(value.toDouble());
         } else {
             Serial.println("Unknown key: " + key);
             error = -2; //unknown key

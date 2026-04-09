@@ -6,19 +6,17 @@
 #include <Arduino.h>
 #include "dp_hardware.h"
 
-machine_model_t machineModel = MODEL_ONE;
-
-const char* model_name()
+const char* Hardware::model_name() const
 {
-  switch (machineModel) {
+  switch (_model) {
     case MODEL_ONE: return "One";
     case MODEL_TWO: return "Two";
     default:        return "Unknown";
   }
 }
 
-void detect_model()
+void Hardware::detect_model()
 {
   // TODO: read GPIO jumper pin to detect model
-  machineModel = MODEL_ONE;
+  _model = MODEL_TWO;
 }
