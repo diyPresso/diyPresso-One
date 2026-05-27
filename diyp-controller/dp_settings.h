@@ -71,7 +71,7 @@ class DpSettings
         double tareWeight() { return settings.tareWeight; }
         double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
         double trimWeight() { return settings.trimWeight; }
-        double trimWeight(double t) { return settings.trimWeight = min(10.0, max(t, -10.0)); }
+        double trimWeight(double t) { return settings.trimWeight = min(50.0, max(t, -90.0)); }
         int wifiMode() { return settings.wifiMode; }
         int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
