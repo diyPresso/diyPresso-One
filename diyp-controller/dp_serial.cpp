@@ -15,7 +15,7 @@
     - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffHeat=3.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
     - GET serialOutputConfig
-    - PUT serialOutputConfig DP_PID_STATE=1
+    - PUT serialOutputConfig DP_PID_STATE=1,DP_STEAM_STATE=1
     - GET boiler
     - PUT boiler powerControlMode=STATIC,staticPower=5.0
     - PUT boiler powerControlMode=PID
@@ -23,6 +23,10 @@
     - PUT boilerPidAutotune start
     - PUT boilerPidAutotune cancel
     - PUT boilerPidAutotune apply
+    - GET steamPidAutotune
+    - PUT steamPidAutotune start
+    - PUT steamPidAutotune cancel
+    - PUT steamPidAutotune apply
 
 
 */
@@ -109,6 +113,10 @@ void DpSerial::receive() {
         get_boiler_pid_autotune();
     } else if (receivedData.startsWith("PUT boilerPidAutotune ")) {
         put_boiler_pid_autotune(receivedData.substring(String("PUT boilerPidAutotune ").length()));
+    } else if (receivedData.startsWith("GET steamPidAutotune")) {
+        get_steam_pid_autotune();
+    } else if (receivedData.startsWith("PUT steamPidAutotune ")) {
+        put_steam_pid_autotune(receivedData.substring(String("PUT steamPidAutotune ").length()));
     } else if (receivedData.startsWith("GET boiler")) {
         get_boiler();
     } else if (receivedData.startsWith("PUT boiler ")) {
@@ -171,25 +179,45 @@ void DpSerial::put_settings(String value) {
 
 void DpSerial::get_serial_output_config() {
     send("DP_PID_STATE=" + String(boilerController.get_serial_output() ? "1" : "0"));
+    send("DP_STEAM_STATE=" + String(steamThermoblock.get_serial_output() ? "1" : "0"));
     send("GET serialOutputConfig OK");
 }
 
 void DpSerial::put_serial_output_config(String value) {
-    // Expecting a string like "DP_PID_STATE=1" or "DP_PID_STATE=0"
-    if (value.startsWith("DP_PID_STATE=")) {
-        String stateStr = value.substring(String("DP_PID_STATE=").length());
-        if (stateStr == "1") {
-            boilerController.set_serial_output(true);
-            send("PUT serialOutputConfig OK");
-        } else if (stateStr == "0") {
-            boilerController.set_serial_output(false);
-            send("PUT serialOutputConfig OK");
-        } else {
-            send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + stateStr);
+    value.trim();
+    int startPos = 0;
+    while (startPos < (int)value.length()) {
+        int commaPos = value.indexOf(',', startPos);
+        if (commaPos == -1) commaPos = value.length();
+
+        String pair = value.substring(startPos, commaPos);
+        pair.trim();
+
+        int eqPos = pair.indexOf('=');
+        if (eqPos == -1) {
+            send("PUT serialOutputConfig NOK, invalid format: " + pair);
+            return;
         }
-    } else {
-        send("PUT serialOutputConfig NOK, unknown key: " + value);
+        String key = pair.substring(0, eqPos);
+        String val = pair.substring(eqPos + 1);
+        key.trim();
+        val.trim();
+
+        if (key == "DP_PID_STATE") {
+            if (val == "1") boilerController.set_serial_output(true);
+            else if (val == "0") boilerController.set_serial_output(false);
+            else { send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + val); return; }
+        } else if (key == "DP_STEAM_STATE") {
+            if (val == "1") steamThermoblock.set_serial_output(true);
+            else if (val == "0") steamThermoblock.set_serial_output(false);
+            else { send("PUT serialOutputConfig NOK, invalid value for DP_STEAM_STATE: " + val); return; }
+        } else {
+            send("PUT serialOutputConfig NOK, unknown key: " + key);
+            return;
+        }
+        startPos = commaPos + 1;
     }
+    send("PUT serialOutputConfig OK");
 }
 
 void DpSerial::get_boiler() {
@@ -316,7 +344,62 @@ void DpSerial::put_boiler_pid_autotune(String value) {
     }
 }
 
-void DpSerial::print_state()
+void DpSerial::get_steam_pid_autotune() {
+    autotune_state_t state = steamThermoblock.getAutoTuneState();
+    String stateStr;
+    
+    switch(state) {
+        case AUTOTUNE_IDLE: stateStr = "IDLE"; break;
+        case AUTOTUNE_RUNNING: stateStr = "RUNNING"; break;
+        case AUTOTUNE_SUCCESS: stateStr = "SUCCESS"; break;
+        case AUTOTUNE_FAILED_TIMEOUT: stateStr = "FAILED_TIMEOUT"; break;
+        case AUTOTUNE_FAILED_NO_OSCILLATION: stateStr = "FAILED_NO_OSCILLATION"; break;
+        default: stateStr = "UNKNOWN"; break;
+    }
+    
+    send("state=" + stateStr);
+    
+    if (state == AUTOTUNE_SUCCESS) {
+        AutoTuneResults results = steamThermoblock.getAutoTuneResults();
+        if (results.isValid) {
+            send("Kp=" + String(results.Kp, 3));
+            send("Ki=" + String(results.Ki, 3));
+            send("Kd=" + String(results.Kd, 3));
+            send("Ku=" + String(results.Ku, 3));
+            send("Pu=" + String(results.Pu, 3));
+        } else {
+            send("isValid=false");
+        }
+    }
+    
+    send("GET steamPidAutotune OK");
+}
+
+void DpSerial::put_steam_pid_autotune(String value) {
+    value.trim();
+    value.toLowerCase();
+    
+    if (value == "start") {
+        steamThermoblock.startAutoTune();
+        send("PUT steamPidAutotune OK, Auto-tune started");
+    } else if (value == "cancel") {
+        steamThermoblock.cancelAutoTune();
+        send("PUT steamPidAutotune OK, Auto-tune cancelled");
+    } else if (value == "apply") {
+        AutoTuneResults results = steamThermoblock.getAutoTuneResults();
+        if (results.isValid) {
+            steamThermoblock.set_pid(results.Kp, results.Ki, results.Kd);
+            send("PUT steamPidAutotune OK, Applied Kp=" + String(results.Kp, 3) + 
+                 " Ki=" + String(results.Ki, 3) + " Kd=" + String(results.Kd, 3));
+        } else {
+            send("PUT steamPidAutotune NOK, No valid results to apply");
+        }
+    } else {
+        send("PUT steamPidAutotune NOK, Unknown command (use: start/cancel/apply)");
+    }
+}
+
+void DpSerial::print_state() //legacy data stream, keep for now for compatibility with web cliet and update client.
 {
   static unsigned long prev_time = millis();
   if (millis() - prev_time > 500)

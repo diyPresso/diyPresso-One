@@ -47,10 +47,11 @@ const setting_t settings_list[] =
         {"DFF Factor", "%", &settings_vals[8], 0.5, 1},
         {"FF heat Value", "%", &settings_vals[9], 0.2, 1},
         {"FF ready Value", "%", &settings_vals[10], 0.2, 1},
-        {"Steam Temp", "\337C", &settings_vals[15], 0.5, 1},
+        {"Steam Temperature", "\337C", &settings_vals[15], 0.5, 1},
         {"Steam P-Gain", "%/\337C", &settings_vals[16], 0.2, 1},
         {"Steam I-Gain", "%/\337C/s", &settings_vals[17], 0.01, 2},
         {"Steam D-Gain", "%s", &settings_vals[18], 1, 0},
+        {"Steam Pump Power", "%", &settings_vals[19], 10, 0},
         {"Shot counter", "shots", &settings_vals[11], READ_ONLY, 0},
         {"WIFI mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
         {"Weight trim", "%", &settings_vals[13], 0.05, 2},
@@ -64,7 +65,7 @@ const setting_t settings_list[] =
 const int num_settings = sizeof(settings_list) / sizeof(setting_t);
 
 const char *errors_list[] = {
-    // 0123456789012345678
+  // 01234567890123456789
     " OVER TEMPERATURE   ",
     " UNDER TEMPERATURE  ",
     " TEMPERATURE SENSOR ",
@@ -305,11 +306,12 @@ int menu_settings(bool button_pressed)
     arg[i] = bufs[i];
   format_float(arg[1], num_settings, 0);
 
-  setting_t set = settings_list[idx];
   pos = display.encoder_value();
   if (modify)
   {
-    set_val = add_value(idx, set.delta * (pos - prev_pos));
+    setting_t set = settings_list[idx];
+    int val_idx = set.val - settings_vals;
+    set_val = add_value(val_idx, set.delta * (pos - prev_pos));
   }
   else
   {
@@ -317,8 +319,11 @@ int menu_settings(bool button_pressed)
     idx %= num_settings;
     if (idx < 0)
       idx += num_settings;
-    set_val = add_value(idx, 0.0);
+    int val_idx = settings_list[idx].val - settings_vals;
+    set_val = add_value(val_idx, 0.0);
   }
+
+  setting_t set = settings_list[idx];
 
   if (button_pressed)
   {
@@ -429,6 +434,8 @@ double add_value(int n, double delta)
     return settings.steamI(settings.steamI() + delta);
   case 18:
     return settings.steamD(settings.steamD() + delta);
+  case 19:
+    return settings.steamPumpPower(settings.steamPumpPower() + delta);
 
   default:
     return 0;

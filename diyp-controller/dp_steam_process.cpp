@@ -51,7 +51,8 @@ void SteamProcess::state_heating()
   ON_MESSAGE(MSG_BUTTON)
     next(&SteamProcess::state_steaming);
   ON_TIMEOUT_SEC(STEAM_TIMEOUT_HEATING_SEC)
-    goto_error(STEAM_PROCESS_ERROR_HEATING_TIMEOUT);
+    if (!steamThermoblock.isAutoTuning()) // don't timeout during PID autotune
+      goto_error(STEAM_PROCESS_ERROR_HEATING_TIMEOUT);
 }
 
 // ready: at temperature, waiting for user
@@ -60,10 +61,13 @@ void SteamProcess::state_ready()
   ON_ENTRY() {}
   if (reservoir.is_empty())
     next(&SteamProcess::state_empty);
+  ON_MESSAGE(MSG_LONG_PRESS)
+    next(&SteamProcess::state_idle);
   ON_MESSAGE(MSG_BUTTON)
     next(&SteamProcess::state_steaming);
   ON_TIMEOUT_SEC(STEAM_TIMEOUT_READY_SEC) {
-    next(&SteamProcess::state_idle);
+    if (!steamThermoblock.isAutoTuning()) // don't timeout during PID autotune
+      next(&SteamProcess::state_idle);
   }
 }
 

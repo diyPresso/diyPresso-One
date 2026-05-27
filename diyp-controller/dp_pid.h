@@ -54,7 +54,7 @@ E_ff = E_ff - (P_ff * Δt_actual)
 #define AUTOTUNE_RELAY_OUTPUT 10.0 // Relay output amplitude (% of max power)
 #define AUTOTUNE_MIN_CYCLES 3 // Minimum number of oscillation cycles to measure
 #define AUTOTUNE_TIMEOUT_MS 1800000 // Auto-tune timeout (30 minutes)
-#define AUTOTUNE_SETPOINT_BAND 0.3 // Band around setpoint for relay switching (+/- degC)
+#define AUTOTUNE_SETPOINT_BAND 0.5 // Band around setpoint for relay switching (+/- degC)
 #define AUTOTUNE_PEAK_NOISE_BAND 0.08 // Noise band for peak detection (+/- degC)
 #define AUTOTUNE_SETTLING_TIME_MS 25000 // Initial settling time before peak detection (25 seconds)
 
@@ -98,6 +98,7 @@ public:
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
     bool getSerialOutput() const { return serialOutput; }
+    void setSerialLabel(const char* label) { serialLabel = label; }
 
     // Auto-tune functions
     void startAutoTune();
@@ -117,6 +118,7 @@ protected:
     void processAutoTune();
 
     bool serialOutput = false; // enable/disable serial debug output
+    const char* serialLabel = "DP_PID_STATE"; // prefix for serial output lines
 
     double* input;
     double* output;

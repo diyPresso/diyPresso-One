@@ -34,23 +34,21 @@ void Reservoir::read()
   
     // read the weight from the sensor and calculate the gross weight
     new_gross_weight = (scale.read() - _offset) / ( _scale);
-
-    // Serial.print("nr of readings: ");
-    // Serial.println(_readings);
      _readings = 0;
 
     // simple deglitcher: only accept new reading if within _glitch_limit grams of previous reading, or on 3 consecutive glitches, or on first reading (-1)
     if  (abs(new_gross_weight - _weight_gross) > _glitch_limit && _deglitched < 3 && _deglitched > -1 )
     {
       _deglitched += 1;  
-      Serial.print("!!!! Deglitched reservoir reading. New: "); // TODO: disable debug
-      Serial.print(new_gross_weight);
-      Serial.print(" old: ");
-      Serial.print(_weight_gross);
-      Serial.print(" diff: ");
-      Serial.print(abs(new_gross_weight - _weight_gross));
-      Serial.print(" deglitched count: ");
-      Serial.println(_deglitched);
+      
+      // Serial.print("!!!! Deglitched reservoir reading. New: ");
+      // Serial.print(new_gross_weight);
+      // Serial.print(" old: ");
+      // Serial.print(_weight_gross);
+      // Serial.print(" diff: ");
+      // Serial.print(abs(new_gross_weight - _weight_gross));
+      // Serial.print(" deglitched count: ");
+      // Serial.println(_deglitched);
     }
     else
     {

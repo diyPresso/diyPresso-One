@@ -28,6 +28,8 @@ class DpSerial {
         void put_boiler(String value);
         void get_boiler_pid_autotune();
         void put_boiler_pid_autotune(String value);
+        void get_steam_pid_autotune();
+        void put_steam_pid_autotune(String value);
 };
 
 extern DpSerial dpSerial;

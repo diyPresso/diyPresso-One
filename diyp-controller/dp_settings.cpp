@@ -9,6 +9,7 @@
 #include <FlashAsEEPROM.h>
 #include "dp_boiler.h"
 #include "dp_steam_thermoblock.h"
+#include "dp_steam_pump.h"
 #include "dp_reservoir.h"
 #include "dp_brew.h"
 
@@ -80,10 +81,11 @@ void DpSettings::defaults()
     settings.wifiMode = 0; // off=0
     settings.shotCounter = 0;
     settings.commissioningDone = 0; // default is 0 (not done)
-    settings.steamTemperature = 145.0;
+    settings.steamTemperature = 165.0;
     settings.steamP = 5.0;
     settings.steamI = 0.1;
     settings.steamD = 50.0;
+    settings.steamPumpPower = 100.0;
     update_crc();
 }
 
@@ -181,6 +183,7 @@ void DpSettings::apply()
 
   steamThermoblock.set_temp(steamTemperature());
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
+  steamPump.power(steamPumpPower());
 }
 
 String DpSettings::serialize() {
@@ -207,6 +210,7 @@ String DpSettings::serialize() {
     result += "steamP=" + String(settings.steamP) + "\n";
     result += "steamI=" + String(settings.steamI) + "\n";
     result += "steamD=" + String(settings.steamD) + "\n";
+    result += "steamPumpPower=" + String(settings.steamPumpPower) + "\n";
     return result;
 }
 
@@ -293,6 +297,8 @@ int DpSettings::deserialize(String serialized_settings) {
             steamI(value.toDouble());
         } else if (key == "steamD") {
             steamD(value.toDouble());
+        } else if (key == "steamPumpPower") {
+            steamPumpPower(value.toDouble());
         } else {
             Serial.println("Unknown key: " + key);
             error = -2; //unknown key

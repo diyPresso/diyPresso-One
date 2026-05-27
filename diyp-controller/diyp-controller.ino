@@ -61,8 +61,8 @@
 #include "dp_steam_process.h"
 #include "dp_steam_thermoblock.h"
 #include "dp_steam_switch.h"
-
-
+#include "dp_steam_heater.h"
+#include "dp_steam_pump.h"
 
 /**
  * @brief setup code
@@ -109,6 +109,7 @@ void setup()
   if(hardware.has_steam_group()) 
   { 
     steamThermoblock.init();
+    steamPump.init();
     steamProcess.init();
   }
 
@@ -163,8 +164,6 @@ void simulate_heater()
     timer = 0;
 }
 
-
-
 /**
  * @brief main process loop
  * Structured as: 1) Read inputs  2) Run FSMs  3) Update outputs
@@ -178,14 +177,15 @@ void loop()
 // --- 1. READ INPUTS --- //
   bool button_pressed = display.button_pressed();
   bool long_pressed = display.button_long_pressed();
-  if (hardware.has_steam_group()) {
-    steamSwitch.read();
-    if (steamSwitch.pressed()) dpSerial.send("Steam button pressed, steam process state: " + String(steamProcess.get_state_name()));
-    if (steamSwitch.long_pressed()) dpSerial.send("Steam button long pressed");
-  }
+  if (hardware.has_steam_group()) steamSwitch.read();  
+  // if (steamSwitch.pressed()) dpSerial.send("Steam button pressed, steam process state: " + String(steamProcess.get_state_name())); 
+  // if (steamSwitch.long_pressed()) dpSerial.send("Steam button long pressed");
+  
   dpSerial.receive();
-  boilerController.read_sensor(); // read temperature sensor
+
+  boilerController.read_sensor(); // read boiler temperature sensor
   if (hardware.has_steam_group()) steamThermoblock.read_sensor(); // read steam thermoblock temperature sensor
+  
   reservoir.read();               // read load cell
 
   #ifdef SIMULATE
@@ -204,6 +204,8 @@ void loop()
 
 // --- 3. UPDATE OUTPUTS --- //
   heaterDevice.control(); // drive heater PWM
+  if (hardware.has_steam_group()) steamHeater.control();
+  if (hardware.has_steam_group()) steamPump.control();
   update_display(button_pressed);
   dpSerial.print_state();
   mqttDevice.send_state();

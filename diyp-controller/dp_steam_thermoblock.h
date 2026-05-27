@@ -13,10 +13,10 @@
 #include <MAX31865_NonBlocking.h>
 
 // Steam temperatures in [degC]
-#define STEAM_TEMP_WINDOW 2.0
-#define STEAM_TEMP_LIMIT_HIGH 165.0
+#define STEAM_TEMP_WINDOW 3.0
+#define STEAM_TEMP_LIMIT_HIGH 180.0
 #define STEAM_TEMP_LIMIT_LOW 1.0
-#define STEAM_TEMP_DEFAULT 140.0
+#define STEAM_TEMP_DEFAULT 165.0
 
 // Steam timeouts in [sec]
 #define STEAM_TIMEOUT_HEATING (60 * 5)
@@ -58,6 +58,15 @@ public:
   const char *get_error_text();
 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  bool get_serial_output() const { return _pid.getSerialOutput(); }
+  void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
+
+  // Auto-tune methods
+  void startAutoTune() { _pid.startAutoTune(); }
+  void cancelAutoTune() { _pid.cancelAutoTune(); }
+  bool isAutoTuning() const { return _pid.isAutoTuning(); }
+  autotune_state_t getAutoTuneState() const { return _pid.getAutoTuneState(); }
+  AutoTuneResults getAutoTuneResults() const { return _pid.getAutoTuneResults(); }
 
 private:
   DpPID _pid;

@@ -6,14 +6,19 @@
 #include "dp.h"
 #include "dp_hardware.h"
 #include "dp_steam_thermoblock.h"
+#include "dp_steam_heater.h"
 #include "dp_settings.h"
 
 SteamThermoblock steamThermoblock = SteamThermoblock();
 
 void SteamThermoblock::init()
 {
-  _pid.begin(&_act_temp, &_power, &_set_temp, 5.0, 0.1, 50.0, 0.0, false, 1000, nullptr); // overridden by settings.apply()
+  steamHeater.init();
+
+  _pid.begin(&_act_temp, &_power, &_set_temp, 0.0, 0.0, 0.0, 3.0, false, 1000, nullptr); // overridden by settings.apply()
   _pid.setOutputLimits(0, 100);
+  _pid.setWindUpLimits(-5, 5); //TODO: adjust windup limits
+  _pid.setSerialLabel("DP_STEAM_STATE");
   _pid.start();
 
   _thermistor.begin(MAX31865::RTD_2WIRE, MAX31865::FILTER_50HZ, MAX31865::CONV_MODE_CONTINUOUS);
@@ -23,9 +28,6 @@ void SteamThermoblock::init()
   _rtd_error = 0;
   _on = false;
   _last_control_time = millis();
-
-  pinMode(PIN_SSR_STEAM_HEATER, OUTPUT);
-  digitalWrite(PIN_SSR_STEAM_HEATER, LOW);
 }
 
 void SteamThermoblock::read_sensor()
@@ -68,8 +70,7 @@ void SteamThermoblock::run()
     _power = 0;
 
   double output = _on ? _power : 0.0;
-  // TODO: PWM control for steam heater SSR (like HeaterDevice)
-  digitalWrite(PIN_SSR_STEAM_HEATER, output > 0 ? HIGH : LOW);
+  steamHeater.power(output);
 }
 
 void SteamThermoblock::state_off()
@@ -84,7 +85,7 @@ void SteamThermoblock::state_heating()
   ON_ENTRY() {}
   if (!_on)
     next(&SteamThermoblock::state_off);
-  if (abs(_set_temp - _act_temp) < STEAM_TEMP_WINDOW)
+  if (_set_temp - _act_temp < STEAM_TEMP_WINDOW)
     next(&SteamThermoblock::state_ready);
   ON_TIMEOUT_SEC(STEAM_TIMEOUT_HEATING)
     goto_error(STEAM_THERMO_ERROR_TIMEOUT_HEATING);

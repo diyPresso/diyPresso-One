@@ -214,8 +214,8 @@ void DpPID::setSampleTime(const unsigned int &minSamplePeriodMs)
 
 void DpPID::printToSerial()
 {
-    Serial.print("DP_PID_STATE ");
-    Serial.print("input: ");
+    Serial.print(serialLabel);
+    Serial.print(" input: ");
     Serial.print(*input);
     Serial.print(", setpoint: ");
     Serial.print(*setpoint);
@@ -348,6 +348,7 @@ void DpPID::processAutoTune()
     Serial.print(", risingEdge: ");
     Serial.println(atRisingEdge);
 
+    if(serialOutput) printToSerial();
 
     if (inSettlingTime) { // during initial settling time, just update last value
         atLastValue = inputValue;

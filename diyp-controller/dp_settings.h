@@ -33,6 +33,7 @@ class DpSettings
             int wifiMode;
             double steamTemperature;
             double steamP, steamI, steamD;
+            double steamPumpPower;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -73,7 +74,7 @@ class DpSettings
         double tareWeight() { return settings.tareWeight; }
         double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
         double trimWeight() { return settings.trimWeight; }
-        double trimWeight(double t) { return settings.trimWeight = min(10.0, max(t, -10.0)); }
+        double trimWeight(double t) { return settings.trimWeight = min(50.0, max(t, -90.0)); }
         int wifiMode() { return settings.wifiMode; }
         int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
         int shotCounter() { return settings.shotCounter; }
@@ -84,13 +85,15 @@ class DpSettings
         void zeroShotCounter() { settings.shotCounter = 0; }
 
         double steamTemperature() { return settings.steamTemperature; }
-        double steamTemperature(double t) { return settings.steamTemperature = min(165.0, max(t, 0.0)); }
+        double steamTemperature(double t) { return settings.steamTemperature = min(170.0, max(t, 0.0)); }
         double steamP() { return settings.steamP; }
-        double steamP(double p) { return settings.steamP = min(10.0, max(p, 0.0)); }
+        double steamP(double p) { return settings.steamP = min(50.0, max(p, 0.0)); }
         double steamI() { return settings.steamI; }
-        double steamI(double i) { return settings.steamI = min(20.0, max(i, 0.0)); }
+        double steamI(double i) { return settings.steamI = min(10.0, max(i, 0.0)); }
         double steamD() { return settings.steamD; }
         double steamD(double d) { return settings.steamD = min(999.0, max(d, 0.0)); }
+        double steamPumpPower() { return settings.steamPumpPower; }
+        double steamPumpPower(double p) { return settings.steamPumpPower = min(100.0, max(p, 10.0)); }
 };
 
 extern DpSettings settings;
