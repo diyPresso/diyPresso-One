@@ -123,16 +123,25 @@ void setup()
 
   if (settings.wifiMode() != WIFI_MODE_OFF)
   {
-    if (settings.wifiMode() == WIFI_MODE_AP)
+    bool config_ap = settings.wifiMode() == WIFI_MODE_AP;
+    if (config_ap)
     {
-      wifi_erase();
-      settings.wifiMode(WIFI_MODE_ON);
+      // Save OFF until connected, so a cancelled or interrupted setup does not return on the next boot
+      settings.wifiMode(WIFI_MODE_OFF);
       settings.save();
     }
     menu_wifi("starting");
     wifi_setup();
-    wifi_loop();
-    delay(1000);
+    if (wifi_loop(config_ap))
+    {
+      if (config_ap)
+      {
+        settings.wifiMode(WIFI_MODE_ON);
+        settings.save();
+      }
+      delay(1000); // keep the IP address on the display for a moment
+    }
+    display.button_pressed(); // consume a button press that cancelled Wifi, so it does not open the settings menu
   }
   mqttDevice.init();
 }

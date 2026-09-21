@@ -3,6 +3,15 @@
  * Created by John V. - 2020 V 1.4.1
  *
  * Released into the public domain on github: https://github.com/javos65/EasyWifi-for-MKR1010
+ *
+ * CUSTOMIZED FOR DIYPRESSO - this is not the upstream library (unmaintained since 2020), do not replace it.
+ * Changes compared to upstream:
+ *  - Progress is shown on the machine display via menu_wifi() (implemented in dp_menu.cpp)
+ *  - The watchdog is reset while waiting
+ *  - Credentials are stored unencrypted as a fixed size struct
+ *  - start() returns whether a connection was made, and can go straight to the AP (forceAP)
+ *  - Waiting for AP input stops after APTIMEOUT_MS, or when wifi_cancel_requested() (dp_wifi.cpp) returns true
+ *  - Credentials entered on the AP page are only saved after they connected successfully
  */
 #ifndef EASYWIFI_H
 #define EASYWIFI_H
@@ -21,6 +30,7 @@
 #define APNAME "EasyWiFi_AP"
 #define MAXCONNECT 4                       // Max number of wifi logon connects before opening AP
 #define ESCAPECONNECT 15                   // Max number of Total wifi logon retries-connects before escaping/stopping the Wifi start
+#define APTIMEOUT_MS (5UL * 60UL * 1000UL) // Close the AP and stop the Wifi start when no credentials are entered within this time
 
 // Define UDP settings for DNS
 #define UDP_PACKET_SIZE 1024          // UDP packet size time out, preventign too large packet reads
@@ -42,7 +52,7 @@ class EasyWiFi
 {
   public:
     EasyWiFi();
-    void start();
+    bool start(bool forceAP = false);
     byte erase();
     byte apname(char * name);
     void seed(int value);
@@ -61,6 +71,8 @@ class EasyWiFi
     void APDNSScan();
     void listNetworks();
     void APSetup();
+    void APStop();
+    bool isConnected(int status);
     void printWiFiStatus();
 
 };

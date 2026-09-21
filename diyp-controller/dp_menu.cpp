@@ -81,40 +81,41 @@ const int num_errors = sizeof(errors_list) / sizeof(char *);
 const char spinner_chars[] = "\0\1\2\3\4\5\6\7";
 
 const char *menus[] = {
-    // MAIN=0
+    // MAIN_ONE=0
     // 01234567890123456789
     "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
-    "Steam #### ###/###\337C" // [2:steam_state] [3:steam_temp]/[4:steam_set_temp]   "Power    ### % ## # " [2:percentage] [3:ON_OFF] [4:PUMP]
+    "Power    ### % ## # "    // [2:percentage] [3:ON_OFF] [4:PUMP]
     "############# #####s"    // [5:state] [6:time]
     "Weight ##### gram # ",   // [7:Weight] [8:level]
 
-    // SETTING=1
+    // MAIN_TWO=1
+    // 01234567890123456789
+    "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
+    "Steam #### ###/###\337C" // [2:steam_state] [3:steam_temp]/[4:steam_set_temp]
+    "############# #####s"    // [5:state] [6:time]
+    "Weight ##### gram # ",   // [7:Weight] [8:level]
+
+    // SETTING=2
     // 01234567890123456789
     "SETTINGS     [##/##]"
     "################### "
     "  ########## #######"
     "             [PRESS]",
 
-    // MODIFY=2
+    // MODIFY=3
     // 01234567890123456789
     "MODIFY       [##/##]"
     "################### "
     "  ########## #######"
     "              [TURN]",
 
-    // ERROR=3
+    // ERROR=4
     // 01234567890123456789
     "****** ERROR *******"
     "*##################*"
     "* TURN MACHINE OFF *"
     "********************",
 
-    // BREW=4
-    // 01234567890123456789
-    "STATE ############  "
-    "STEP-T ######## sec "
-    "BREW-T ######## sec "
-    "                    ",
     // SLEEP=5
     // 01234567890123456789
     "     ##########     "
@@ -134,7 +135,7 @@ const char *menus[] = {
     " WIFI CONNECTING... "
     " ################## "
     " ################## "
-    "                    ",
+    "  [PRESS] to cancel ",
     // SAVED=8
     // 01234567890123456789
     "                    "
@@ -168,23 +169,6 @@ const int num_menus = sizeof(menus) / sizeof(char *);
 const char *get_string_item(const char *items, int index);
 int get_item_count(const char *items);
 double add_value(int n, double delta);
-
-bool menu_brew() // not used?
-{
-  char bufs[10][32];
-  char *arg[10];
-
-  arg[0] = bufs[0];
-  arg[1] = bufs[1];
-  arg[2] = bufs[2];
-
-  arg[0] = (char *)brewProcess.get_state_name();
-  format_float(arg[1], brewProcess.state_time(), 1);
-  format_float(arg[2], brewProcess.brew_time(), 1);
-
-  display.show(menus[MENU_BREW], arg);
-  return false;
-}
 
 // Main menu
 bool menu_main()
@@ -237,20 +221,20 @@ bool menu_main()
   format_float(arg[0], boilerController.act_temp(), 1, 5);
   format_float(arg[1], boilerController.set_temp(), 1);
 
-  // Steam [2:steam_state] [3:steam_temp]/[4:steam_set_temp]
   if (hardware.has_steam_group())
   {
+    // Steam [2:steam_state] [3:steam_temp]/[4:steam_set_temp]
     arg[2] = (char *)steamProcess.get_short_state();
     format_float(arg[3], steamThermoblock.act_temp(), 1, 5);
     format_float(arg[4], steamThermoblock.set_temp(), 1);
   }
   else
-  { arg[2] = ""; arg[3] = ""; arg[4] = "";}
-
-  // Non-steam [2:percentage] [3:ON_OFF] [4:PUMP]
-  // format_float(arg[2], heaterDevice.power(), 0, 3);
-  // strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
-  // arg[4] = pump_spinner;
+  {
+    // Power [2:percentage] [3:ON_OFF] [4:PUMP]
+    format_float(arg[2], heaterDevice.power(), 0, 3);
+    strcpy(arg[3], heaterDevice.is_on() ? "ON" : "");
+    arg[4] = pump_spinner;
+  }
 
   // [5:state] [6:time]
   arg[5] = (char *)brewProcess.get_state_name();
@@ -266,7 +250,7 @@ bool menu_main()
 
   arg[8] = level_spinner;
 
-  display.show(menus[MENU_MAIN], arg);
+  display.show(menus[hardware.has_steam_group() ? MENU_MAIN_TWO : MENU_MAIN_ONE], arg);
   return false;
 }
 

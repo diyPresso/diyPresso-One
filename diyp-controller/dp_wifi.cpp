@@ -6,10 +6,18 @@
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include "EasyWiFi.h"
+#include "dp_encoder.h"
 
 /*********** Global Settings  **********/
 EasyWiFi MyEasyWiFi;
 char MyAPName[]= {"diyPresso-One"};
+static int cancel_button_count = 0; // encoder button count when wifi_loop() started
+
+// Called by EasyWiFi while connecting or waiting for AP input: any button press since wifi_loop() started cancels
+bool wifi_cancel_requested()
+{
+  return encoder.button_count() != cancel_button_count;
+}
 
 void wifi_setup()
 {
@@ -28,22 +36,16 @@ void printWiFiStatus()
     long rssi = WiFi.RSSI(); Serial.print("- Rssi: "); Serial.print(rssi); Serial.println("dBm");
 }
 
-void wifi_loop()
+bool wifi_loop(bool config_ap)
 {
-  if (WiFi.status()==WL_CONNECTED)
+  cancel_button_count = encoder.button_count();
+  if (WiFi.status()==WL_CONNECTED && !config_ap)
   {
     printWiFiStatus();
+    return true;
   }
-  else
-  {
-    Serial.println("* Not Connected, starting EasyWiFi");
-    MyEasyWiFi.start();
-  }
+  Serial.println(config_ap ? "* Config AP requested, starting EasyWiFi" : "* Not Connected, starting EasyWiFi");
+  return MyEasyWiFi.start(config_ap);
 } // end Main loop
-
-void wifi_erase()
-{
-   MyEasyWiFi.erase();
-}
 
 

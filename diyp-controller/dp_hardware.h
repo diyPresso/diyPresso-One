@@ -60,6 +60,11 @@ inline Hardware& hardware = Hardware::instance();
 #define PIN_STEAM_SWITCH A6
 #define PIN_STEAM_THERM_CS 6  // D6, shares SPI bus with boiler sensor
 
+// MODEL DETECTION (0 Ohm jumper between AREF and A0 = Model Two)
+// Both pins are left as high-impedance inputs after detection; do not use A0 (DAC) or AREF for anything else.
+#define PIN_MODEL_DRIVE 25    // AREF, PA03 (no AREF constant in the MKR variant)
+#define PIN_MODEL_SENSE A0    // D15, PA02
+
 
 // The value of the Rref resistor. Use 430.0 for PT100 and 4300.0 for PT1000
 #define RREF      4300.0

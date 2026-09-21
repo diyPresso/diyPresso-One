@@ -10,7 +10,6 @@
 #define SLEEP_SPINNER_REFRESH_RATE_MS 500 // in msec, the base rate for sleep spinner updates
 
 extern int menu_settings(bool button_pressed);
-extern bool menu_brew(); // not used?
 extern bool menu_main();
 extern bool menu_warning_almost_empty();
 extern bool menu_sleep();
@@ -24,11 +23,11 @@ extern void menu_ready_reset();
 
 typedef enum
 {
-  MENU_MAIN = 0,
-  MENU_SETTING = 1,
-  MENU_MODIFY = 2,
-  MENU_ERROR = 3,
-  MENU_BREW = 4,
+  MENU_MAIN_ONE = 0,
+  MENU_MAIN_TWO = 1,
+  MENU_SETTING = 2,
+  MENU_MODIFY = 3,
+  MENU_ERROR = 4,
   MENU_SLEEP = 5,
   MENU_CONFIRM = 6,
   MENU_WIFI = 7,
