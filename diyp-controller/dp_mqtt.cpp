@@ -18,10 +18,6 @@ const char broker[] = "test.mosquitto.org";
 int port = 1883;
 char topic[64]  = "";
 
-const long interval = 4000;
-unsigned long previousMillis = 0;
-int count = 0;
-
 
 void mac_to_hex(char *hex, byte *mac)
 {
@@ -41,7 +37,6 @@ void MqttDevice::init()
   Serial.print("Attempting to connect to the MQTT broker: ");
   Serial.println(broker);
   WiFi.macAddress(mac);
-  char topic_buf[64];
   strcpy(topic, "diyPressoOne/");
   mac_to_hex(topic+strlen(topic), mac);
 
@@ -63,25 +58,11 @@ void MqttDevice::init()
 
 void MqttDevice::run() 
 {
-    static int count = 0;
-    unsigned long currentMillis = millis();
     if ( !is_on() )
         return;
 
     // call poll() regularly to allow the library to send MQTT keep alive which avoids being disconnected by the broker
     mqttClient.poll();
-
-    /* if (currentMillis - previousMillis >= interval) 
-    {
-        previousMillis = currentMillis;
-        Serial.print("Sending message to topic: ");
-        Serial.println(topic);
-        Serial.println(count++);
-        mqttClient.beginMessage(topic);
-        mqttClient.print("counter count=");
-        mqttClient.print(count);
-        mqttClient.endMessage();
-    } */
 }
 
 void MqttDevice::prepare(char *measurement)
