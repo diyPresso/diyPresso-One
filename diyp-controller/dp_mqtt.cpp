@@ -65,7 +65,7 @@ void MqttDevice::run()
     mqttClient.poll();
 }
 
-void MqttDevice::prepare(char *measurement)
+void MqttDevice::prepare(const char *measurement)
 {
     if (_state == MSG_START)
     {
@@ -79,14 +79,14 @@ void MqttDevice::prepare(char *measurement)
     _state = MSG_NEXT;
 }
 
-void MqttDevice::write(char *measurement, double value)
+void MqttDevice::write(const char *measurement, double value)
 {
     if ( !is_on() )  return;
     prepare(measurement);
     mqttClient.print(value);
 }
 
-void MqttDevice::write(char *measurement, char *value)
+void MqttDevice::write(const char *measurement, const char *value)
 {
     if ( !is_on() ) return;
     prepare(measurement);
@@ -95,7 +95,7 @@ void MqttDevice::write(char *measurement, char *value)
     mqttClient.print("\"");
 }
 
-void MqttDevice::write(char *measurement, long value)
+void MqttDevice::write(const char *measurement, long value)
 {
     if ( !is_on() ) return;
     prepare(measurement);
@@ -123,16 +123,16 @@ void MqttDevice::send_state()
     write("w_end", brewProcess.end_weight());
     write("shots", (long)settings.shotCounter());
 
-    write("boil", (char *)boilerController.get_state_name());
+    write("boil", boilerController.get_state_name());
     if (boilerController.is_error())
-      write("boil_err", (char *)boilerController.get_error_text());
+      write("boil_err", boilerController.get_error_text());
 
-    write("brew", (char *)brewProcess.get_state_name());
+    write("brew", brewProcess.get_state_name());
     if (brewProcess.is_error())
-      write("brew_err", (char *)brewProcess.get_error_text());
+      write("brew_err", brewProcess.get_error_text());
 
     if (reservoir.is_error())
-      write("res_err", (char *)reservoir.get_error_text());
+      write("res_err", reservoir.get_error_text());
 
     write("msec", (long)millis());
     send();
