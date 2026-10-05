@@ -104,6 +104,7 @@ void MqttDevice::write(const char *measurement, long value)
 
 void MqttDevice::send()
 {
+    if ( !is_on() ) return;
     mqttClient.endMessage();
     _state = MSG_START;
 }
