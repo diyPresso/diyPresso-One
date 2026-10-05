@@ -48,6 +48,7 @@ void MqttDevice::init()
   if (!mqttClient.connect(broker, port)) {
     Serial.print("MQTT connection failed! Error code = ");
     Serial.println(mqttClient.connectError());
+    return;
   }
   on();
   
