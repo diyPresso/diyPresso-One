@@ -12,7 +12,7 @@ class MqttDevice
 {
     private:
       bool _on=false;
-      typedef enum  mqtt_state_t { MSG_START, MSG_NEXT };
+      enum mqtt_state_t { MSG_START, MSG_NEXT };
       mqtt_state_t _state = MSG_START;
       void prepare(char *measurement);
     public:
