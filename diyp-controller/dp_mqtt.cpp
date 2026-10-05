@@ -29,9 +29,9 @@ void mac_to_hex(char *hex, byte *mac)
     for(int i=0; i<6; i++)
     {
         hex[2*i+0] = hexchar[ (mac[i] >> 4) ];
-        hex[2*i+1] = hexchar[ (mac[1] & 15) ];
+        hex[2*i+1] = hexchar[ (mac[i] & 15) ];
     }
-    hex[13] = 0;
+    hex[12] = 0;
 }
 
 void MqttDevice::init()
