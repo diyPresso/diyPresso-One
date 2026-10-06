@@ -22,10 +22,12 @@ char topic[64]  = "";
 void mac_to_hex(char *hex, byte *mac)
 {
     static const char *hexchar = "0123456789ABCDEF";
+    // WiFiNINA's WiFi.macAddress() fills the bytes LSB first; reverse them
+    // so the topic matches the MAC as shown by routers and network tools.
     for(int i=0; i<6; i++)
     {
-        hex[2*i+0] = hexchar[ (mac[i] >> 4) ];
-        hex[2*i+1] = hexchar[ (mac[i] & 15) ];
+        hex[2*i+0] = hexchar[ (mac[5-i] >> 4) ];
+        hex[2*i+1] = hexchar[ (mac[5-i] & 15) ];
     }
     hex[12] = 0;
 }
