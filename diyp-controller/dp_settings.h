@@ -43,6 +43,7 @@ class DpSettings
             int brewHoldDipWindowSec;
             double dffDecay;
             double steamPumpP, steamPumpI, steamPumpD;
+            double steamPumpIntegrationBand;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -125,6 +126,8 @@ class DpSettings
         double steamWindupMax(double w) { return settings.steamWindupMax = min(100.0, max(w, 0.0)); }
         double steamIntegrationBand() { return settings.steamIntegrationBand; }
         double steamIntegrationBand(double b) { return settings.steamIntegrationBand = min(30.0, max(b, 0.0)); }
+        double steamPumpIntegrationBand() { return settings.steamPumpIntegrationBand; }
+        double steamPumpIntegrationBand(double b) { return settings.steamPumpIntegrationBand = min(30.0, max(b, 0.0)); }
         int steamConditionalIntegration() { return settings.steamConditionalIntegration; }
         int steamConditionalIntegration(int state) { return settings.steamConditionalIntegration = min(1, max(state, 0)); }
         int brewIntegralHold() { return settings.brewIntegralHold; }

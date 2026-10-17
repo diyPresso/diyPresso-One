@@ -70,9 +70,11 @@ void SteamThermoblock::run()
   bool pump_on = steamPump.is_on();
   if (pump_on) {
     _pid.setCoefficients(_pump_p, _pump_i, _pump_d);
+    _pid.setConditionalIntegration(_cond_int, _pump_band);
     _pid.setGainSetLabel("pump");
   } else {
     _pid.setCoefficients(_p, _i, _d);
+    _pid.setConditionalIntegration(_cond_int, _band);
     _pid.setGainSetLabel("normal");
   }
   if (_pump_was_on && !pump_on && _on)
