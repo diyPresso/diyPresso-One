@@ -17,9 +17,9 @@
     steam settings (Model Two): steamTemperature, steamP, steamI, steamD, steamPumpPower
     PID tuning settings (serial only, not in the menu):
       boiler: windupMin, windupMax, integrationBand, conditionalIntegration (0/1), dffDecay (0.90-1.0),
-              shotIntegralHold (0/1), shotHoldTimeoutSec (10-600)
+              brewIntegralHold (0/1), brewHoldTimeoutSec (10-600), brewHoldDipWindowSec (10-180)
       steam:  steamWindupMin, steamWindupMax, steamIntegrationBand, steamConditionalIntegration (0/1)
-    e.g. PUT settings windupMin=-15.00,windupMax=15.00,integrationBand=5.00,shotIntegralHold=1
+    e.g. PUT settings windupMin=-15.00,windupMax=15.00,integrationBand=5.00,brewIntegralHold=1
     - GET serialOutputConfig
     - PUT serialOutputConfig DP_PID_STATE=1,DP_STEAM_STATE=1
     - GET boiler
@@ -144,6 +144,7 @@ void DpSerial::send_info() {
     send("brewProcessState=" + String(brewProcess.get_state_name()));
     send("brewProcessError=" + String(brewProcess.get_error_text()));
     send("boilerControllerState=" + String(boilerController.get_state_name()));
+    send("brewIntegralHoldState=" + String(boilerController.get_brew_hold_state_name()));
     send("boilerControllerError=" + String(boilerController.get_error_text()));
     send("reservoirError=" + String(reservoir.get_error_text()));
     send("steamProcessState=" + String(steamProcess.get_state_name()));

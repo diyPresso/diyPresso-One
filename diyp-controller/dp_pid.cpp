@@ -274,8 +274,8 @@ void DpPID::printToSerial()
     Serial.print(conditionalIntegration);
     Serial.print(", iHeld: ");
     Serial.print(integrationHeld);
-    Serial.print(", iHold: ");
-    Serial.println(integralHold);
+    Serial.print(", brewIHold: ");
+    Serial.println(integralHoldState);
     
 }
 
