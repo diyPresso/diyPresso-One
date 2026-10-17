@@ -91,7 +91,10 @@ void DpPID::compute()
         termP = Kp * curError; // Kp time the error in temperature.
 
         // integral term
-        double termI_new = termI + Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
+        double termI_increment = Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
+        if (termI_increment < 0)
+            termI_increment *= iDownFactor; // above setpoint: unwind faster, the integral is still sized for a load that has disappeared
+        double termI_new = termI + termI_increment;
         termI_new = constrain(termI_new, windUpMin, windUpMax); // prevent integral wind-up
 
         // derivative term
@@ -233,6 +236,11 @@ void DpPID::setConditionalIntegration(bool enabled, double bandDegC)
 {
     conditionalIntegration = enabled;
     integrationBand = max(bandDegC, 0.0);
+}
+
+void DpPID::setIntegralDownFactor(const double &factor)
+{
+    iDownFactor = constrain(factor, 1.0, 5.0);
 }
 
 void DpPID::setDynamicFeedForwardDecay(const double &decay)
