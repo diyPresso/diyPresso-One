@@ -185,7 +185,7 @@ void BoilerStateMachine::run(void)
   else
     _brew_hold.reset();
   _pid.setIntegralHold(_brew_hold.is_holding(), _brew_hold.get_state_name());
-  _pid.setOutputEnabled(_on && _power_control_mode == POWER_CONTROL_PID); // no integral windup while the PID output is not used (boiler off / sleep, static power mode)
+  _pid.setOutputEnabled(_on && _power_control_mode == POWER_CONTROL_PID); // PID not in control (boiler off / sleep, static power mode): integral kept at 0
   _pid.compute();
 
   if (_power_control_mode == POWER_CONTROL_STATIC) {
