@@ -38,6 +38,9 @@ class DpSettings
             int conditionalIntegration;
             double steamWindupMin, steamWindupMax, steamIntegrationBand;
             int steamConditionalIntegration;
+            int shotIntegralHold;
+            int shotHoldTimeoutSec;
+            double dffDecay;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -116,6 +119,12 @@ class DpSettings
         double steamIntegrationBand(double b) { return settings.steamIntegrationBand = min(30.0, max(b, 0.0)); }
         int steamConditionalIntegration() { return settings.steamConditionalIntegration; }
         int steamConditionalIntegration(int state) { return settings.steamConditionalIntegration = min(1, max(state, 0)); }
+        int shotIntegralHold() { return settings.shotIntegralHold; }
+        int shotIntegralHold(int state) { return settings.shotIntegralHold = min(1, max(state, 0)); }
+        int shotHoldTimeoutSec() { return settings.shotHoldTimeoutSec; }
+        int shotHoldTimeoutSec(int t) { return settings.shotHoldTimeoutSec = min(600, max(t, 10)); }
+        double dffDecay() { return settings.dffDecay; }
+        double dffDecay(double d) { return settings.dffDecay = min(1.0, max(d, 0.90)); }
 };
 
 extern DpSettings settings;
