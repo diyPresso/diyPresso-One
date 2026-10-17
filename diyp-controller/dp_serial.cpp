@@ -19,7 +19,8 @@
     PID tuning settings (serial only, not in the menu):
       boiler: windupMin, windupMax, integrationBand, conditionalIntegration (0/1), dffDecay (0.90-1.0),
               brewIntegralHold (0/1), brewHoldTimeoutSec (10-600), brewHoldDipWindowSec (10-180)
-      steam:  steamWindupMin, steamWindupMax, steamIntegrationBand, steamConditionalIntegration (0/1)
+      steam:  steamWindupMin, steamWindupMax, steamIntegrationBand (pump off), steamPumpIntegrationBand (pump on),
+              steamConditionalIntegration (0/1)
     e.g. PUT settings windupMin=-15.00,windupMax=15.00,integrationBand=5.00,brewIntegralHold=1
     - GET serialOutputConfig
     - PUT serialOutputConfig DP_PID_STATE=1,DP_STEAM_STATE=1

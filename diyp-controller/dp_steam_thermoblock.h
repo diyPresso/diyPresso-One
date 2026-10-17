@@ -19,8 +19,9 @@
 #define STEAM_TEMP_DEFAULT 165.0
 
 #define STEAM_WINDUP_LIMIT_MIN -5.0  // windup limits in %
-#define STEAM_WINDUP_LIMIT_MAX 60.0  //
-#define STEAM_INTEGRATION_BAND 0.0   // only integrate when error is within this band [degC], when conditional integration is enabled (0 = no band)
+#define STEAM_WINDUP_LIMIT_MAX 100.0 //
+#define STEAM_INTEGRATION_BAND 10.0      // only integrate when error is within this band [degC], when conditional integration is enabled (0 = no band)
+#define STEAM_PUMP_INTEGRATION_BAND 0.0  // same, while the steam pump runs: no band, as large pump errors need integration
 
 // Steam timeouts in [sec]
 #define STEAM_TIMEOUT_HEATING (60 * 5)
@@ -64,7 +65,7 @@ public:
   void set_pid(double p, double i, double d) { _p = p; _i = i; _d = d; }                     // gains while the steam pump is off
   void set_pump_pid(double p, double i, double d) { _pump_p = p; _pump_i = i; _pump_d = d; } // gains while the steam pump is on
   void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
-  void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
+  void set_conditional_integration(bool enabled, double bandDegC, double pumpBandDegC) { _cond_int = enabled; _band = bandDegC; _pump_band = pumpBandDegC; } // band while the pump is off / on
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
 
@@ -86,6 +87,8 @@ private:
   unsigned long _last_control_time = 0;
   double _p = 0, _i = 0, _d = 0, _pump_p = 0, _pump_i = 0, _pump_d = 0;
   bool _pump_was_on = false;
+  bool _cond_int = false;
+  double _band = STEAM_INTEGRATION_BAND, _pump_band = STEAM_PUMP_INTEGRATION_BAND;
 
   static constexpr double TEMP_FILTER_ALPHA = 0.15;
   bool _temp_initialized = false;

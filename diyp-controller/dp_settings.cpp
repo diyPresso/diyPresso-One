@@ -96,6 +96,7 @@ void DpSettings::defaults()
     settings.steamWindupMin = STEAM_WINDUP_LIMIT_MIN;
     settings.steamWindupMax = STEAM_WINDUP_LIMIT_MAX;
     settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
+    settings.steamPumpIntegrationBand = STEAM_PUMP_INTEGRATION_BAND;
     settings.steamConditionalIntegration = 1;
     settings.brewIntegralHold = 1;
     settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
@@ -204,7 +205,7 @@ void DpSettings::apply()
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
   steamThermoblock.set_pump_pid(steamPumpP(), steamPumpI(), steamPumpD());
   steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
-  steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand());
+  steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand(), steamPumpIntegrationBand());
   steamPump.power(steamPumpPower());
 }
 
@@ -243,6 +244,7 @@ String DpSettings::serialize() {
     result += "steamWindupMin=" + String(settings.steamWindupMin) + "\n";
     result += "steamWindupMax=" + String(settings.steamWindupMax) + "\n";
     result += "steamIntegrationBand=" + String(settings.steamIntegrationBand) + "\n";
+    result += "steamPumpIntegrationBand=" + String(settings.steamPumpIntegrationBand) + "\n";
     result += "steamConditionalIntegration=" + String(settings.steamConditionalIntegration) + "\n";
     result += "brewIntegralHold=" + String(settings.brewIntegralHold) + "\n";
     result += "brewHoldTimeoutSec=" + String(settings.brewHoldTimeoutSec) + "\n";
@@ -356,6 +358,8 @@ int DpSettings::deserialize(String serialized_settings) {
             steamWindupMax(value.toDouble());
         } else if (key == "steamIntegrationBand") {
             steamIntegrationBand(value.toDouble());
+        } else if (key == "steamPumpIntegrationBand") {
+            steamPumpIntegrationBand(value.toDouble());
         } else if (key == "steamConditionalIntegration") {
             steamConditionalIntegration(value.toInt());
         } else if (key == "brewIntegralHold") {
