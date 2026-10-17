@@ -23,8 +23,8 @@
 #define TEMP_MIN_BREW 10.0    // do not brew under this temp
 
 #define WINDUP_LIMIT_MIN -15.0 // windup limits in %
-#define WINDUP_LIMIT_MAX 15.0  // 
-#define INTEGRATION_BAND 5.0   // only integrate when error is within this band [degC]
+#define WINDUP_LIMIT_MAX 8.0   // 
+#define INTEGRATION_BAND 4.0   // only integrate when error is within this band [degC]
 
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes

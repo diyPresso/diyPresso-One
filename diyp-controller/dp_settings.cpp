@@ -70,11 +70,11 @@ void DpSettings::defaults()
     settings.preInfusionTime = 3;
     settings.infusionTime = 1;
     settings.extractionTime = 25;
-    settings.p = 6.2;
-    settings.i = 0.08;
-    settings.d = 70.0;
-    settings.ffHeat = 6.0;
-    settings.ffReady = 6.0;
+    settings.p = 6.0;
+    settings.i = 0.05;
+    settings.d = 150.0;
+    settings.ffHeat = 5.5;
+    settings.ffReady = 5.5;
     settings.dffFactorPct = 70.0;  // 70%
     settings.tareWeight = 0.0;
     settings.trimWeight = 0.0;
