@@ -103,7 +103,7 @@ void DpPID::compute()
             bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
             integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
         }
-        if (!integrationHeld && !integralHold) {
+        if (!integrationHeld && !integralHold && outputEnabled) {
             termI = termI_new;
         }
 
@@ -275,7 +275,9 @@ void DpPID::printToSerial()
     Serial.print(", iHeld: ");
     Serial.print(integrationHeld);
     Serial.print(", brewIHold: ");
-    Serial.println(integralHoldState);
+    Serial.print(integralHoldState);
+    Serial.print(", offIHold: ");
+    Serial.println(!outputEnabled);
     
 }
 
