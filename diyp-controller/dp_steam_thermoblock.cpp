@@ -64,6 +64,7 @@ void SteamThermoblock::run()
 
   StateMachine::run();
 
+  _pid.setOutputEnabled(_on); // PID not in control (steam off): integral kept at 0
   _pid.compute();
 
   if (_act_temp > (STEAM_TEMP_LIMIT_HIGH + 2.0))

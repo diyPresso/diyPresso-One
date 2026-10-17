@@ -78,6 +78,9 @@ void DpPID::compute()
         if (autotuneState == AUTOTUNE_RUNNING) {
             processAutoTune();
             lastTime = now; // Update lastTime to avoid large jumps after autotune
+            termI = 0; // start without integral after auto-tune
+            lastInput = *input; // no derivative kick after auto-tune
+            lastError = *setpoint - *input;
             return;
         }
 
@@ -103,7 +106,9 @@ void DpPID::compute()
             bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
             integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
         }
-        if (!integrationHeld && !integralHold && outputEnabled) {
+        if (!outputEnabled) {
+            termI = 0; // PID not in control (e.g. heater off): start from 0 when taking control, the feed forward covers the base load
+        } else if (!integrationHeld && !integralHold) {
             termI = termI_new;
         }
 
