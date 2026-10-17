@@ -81,6 +81,7 @@ public:
   void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
   void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
   void set_dffDecay(double decay) { _pid.setDynamicFeedForwardDecay(decay); }
+  void set_iDownFactor(double factor) { _pid.setIntegralDownFactor(factor); }
   void set_brew_integral_hold(bool enabled, unsigned long timeoutSec, unsigned long dipWindowSec)
   {
     _brew_hold_enabled = enabled;

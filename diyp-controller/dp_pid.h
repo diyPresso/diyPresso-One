@@ -94,6 +94,7 @@ public:
     void setCoefficients(const double& p, const double& i, const double& d);
     void setGainSetLabel(const char* label) { gainSet = label; } // name of the active gain set, for serial output
     void resetIntegral() { termI = 0; }
+    void setIntegralDownFactor(const double& factor); // integration rate factor when the error is negative (above setpoint), 1.0 - 5.0
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
     void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
@@ -131,6 +132,7 @@ protected:
     double* setpoint;
     double Kp, Ki, Kd; // the coefficients for the proportional, integral, and derivative terms 
     const char* gainSet = "normal"; // name of the active gain set, for serial output
+    double iDownFactor = 1.0; // integration rate factor when the error is negative, unwinds the integral faster when a load disappears
     double termP, termI, termD; // the calculated PID terms
     double unconstrainedOutput;
     double curError = 0, curInput = 0;

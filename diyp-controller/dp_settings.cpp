@@ -97,6 +97,8 @@ void DpSettings::defaults()
     settings.steamWindupMax = STEAM_WINDUP_LIMIT_MAX;
     settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
     settings.steamPumpIntegrationBand = STEAM_PUMP_INTEGRATION_BAND;
+    settings.iDownFactor = 1.0;
+    settings.steamIDownFactor = 1.0;
     settings.steamConditionalIntegration = 1;
     settings.brewIntegralHold = 1;
     settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
@@ -194,6 +196,7 @@ void DpSettings::apply()
   boilerController.set_conditional_integration(conditionalIntegration(), integrationBand());
   boilerController.set_brew_integral_hold(brewIntegralHold(), brewHoldTimeoutSec(), brewHoldDipWindowSec());
   boilerController.set_dffDecay(dffDecay());
+  boilerController.set_iDownFactor(iDownFactor());
 
   reservoir.set_trim(trimWeight());
   reservoir.set_tare(tareWeight());
@@ -204,6 +207,7 @@ void DpSettings::apply()
   steamThermoblock.set_temp(steamTemperature());
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
   steamThermoblock.set_pump_pid(steamPumpP(), steamPumpI(), steamPumpD());
+  steamThermoblock.set_iDownFactor(steamIDownFactor());
   steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
   steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand(), steamPumpIntegrationBand());
   steamPump.power(steamPumpPower());
@@ -245,6 +249,8 @@ String DpSettings::serialize() {
     result += "steamWindupMax=" + String(settings.steamWindupMax) + "\n";
     result += "steamIntegrationBand=" + String(settings.steamIntegrationBand) + "\n";
     result += "steamPumpIntegrationBand=" + String(settings.steamPumpIntegrationBand) + "\n";
+    result += "iDownFactor=" + String(settings.iDownFactor) + "\n";
+    result += "steamIDownFactor=" + String(settings.steamIDownFactor) + "\n";
     result += "steamConditionalIntegration=" + String(settings.steamConditionalIntegration) + "\n";
     result += "brewIntegralHold=" + String(settings.brewIntegralHold) + "\n";
     result += "brewHoldTimeoutSec=" + String(settings.brewHoldTimeoutSec) + "\n";
@@ -360,6 +366,10 @@ int DpSettings::deserialize(String serialized_settings) {
             steamIntegrationBand(value.toDouble());
         } else if (key == "steamPumpIntegrationBand") {
             steamPumpIntegrationBand(value.toDouble());
+        } else if (key == "iDownFactor") {
+            iDownFactor(value.toDouble());
+        } else if (key == "steamIDownFactor") {
+            steamIDownFactor(value.toDouble());
         } else if (key == "steamConditionalIntegration") {
             steamConditionalIntegration(value.toInt());
         } else if (key == "brewIntegralHold") {

@@ -64,6 +64,7 @@ public:
 
   void set_pid(double p, double i, double d) { _p = p; _i = i; _d = d; }                     // gains while the steam pump is off
   void set_pump_pid(double p, double i, double d) { _pump_p = p; _pump_i = i; _pump_d = d; } // gains while the steam pump is on
+  void set_iDownFactor(double factor) { _pid.setIntegralDownFactor(factor); } // applies to both gain sets
   void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
   void set_conditional_integration(bool enabled, double bandDegC, double pumpBandDegC) { _cond_int = enabled; _band = bandDegC; _pump_band = pumpBandDegC; } // band while the pump is off / on
   bool get_serial_output() const { return _pid.getSerialOutput(); }

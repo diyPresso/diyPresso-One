@@ -44,6 +44,7 @@ class DpSettings
             double dffDecay;
             double steamPumpP, steamPumpI, steamPumpD;
             double steamPumpIntegrationBand;
+            double iDownFactor, steamIDownFactor;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -128,6 +129,10 @@ class DpSettings
         double steamIntegrationBand(double b) { return settings.steamIntegrationBand = min(30.0, max(b, 0.0)); }
         double steamPumpIntegrationBand() { return settings.steamPumpIntegrationBand; }
         double steamPumpIntegrationBand(double b) { return settings.steamPumpIntegrationBand = min(30.0, max(b, 0.0)); }
+        double iDownFactor() { return settings.iDownFactor; }
+        double iDownFactor(double f) { return settings.iDownFactor = min(5.0, max(f, 1.0)); }
+        double steamIDownFactor() { return settings.steamIDownFactor; }
+        double steamIDownFactor(double f) { return settings.steamIDownFactor = min(5.0, max(f, 1.0)); }
         int steamConditionalIntegration() { return settings.steamConditionalIntegration; }
         int steamConditionalIntegration(int state) { return settings.steamConditionalIntegration = min(1, max(state, 0)); }
         int brewIntegralHold() { return settings.brewIntegralHold; }
