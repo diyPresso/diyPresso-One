@@ -18,6 +18,10 @@
 #define STEAM_TEMP_LIMIT_LOW 1.0
 #define STEAM_TEMP_DEFAULT 165.0
 
+#define STEAM_WINDUP_LIMIT_MIN -5.0  // windup limits in %
+#define STEAM_WINDUP_LIMIT_MAX 5.0   //
+#define STEAM_INTEGRATION_BAND 10.0  // only integrate when error is within this band [degC], when conditional integration is enabled
+
 // Steam timeouts in [sec]
 #define STEAM_TIMEOUT_HEATING (60 * 5)
 #define STEAM_TIMEOUT_READY (60 * 30)
@@ -58,6 +62,8 @@ public:
   const char *get_error_text();
 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
+  void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
 

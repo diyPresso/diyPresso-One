@@ -65,7 +65,7 @@ bool DpSettings::crc_is_valid(settings_t *s)
 /// @brief set all values to default in settings stuct
 void DpSettings::defaults()
 {
-    settings.version = 3;  // bumped: added steam settings
+    settings.version = 4;  // bumped: added PID windup and conditional integration settings
     settings.temperature = 98.0;
     settings.preInfusionTime = 3;
     settings.infusionTime = 1;
@@ -86,6 +86,14 @@ void DpSettings::defaults()
     settings.steamI = 0.1;
     settings.steamD = 50.0;
     settings.steamPumpPower = 100.0;
+    settings.windupMin = WINDUP_LIMIT_MIN;
+    settings.windupMax = WINDUP_LIMIT_MAX;
+    settings.integrationBand = INTEGRATION_BAND;
+    settings.conditionalIntegration = 1;
+    settings.steamWindupMin = STEAM_WINDUP_LIMIT_MIN;
+    settings.steamWindupMax = STEAM_WINDUP_LIMIT_MAX;
+    settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
+    settings.steamConditionalIntegration = 0;
     update_crc();
 }
 
@@ -174,6 +182,8 @@ void DpSettings::apply()
   boilerController.set_ffHeat(ffHeat());
   boilerController.set_ffReady(ffReady());
   boilerController.set_dffFactorPct(dffFactorPct());
+  boilerController.set_windup_limits(windupMin(), windupMax());
+  boilerController.set_conditional_integration(conditionalIntegration(), integrationBand());
 
   reservoir.set_trim(trimWeight());
   reservoir.set_tare(tareWeight());
@@ -183,6 +193,8 @@ void DpSettings::apply()
 
   steamThermoblock.set_temp(steamTemperature());
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
+  steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
+  steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand());
   steamPump.power(steamPumpPower());
 }
 
@@ -211,6 +223,14 @@ String DpSettings::serialize() {
     result += "steamI=" + String(settings.steamI) + "\n";
     result += "steamD=" + String(settings.steamD) + "\n";
     result += "steamPumpPower=" + String(settings.steamPumpPower) + "\n";
+    result += "windupMin=" + String(settings.windupMin) + "\n";
+    result += "windupMax=" + String(settings.windupMax) + "\n";
+    result += "integrationBand=" + String(settings.integrationBand) + "\n";
+    result += "conditionalIntegration=" + String(settings.conditionalIntegration) + "\n";
+    result += "steamWindupMin=" + String(settings.steamWindupMin) + "\n";
+    result += "steamWindupMax=" + String(settings.steamWindupMax) + "\n";
+    result += "steamIntegrationBand=" + String(settings.steamIntegrationBand) + "\n";
+    result += "steamConditionalIntegration=" + String(settings.steamConditionalIntegration) + "\n";
     return result;
 }
 
@@ -299,6 +319,22 @@ int DpSettings::deserialize(String serialized_settings) {
             steamD(value.toDouble());
         } else if (key == "steamPumpPower") {
             steamPumpPower(value.toDouble());
+        } else if (key == "windupMin") {
+            windupMin(value.toDouble());
+        } else if (key == "windupMax") {
+            windupMax(value.toDouble());
+        } else if (key == "integrationBand") {
+            integrationBand(value.toDouble());
+        } else if (key == "conditionalIntegration") {
+            conditionalIntegration(value.toInt());
+        } else if (key == "steamWindupMin") {
+            steamWindupMin(value.toDouble());
+        } else if (key == "steamWindupMax") {
+            steamWindupMax(value.toDouble());
+        } else if (key == "steamIntegrationBand") {
+            steamIntegrationBand(value.toDouble());
+        } else if (key == "steamConditionalIntegration") {
+            steamConditionalIntegration(value.toInt());
         } else {
             Serial.println("Unknown key: " + key);
             error = -2; //unknown key

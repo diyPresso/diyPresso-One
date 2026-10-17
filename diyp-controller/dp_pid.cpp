@@ -181,6 +181,7 @@ void DpPID::setWindUpLimits(const double &min, const double &max)
     {
         windUpMax = max;
         windUpMin = min;
+        termI = constrain(termI, windUpMin, windUpMax); // keep a held integral term within the new limits
     }
 }
 
