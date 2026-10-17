@@ -94,8 +94,9 @@ void DpSettings::defaults()
     settings.steamWindupMax = STEAM_WINDUP_LIMIT_MAX;
     settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
     settings.steamConditionalIntegration = 0;
-    settings.shotIntegralHold = 1;
-    settings.shotHoldTimeoutSec = SHOT_HOLD_TIMEOUT_SEC;
+    settings.brewIntegralHold = 1;
+    settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
+    settings.brewHoldDipWindowSec = BREW_HOLD_DIP_WINDOW_SEC;
     settings.dffDecay = DFF_ENERGY_STOCK_PILE_DECAY;
     update_crc();
 }
@@ -187,7 +188,7 @@ void DpSettings::apply()
   boilerController.set_dffFactorPct(dffFactorPct());
   boilerController.set_windup_limits(windupMin(), windupMax());
   boilerController.set_conditional_integration(conditionalIntegration(), integrationBand());
-  boilerController.set_shot_integral_hold(shotIntegralHold(), shotHoldTimeoutSec());
+  boilerController.set_brew_integral_hold(brewIntegralHold(), brewHoldTimeoutSec(), brewHoldDipWindowSec());
   boilerController.set_dffDecay(dffDecay());
 
   reservoir.set_trim(trimWeight());
@@ -236,8 +237,9 @@ String DpSettings::serialize() {
     result += "steamWindupMax=" + String(settings.steamWindupMax) + "\n";
     result += "steamIntegrationBand=" + String(settings.steamIntegrationBand) + "\n";
     result += "steamConditionalIntegration=" + String(settings.steamConditionalIntegration) + "\n";
-    result += "shotIntegralHold=" + String(settings.shotIntegralHold) + "\n";
-    result += "shotHoldTimeoutSec=" + String(settings.shotHoldTimeoutSec) + "\n";
+    result += "brewIntegralHold=" + String(settings.brewIntegralHold) + "\n";
+    result += "brewHoldTimeoutSec=" + String(settings.brewHoldTimeoutSec) + "\n";
+    result += "brewHoldDipWindowSec=" + String(settings.brewHoldDipWindowSec) + "\n";
     result += "dffDecay=" + String(settings.dffDecay, 3) + "\n";
     return result;
 }
@@ -343,10 +345,12 @@ int DpSettings::deserialize(String serialized_settings) {
             steamIntegrationBand(value.toDouble());
         } else if (key == "steamConditionalIntegration") {
             steamConditionalIntegration(value.toInt());
-        } else if (key == "shotIntegralHold") {
-            shotIntegralHold(value.toInt());
-        } else if (key == "shotHoldTimeoutSec") {
-            shotHoldTimeoutSec(value.toInt());
+        } else if (key == "brewIntegralHold") {
+            brewIntegralHold(value.toInt());
+        } else if (key == "brewHoldTimeoutSec") {
+            brewHoldTimeoutSec(value.toInt());
+        } else if (key == "brewHoldDipWindowSec") {
+            brewHoldDipWindowSec(value.toInt());
         } else if (key == "dffDecay") {
             dffDecay(value.toDouble());
         } else {

@@ -102,47 +102,15 @@ void BoilerStateMachine::apply_feed_forward()
     _pid.setFeedForward(_ffReady, true); // dynamic feed forward stays enabled while brewing
 }
 
-/// @brief Hold the PID integral term during a brew and its recovery.
-/// The pre-shot integral is the steady state value; letting it build during the post-shot dip causes overshoot.
-/// Released when, after the brew ended, the temperature dipped below setpoint and rises back through it,
-/// or on timeout after the brew ended. A new brew restarts the release logic.
-void BoilerStateMachine::update_shot_hold()
+void BoilerStateMachine::cancel_brew_hold()
 {
-  if (!_shot_hold_enabled || !_on)
-  {
-    cancel_shot_hold();
-    return;
-  }
-  if (_brew)
-  {
-    _shot_hold_active = true;
-    _shot_hold_brew_ended = false;
-    _shot_hold_dip_seen = false;
-  }
-  else if (_shot_hold_active)
-  {
-    if (!_shot_hold_brew_ended)
-    {
-      _shot_hold_brew_ended = true;
-      _shot_hold_brew_end_time = millis();
-    }
-    if (_act_temp < _set_temp - SHOT_HOLD_DIP_BAND) // the dip arrives late (sensor dead time), T >= setpoint at pump stop does not count
-      _shot_hold_dip_seen = true;
-    if ((_shot_hold_dip_seen && _act_temp >= _set_temp) || (millis() - _shot_hold_brew_end_time) > _shot_hold_timeout_ms)
-      _shot_hold_active = false;
-  }
-  _pid.setIntegralHold(_shot_hold_active);
-}
-
-void BoilerStateMachine::cancel_shot_hold()
-{
-  _shot_hold_active = false;
-  _pid.setIntegralHold(false);
+  _brew_hold.reset();
+  _pid.setIntegralHold(false, _brew_hold.get_state_name());
 }
 
 void BoilerStateMachine::goto_error(boiler_error_t error)
 {
-  cancel_shot_hold();
+  cancel_brew_hold();
   _error = error;
   next(&BoilerStateMachine::state_error);
 }
@@ -212,7 +180,11 @@ void BoilerStateMachine::run(void)
 
   StateMachine::run();
 
-  update_shot_hold();
+  if (_brew_hold_enabled && _on)
+    _brew_hold.update(_brew, _act_temp, _set_temp);
+  else
+    _brew_hold.reset();
+  _pid.setIntegralHold(_brew_hold.is_holding(), _brew_hold.get_state_name());
   _pid.compute();
 
   if (_power_control_mode == POWER_CONTROL_STATIC) {

@@ -96,7 +96,7 @@ public:
     void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
     void setConditionalIntegration(bool enabled, double bandDegC); // anti-windup: hold the integral term when saturated or outside the band (0 = no band)
-    void setIntegralHold(bool hold) { integralHold = hold; } // freeze the integral term (e.g. during and after a shot), resumes bumpless
+    void setIntegralHold(bool hold, const char* state = "idle") { integralHold = hold; integralHoldState = state; } // freeze the integral term (e.g. after a brew), resumes bumpless
     void setDynamicFeedForwardDecay(const double& decay); // decay factor of the DFF energy stock pile per cycle (0.90 - 1.0)
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
@@ -136,6 +136,7 @@ protected:
     double integrationBand = 0; // in degC, 0 = no band
     bool integrationHeld = false; // true when the integral term was held during the last cycle
     bool integralHold = false; // externally requested hold of the integral term
+    const char* integralHoldState = "idle"; // state of the hold logic, for serial output
     double outputMin = 0, outputMax = 100;
     unsigned int minSamplePeriodMs = 1;
     unsigned long lastTime = 0;
