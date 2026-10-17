@@ -103,7 +103,7 @@ void DpPID::compute()
             bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
             integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
         }
-        if (!integrationHeld) {
+        if (!integrationHeld && !integralHold) {
             termI = termI_new;
         }
 
@@ -130,14 +130,14 @@ double DpPID::calculateFeedForward()
     // Reduce the energy stock pile with previous dynamic feed forward and actual time passed, decay the stock pile as well.
     dffEnergyStockPile -= dynamicFeedForward * curSampleTimeMs * boilerPowerKiloWatt / 100.0; // in Joules
     dffEnergyStockPile = max(dffEnergyStockPile, 0.0); // don't allow negative stock pile
-    dffEnergyStockPile = dffEnergyStockPile * DFF_ENERGY_STOCK_PILE_DECAY; // decay the energy stock pile
+    dffEnergyStockPile = dffEnergyStockPile * dffDecay; // decay the energy stock pile
 
     if (curSampleTimeMs < 1 || *setpoint <= reservoir->outflowTemp()) {
         dynamicFeedForward = 0;
     } else {
         double deltaWeight = previousReservoirWeight - currentWeight; // Reservoir weight decreases when water is flowing in the boiler
 
-        if(this->dynamicFeedForwardEnabled || (long)(this->lastTime - this->lastDynamicFeedForwardTime < 0)) { // only increase stock pile when dynamic feed forward is enabled (typically when pump is on) or was enabled during last cycle
+        if(this->dynamicFeedForwardEnabled || (long)(this->lastTime - this->lastDynamicFeedForwardTime) < 0) { // only increase stock pile when dynamic feed forward is enabled (typically when pump is on) or was enabled during last cycle
 
             // delta weight is limited to the maximum flow rate and should be > 0
             deltaWeight = constrain(deltaWeight, 0, MAX_FLOW_RATE_G_PER_MS * curSampleTimeMs);
@@ -230,6 +230,11 @@ void DpPID::setConditionalIntegration(bool enabled, double bandDegC)
     integrationBand = max(bandDegC, 0.0);
 }
 
+void DpPID::setDynamicFeedForwardDecay(const double &decay)
+{
+    dffDecay = constrain(decay, 0.90, 1.0);
+}
+
 void DpPID::printToSerial()
 {
     Serial.print(serialLabel);
@@ -268,7 +273,9 @@ void DpPID::printToSerial()
     Serial.print(", condInt: ");
     Serial.print(conditionalIntegration);
     Serial.print(", iHeld: ");
-    Serial.println(integrationHeld);
+    Serial.print(integrationHeld);
+    Serial.print(", iHold: ");
+    Serial.println(integralHold);
     
 }
 

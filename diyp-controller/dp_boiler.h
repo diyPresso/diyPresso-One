@@ -25,6 +25,9 @@
 #define WINDUP_LIMIT_MAX 15.0  // 
 #define INTEGRATION_BAND 5.0   // only integrate when error is within this band [degC]
 
+#define SHOT_HOLD_TIMEOUT_SEC 180 // release the shot integral hold this long after the brew ended [sec]
+#define SHOT_HOLD_DIP_BAND 0.2    // temperature must drop this far below setpoint to count as the post-shot dip [degC]
+
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes
 #define TIMEOUT_BREW (60 * 3)    // maximum brew on time: 3 minutes
@@ -62,7 +65,13 @@ public:
   int error() { return _error; }
   void clear_error() { _error = BOILER_ERROR_NONE; }
   double set_temp() { return _set_temp; }
-  double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
+  double set_temp(double temp)
+  {
+    temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0));
+    if (temp != _set_temp)
+      cancel_shot_hold();
+    return _set_temp = temp;
+  }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
   double set_ffHeat(double ff) { _ffHeat = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffHeat; }
@@ -73,6 +82,14 @@ public:
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
   void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
   void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
+  void set_dffDecay(double decay) { _pid.setDynamicFeedForwardDecay(decay); }
+  void set_shot_integral_hold(bool enabled, unsigned long timeoutSec)
+  {
+    _shot_hold_enabled = enabled;
+    _shot_hold_timeout_ms = timeoutSec * 1000UL;
+    if (!enabled)
+      cancel_shot_hold();
+  }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
 
@@ -96,6 +113,7 @@ public:
   {
     _on = false;
     heaterDevice.power(0);
+    cancel_shot_hold();
   }
   void start_brew() { _brew = true; }
   void stop_brew() { _brew = false; }
@@ -117,6 +135,16 @@ private:
   double _power_static = 0.0;
   unsigned long _last_control_time = 0;
   boiler_error_t _error = BOILER_ERROR_NONE;
+
+  // Shot integral hold: freeze the PID integral term during a brew and its recovery
+  bool _shot_hold_enabled = true;
+  unsigned long _shot_hold_timeout_ms = SHOT_HOLD_TIMEOUT_SEC * 1000UL;
+  bool _shot_hold_active = false;
+  bool _shot_hold_brew_ended = false; // brew has ended, release logic is running
+  bool _shot_hold_dip_seen = false;   // temperature dropped below setpoint after the brew ended
+  unsigned long _shot_hold_brew_end_time = 0;
+  void update_shot_hold();
+  void cancel_shot_hold();
   int _rtd_error = 0;   // current RTD errors
   
   // Temperature filter (EMA)
