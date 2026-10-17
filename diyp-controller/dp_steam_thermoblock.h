@@ -20,7 +20,7 @@
 
 #define STEAM_WINDUP_LIMIT_MIN -5.0  // windup limits in %
 #define STEAM_WINDUP_LIMIT_MAX 100.0 //
-#define STEAM_INTEGRATION_BAND 10.0      // only integrate when error is within this band [degC], when conditional integration is enabled (0 = no band)
+#define STEAM_INTEGRATION_BAND 5.0       // only integrate when error is within this band [degC], when conditional integration is enabled (0 = no band)
 #define STEAM_PUMP_INTEGRATION_BAND 0.0  // same, while the steam pump runs: no band, as large pump errors need integration
 
 // Steam timeouts in [sec]
