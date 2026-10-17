@@ -98,7 +98,7 @@ void DpSettings::defaults()
     settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
     settings.steamPumpIntegrationBand = STEAM_PUMP_INTEGRATION_BAND;
     settings.iDownFactor = 1.0;
-    settings.steamIDownFactor = 1.0;
+    settings.steamIDownFactor = 3.0;
     settings.steamConditionalIntegration = 1;
     settings.brewIntegralHold = 1;
     settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
