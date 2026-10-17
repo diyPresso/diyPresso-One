@@ -17,7 +17,7 @@ void SteamThermoblock::init()
 
   _pid.begin(&_act_temp, &_power, &_set_temp, 0.0, 0.0, 0.0, 3.0, false, 1000, nullptr); // overridden by settings.apply()
   _pid.setOutputLimits(0, 100);
-  _pid.setWindUpLimits(-5, 5); //TODO: adjust windup limits
+  _pid.setWindUpLimits(STEAM_WINDUP_LIMIT_MIN, STEAM_WINDUP_LIMIT_MAX); // overridden by settings.apply()
   _pid.setSerialLabel("DP_STEAM_STATE");
   _pid.start();
 

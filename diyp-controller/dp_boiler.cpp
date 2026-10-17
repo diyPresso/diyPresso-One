@@ -28,7 +28,7 @@ void BoilerStateMachine::state_heating()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffHeat, false);
+    apply_feed_forward();
   }
   if (!_on)
     next(&BoilerStateMachine::state_off);
@@ -48,7 +48,7 @@ void BoilerStateMachine::state_ready()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffReady, false);
+    apply_feed_forward();
   }
   if (!_on)
     next(&BoilerStateMachine::state_off);
@@ -68,7 +68,7 @@ void BoilerStateMachine::state_brew()
     next(&BoilerStateMachine::state_heating);
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffReady, true);
+    apply_feed_forward();
   }
 
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
@@ -89,6 +89,17 @@ void BoilerStateMachine::state_error()
   _set_temp = 0;
   if (_error == BOILER_ERROR_NONE)
     next(&BoilerStateMachine::state_off);
+}
+
+/// @brief Set the PID feed forward for the current state, so changed ffHeat / ffReady settings take effect immediately
+void BoilerStateMachine::apply_feed_forward()
+{
+  if (in_state(&BoilerStateMachine::state_heating))
+    _pid.setFeedForward(_ffHeat, false);
+  else if (in_state(&BoilerStateMachine::state_ready))
+    _pid.setFeedForward(_ffReady, false);
+  else if (in_state(&BoilerStateMachine::state_brew))
+    _pid.setFeedForward(_ffReady, true); // dynamic feed forward stays enabled while brewing
 }
 
 void BoilerStateMachine::goto_error(boiler_error_t error)

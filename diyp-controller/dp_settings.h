@@ -34,6 +34,10 @@ class DpSettings
             double steamTemperature;
             double steamP, steamI, steamD;
             double steamPumpPower;
+            double windupMin, windupMax, integrationBand;
+            int conditionalIntegration;
+            double steamWindupMin, steamWindupMax, steamIntegrationBand;
+            int steamConditionalIntegration;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -94,6 +98,24 @@ class DpSettings
         double steamD(double d) { return settings.steamD = min(999.0, max(d, 0.0)); }
         double steamPumpPower() { return settings.steamPumpPower; }
         double steamPumpPower(double p) { return settings.steamPumpPower = min(100.0, max(p, 10.0)); }
+
+        // PID integral term limits and conditional integration (serial interface only, not in the menu)
+        double windupMin() { return settings.windupMin; }
+        double windupMin(double w) { return settings.windupMin = min(0.0, max(w, -100.0)); }
+        double windupMax() { return settings.windupMax; }
+        double windupMax(double w) { return settings.windupMax = min(100.0, max(w, 0.0)); }
+        double integrationBand() { return settings.integrationBand; }
+        double integrationBand(double b) { return settings.integrationBand = min(20.0, max(b, 0.0)); }
+        int conditionalIntegration() { return settings.conditionalIntegration; }
+        int conditionalIntegration(int state) { return settings.conditionalIntegration = min(1, max(state, 0)); }
+        double steamWindupMin() { return settings.steamWindupMin; }
+        double steamWindupMin(double w) { return settings.steamWindupMin = min(0.0, max(w, -100.0)); }
+        double steamWindupMax() { return settings.steamWindupMax; }
+        double steamWindupMax(double w) { return settings.steamWindupMax = min(100.0, max(w, 0.0)); }
+        double steamIntegrationBand() { return settings.steamIntegrationBand; }
+        double steamIntegrationBand(double b) { return settings.steamIntegrationBand = min(30.0, max(b, 0.0)); }
+        int steamConditionalIntegration() { return settings.steamConditionalIntegration; }
+        int steamConditionalIntegration(int state) { return settings.steamConditionalIntegration = min(1, max(state, 0)); }
 };
 
 extern DpSettings settings;

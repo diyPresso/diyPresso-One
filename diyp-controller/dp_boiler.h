@@ -65,12 +65,14 @@ public:
   double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
-  double set_ffHeat(double ff) { return _ffHeat = min(100.0, max(ff, 0.0)); }
+  double set_ffHeat(double ff) { _ffHeat = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffHeat; }
   double get_ffHeat(void) { return _ffHeat; }
-  double set_ffReady(double ff) { return _ffReady = min(100.0, max(ff, 0.0)); }
+  double set_ffReady(double ff) { _ffReady = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffReady; }
   double get_ffReady(void) { return _ffReady; }
   void set_dffFactorPct(double factorPct) { _pid.setDynamicFeedForwardFactorPct(factorPct); } 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
+  void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
 
@@ -121,6 +123,7 @@ private:
   static constexpr double TEMP_FILTER_ALPHA = 0.15; // 0-1, lower = more filtering
   bool _temp_initialized = false;
   void goto_error(boiler_error_t err);
+  void apply_feed_forward(); // set the PID feed forward for the current state
   MAX31865 thermistor = MAX31865(PIN_THERM_CS);
   void state_off();     // SSR is forced OFF
   void state_heating(); // Temperature control, but not yet on target temperature
