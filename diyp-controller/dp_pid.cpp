@@ -88,15 +88,26 @@ void DpPID::compute()
         termP = Kp * curError; // Kp time the error in temperature.
 
         // integral term
-        termI = termI + Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
-        termI = constrain(termI, windUpMin, windUpMax); // prevent integral wind-up
+        double termI_new = termI + Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
+        termI_new = constrain(termI_new, windUpMin, windUpMax); // prevent integral wind-up
 
         // derivative term
         termD = Kd * -1 * dInput * 1000.0 / curSampleTimeMs;
 
+        double feedForward = calculateFeedForward(); // call once per cycle, updates the DFF stock pile and reservoir weight
 
+        integrationHeld = false;
+        if (conditionalIntegration) {
+            double out = feedForward + termP + termI_new + termD;
+            bool saturated = (out > outputMax && curError > 0) || (out < outputMin && curError < 0); // don't integrate further into saturation
+            bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
+            integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
+        }
+        if (!integrationHeld) {
+            termI = termI_new;
+        }
 
-        unconstrainedOutput = calculateFeedForward() + termP + termI + termD;
+        unconstrainedOutput = feedForward + termP + termI + termD;
         *output = constrain(unconstrainedOutput, outputMin, outputMax);
 
         lastInput = *input;
@@ -212,6 +223,12 @@ void DpPID::setSampleTime(const unsigned int &minSamplePeriodMs)
     this->minSamplePeriodMs = max(minSamplePeriodMs, 1); // make sure it is at least 1ms
 }
 
+void DpPID::setConditionalIntegration(bool enabled, double bandDegC)
+{
+    conditionalIntegration = enabled;
+    integrationBand = max(bandDegC, 0.0);
+}
+
 void DpPID::printToSerial()
 {
     Serial.print(serialLabel);
@@ -246,7 +263,11 @@ void DpPID::printToSerial()
     Serial.print(", stockPileKJ): ");
     Serial.print(dffEnergyStockPile / 1000.0, 2);
     Serial.print(", prevWeight: ");
-    Serial.println(previousReservoirWeight);
+    Serial.print(previousReservoirWeight);
+    Serial.print(", condInt: ");
+    Serial.print(conditionalIntegration);
+    Serial.print(", iHeld: ");
+    Serial.println(integrationHeld);
     
 }
 

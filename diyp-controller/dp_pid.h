@@ -95,6 +95,7 @@ public:
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
     void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
+    void setConditionalIntegration(bool enabled, double bandDegC); // anti-windup: hold the integral term when saturated or outside the band (0 = no band)
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
     bool getSerialOutput() const { return serialOutput; }
@@ -129,6 +130,9 @@ protected:
     double curError = 0, curInput = 0;
     double lastError = 0, lastSetpoint = 0, lastInput = 0;
     double windUpMin = -100, windUpMax = 5;
+    bool conditionalIntegration = false; // only integrate when not saturated and within integrationBand
+    double integrationBand = 0; // in degC, 0 = no band
+    bool integrationHeld = false; // true when the integral term was held during the last cycle
     double outputMin = 0, outputMax = 100;
     unsigned int minSamplePeriodMs = 1;
     unsigned long lastTime = 0;

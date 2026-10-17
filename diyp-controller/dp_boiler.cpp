@@ -102,6 +102,7 @@ void BoilerStateMachine::init()
   _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ffReady(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
   _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
+  _pid.setConditionalIntegration(true, INTEGRATION_BAND); // hold the integral term when saturated or far from setpoint
   _pid.start();
 
   begin();  // start the thermistor.
