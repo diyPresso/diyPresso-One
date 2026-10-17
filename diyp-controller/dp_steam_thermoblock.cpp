@@ -7,6 +7,7 @@
 #include "dp_hardware.h"
 #include "dp_steam_thermoblock.h"
 #include "dp_steam_heater.h"
+#include "dp_steam_pump.h"
 #include "dp_settings.h"
 
 SteamThermoblock steamThermoblock = SteamThermoblock();
@@ -63,6 +64,20 @@ void SteamThermoblock::run()
   _last_control_time = millis();
 
   StateMachine::run();
+
+  // Separate gains while the steam pump runs (pump on/off state, not the PWM pulses).
+  // The integral term is stored as a contribution and the derivative uses the input change, so switching gains causes no jump.
+  bool pump_on = steamPump.is_on();
+  if (pump_on) {
+    _pid.setCoefficients(_pump_p, _pump_i, _pump_d);
+    _pid.setGainSetLabel("pump");
+  } else {
+    _pid.setCoefficients(_p, _i, _d);
+    _pid.setGainSetLabel("normal");
+  }
+  if (_pump_was_on && !pump_on && _on)
+    _pid.resetIntegral(); // pump stopped: the integral holds the pump load, the static feed forward covers the idle load
+  _pump_was_on = pump_on;
 
   _pid.setOutputEnabled(_on); // PID not in control (steam off): integral kept at 0
   _pid.compute();

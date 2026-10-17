@@ -42,6 +42,7 @@ class DpSettings
             int brewHoldTimeoutSec;
             int brewHoldDipWindowSec;
             double dffDecay;
+            double steamPumpP, steamPumpI, steamPumpD;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -100,6 +101,12 @@ class DpSettings
         double steamI(double i) { return settings.steamI = min(10.0, max(i, 0.0)); }
         double steamD() { return settings.steamD; }
         double steamD(double d) { return settings.steamD = min(999.0, max(d, 0.0)); }
+        double steamPumpP() { return settings.steamPumpP; }
+        double steamPumpP(double p) { return settings.steamPumpP = min(50.0, max(p, 0.0)); }
+        double steamPumpI() { return settings.steamPumpI; }
+        double steamPumpI(double i) { return settings.steamPumpI = min(10.0, max(i, 0.0)); }
+        double steamPumpD() { return settings.steamPumpD; }
+        double steamPumpD(double d) { return settings.steamPumpD = min(999.0, max(d, 0.0)); }
         double steamPumpPower() { return settings.steamPumpPower; }
         double steamPumpPower(double p) { return settings.steamPumpPower = min(100.0, max(p, 10.0)); }
 

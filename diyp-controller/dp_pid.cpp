@@ -282,7 +282,9 @@ void DpPID::printToSerial()
     Serial.print(", brewIHold: ");
     Serial.print(integralHoldState);
     Serial.print(", offIHold: ");
-    Serial.println(!outputEnabled);
+    Serial.print(!outputEnabled);
+    Serial.print(", gains: ");
+    Serial.println(gainSet);
     
 }
 
