@@ -101,7 +101,7 @@ void DpPID::compute()
 
         integrationHeld = false;
         if (conditionalIntegration) {
-            double out = feedForward + termP + termI_new + termD;
+            double out = feedForward + termP + termI_new; // without D: the derivative is a short transient, it should not block integration
             bool saturated = (out > outputMax && curError > 0) || (out < outputMin && curError < 0); // don't integrate further into saturation
             bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
             integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
