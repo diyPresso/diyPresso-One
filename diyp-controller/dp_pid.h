@@ -92,6 +92,8 @@ public:
     void setOutputLimits(const double& min, const double& max);
     void setWindUpLimits(const double& min, const double& max);
     void setCoefficients(const double& p, const double& i, const double& d);
+    void setGainSetLabel(const char* label) { gainSet = label; } // name of the active gain set, for serial output
+    void resetIntegral() { termI = 0; }
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
     void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
@@ -128,6 +130,7 @@ protected:
     double* output;
     double* setpoint;
     double Kp, Ki, Kd; // the coefficients for the proportional, integral, and derivative terms 
+    const char* gainSet = "normal"; // name of the active gain set, for serial output
     double termP, termI, termD; // the calculated PID terms
     double unconstrainedOutput;
     double curError = 0, curInput = 0;

@@ -82,9 +82,12 @@ void DpSettings::defaults()
     settings.shotCounter = 0;
     settings.commissioningDone = 0; // default is 0 (not done)
     settings.steamTemperature = 165.0;
-    settings.steamP = 5.0;
-    settings.steamI = 0.1;
+    settings.steamP = 3.5;
+    settings.steamI = 0.05;
     settings.steamD = 50.0;
+    settings.steamPumpP = 5.0;
+    settings.steamPumpI = 0.1;
+    settings.steamPumpD = 50.0;
     settings.steamPumpPower = 100.0;
     settings.windupMin = WINDUP_LIMIT_MIN;
     settings.windupMax = WINDUP_LIMIT_MAX;
@@ -93,7 +96,7 @@ void DpSettings::defaults()
     settings.steamWindupMin = STEAM_WINDUP_LIMIT_MIN;
     settings.steamWindupMax = STEAM_WINDUP_LIMIT_MAX;
     settings.steamIntegrationBand = STEAM_INTEGRATION_BAND;
-    settings.steamConditionalIntegration = 0;
+    settings.steamConditionalIntegration = 1;
     settings.brewIntegralHold = 1;
     settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
     settings.brewHoldDipWindowSec = BREW_HOLD_DIP_WINDOW_SEC;
@@ -199,6 +202,7 @@ void DpSettings::apply()
 
   steamThermoblock.set_temp(steamTemperature());
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
+  steamThermoblock.set_pump_pid(steamPumpP(), steamPumpI(), steamPumpD());
   steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
   steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand());
   steamPump.power(steamPumpPower());
@@ -229,6 +233,9 @@ String DpSettings::serialize() {
     result += "steamI=" + String(settings.steamI) + "\n";
     result += "steamD=" + String(settings.steamD) + "\n";
     result += "steamPumpPower=" + String(settings.steamPumpPower) + "\n";
+    result += "steamPumpP=" + String(settings.steamPumpP) + "\n";
+    result += "steamPumpI=" + String(settings.steamPumpI) + "\n";
+    result += "steamPumpD=" + String(settings.steamPumpD) + "\n";
     result += "windupMin=" + String(settings.windupMin) + "\n";
     result += "windupMax=" + String(settings.windupMax) + "\n";
     result += "integrationBand=" + String(settings.integrationBand) + "\n";
@@ -329,6 +336,12 @@ int DpSettings::deserialize(String serialized_settings) {
             steamD(value.toDouble());
         } else if (key == "steamPumpPower") {
             steamPumpPower(value.toDouble());
+        } else if (key == "steamPumpP") {
+            steamPumpP(value.toDouble());
+        } else if (key == "steamPumpI") {
+            steamPumpI(value.toDouble());
+        } else if (key == "steamPumpD") {
+            steamPumpD(value.toDouble());
         } else if (key == "windupMin") {
             windupMin(value.toDouble());
         } else if (key == "windupMax") {
