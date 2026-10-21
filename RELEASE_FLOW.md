@@ -9,7 +9,7 @@ Work is done on feature branches that start from `development`.
 
 1. Before opening the PR, bring the feature branch up to date with `development` (`git fetch` then `git rebase origin/development`), so the PR has no conflicts.
 2. Push the feature branch.
-3. Create a PR from the feature branch → `development` (e.g. `gh pr create --base development`). Describe the changes and how they were tested.
+3. Create a PR from the feature branch → `development` (VS Code GitHub PR view or GitHub web). Describe the changes and how they were tested.
 4. Use **Rebase and merge** or **Create a merge commit**, not squash. That keeps the separate commits on `development`, so a single change can be found or reverted. Commits are squashed later, when `development` is merged into `main`.
 5. Delete the feature branch after the merge.
 
