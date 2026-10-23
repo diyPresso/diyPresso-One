@@ -72,6 +72,7 @@ void setup()
 {
   int result = 0;
 
+  encoder.start(); // before the logo: button presses during the logo count for the factory reset below
   display.init();
   display.logo();
   
@@ -79,9 +80,6 @@ void setup()
   dpSerial.send(__DATE__ " " __TIME__);
   dpSerial.send("diyPresso " + String(hardware.model_name()) + " starting up...");
   statusLed.color(ColorLed::WHITE);
-
-  encoder.start();
-
 
   if ((result = settings.load()) < 0)
   {
