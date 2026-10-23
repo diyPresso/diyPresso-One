@@ -173,89 +173,25 @@ long Display::encoder_value()
 }
 
 
-void Display::logo(const char *date, const char*time)
+void Display::logo()
 {
-  int textDelay = 1;
-  lcd.setCursor(8,0);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.print (" ");
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.write (2);
-  delay(textDelay);
-  lcd.write (2);
-  delay(textDelay);
-  lcd.write (2);
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-
-  lcd.setCursor(8,1);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.print (" ");
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.write (3);
-  delay(textDelay);
-  lcd.write (3);
-  delay(textDelay);
-  lcd.write (6);
-  delay(textDelay);
-  lcd.write (7);
-
-  lcd.setCursor(4,2);
-  delay(textDelay);
-  lcd.write (4);
-  delay(textDelay);
-  lcd.write (5);
-  delay(textDelay);
-  lcd.write (2);
-  delay(textDelay);
-  lcd.write (2);
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.print (" ");
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-
-  lcd.setCursor(4,3);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.write (3);
-  delay(textDelay);
-  lcd.write (3);
-  delay(textDelay);
-  lcd.write (3);
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-  lcd.print (" ");
-  delay(textDelay);
-  lcd.write (1);
-  delay(textDelay);
-
-  delay(1000);
-  lcd.setCursor(0,3);
-  lcd.print("r" HARDWARE_REVISION);
-  lcd.setCursor(20-strlen("v" SOFTWARE_VERSION), 3);
-  lcd.print("v" SOFTWARE_VERSION);
-
-  lcd.setCursor(4,1);
-  lcd.print(date);
-  lcd.setCursor(6,2);
-  lcd.print(time);
+  // logo from custom characters 1..7, ' ' = blank
+  static const struct { int col; const char *chars; } rows[4] = {
+    { 8, "\1 \1\2\2\2\1" },
+    { 8, "\1 \1\3\3\6\7" },
+    { 4, "\4\5\2\2\1 \1" },
+    { 4, "\1\3\3\3\1 \1" },
+  };
+  for (int i = 0; i < 4; i++)
+  {
+    lcd.setCursor(rows[i].col, i);
+    lcd.print(rows[i].chars);
+  }
 
 #if defined(SIMULATE) || !defined(WATCHDOG_ENABLED)
   lcd.setCursor(2,0);
   lcd.print("!!! TESTING !!!");
 #endif
 
-
-  delay(3000);
+  delay(2000);
 }
