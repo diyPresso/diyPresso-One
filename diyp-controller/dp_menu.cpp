@@ -12,57 +12,13 @@
 #include "dp_heater.h"
 #include "dp_pump.h"
 #include "dp_settings.h"
+#include "dp_settings_menu.h"
 #include "dp_commission.h"
 #include "dp_machine.h"
 #include "dp_serial.h"
 #include "dp_steam_process.h"
 #include "dp_steam_thermoblock.h"
 #include <Timer.h>
-
-double settings_vals[32];
-
-// the increment setting has some special values:
-#define READ_ONLY 0         // only display value, cannot modify
-#define EXECUTE_FUNCTION -1 // Execute a function, the 'decimals' field contains a function ID
-#define SELECT_ITEM -2      // Select item from a list, 'unit' has an `ASCII-ZERO` separated list
-
-// List of function IDs
-#define FUNCTION_SAVE 1
-#define FUNCTION_TARE 2
-#define FUNCTION_ZERO 3
-#define FUNCTION_DEFAULTS 4
-#define FUNCTION_EXIT 5
-
-// "text", "unit", pointer, increment, decimals
-const setting_t settings_list[] =
-    {
-        {"Temperature", "\337C", &settings_vals[0], 0.5, 2},
-        {"Pre-infusion time", "sec", &settings_vals[1], 0.1, 2},
-        {"Infusion time", "sec", &settings_vals[2], 0.1, 2},
-        {"Extraction time", "sec", &settings_vals[3], 0.5, 2},
-        {"Extraction weight", "gram", &settings_vals[4], 0.5, 2},
-        {"P-Gain", "%/\337C", &settings_vals[5], 0.2, 1},
-        {"I-Gain", "%/\337C/s", &settings_vals[6], 0.01, 2},
-        {"D-Gain", "%s", &settings_vals[7], 1, 0},
-        {"DFF Factor", "%", &settings_vals[8], 0.5, 1},
-        {"FF heat Value", "%", &settings_vals[9], 0.2, 1},
-        {"FF ready Value", "%", &settings_vals[10], 0.2, 1},
-        {"Steam Temperature", "\337C", &settings_vals[15], 0.5, 1},
-        {"Steam P-Gain", "%/\337C", &settings_vals[16], 0.2, 1},
-        {"Steam I-Gain", "%/\337C/s", &settings_vals[17], 0.01, 2},
-        {"Steam D-Gain", "%s", &settings_vals[18], 1, 0},
-        {"Steam Pump Power", "%", &settings_vals[19], 10, 0},
-        {"Shot counter", "shots", &settings_vals[11], READ_ONLY, 0},
-        {"WIFI mode", "OFF\0ON\0CONFIG-AP\0", &settings_vals[12], SELECT_ITEM, 1},
-        {"Weight trim", "%", &settings_vals[13], 0.05, 2},
-        {"Commissioning done", "NO\0YES\0", &settings_vals[14], SELECT_ITEM, 1},
-        {"   <Tare Weight>", "FULL", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_TARE},
-        {"   <Zero Counter>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_ZERO},
-        {"<Reset to defaults>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_DEFAULTS},
-        {"       <EXIT>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_EXIT},
-        {"       <SAVE>", "", &settings_vals[31], EXECUTE_FUNCTION, FUNCTION_SAVE}};
-
-const int num_settings = sizeof(settings_list) / sizeof(setting_t);
 
 const char *errors_list[] = {
   // 01234567890123456789
@@ -95,68 +51,47 @@ const char *menus[] = {
     "############# #####s"    // [5:state] [6:time]
     "Weight ##### gram # ",   // [7:Weight] [8:level]
 
-    // SETTING=2
-    // 01234567890123456789
-    "SETTINGS     [##/##]"
-    "################### "
-    "  ########## #######"
-    "             [PRESS]",
-
-    // MODIFY=3
-    // 01234567890123456789
-    "MODIFY       [##/##]"
-    "################### "
-    "  ########## #######"
-    "              [TURN]",
-
-    // ERROR=4
+    // ERROR=2
     // 01234567890123456789
     "****** ERROR *******"
     "*##################*"
     "* TURN MACHINE OFF *"
     "********************",
 
-    // SLEEP=5
+    // SLEEP=3
     // 01234567890123456789
     "     ##########     "
     "   I AM SLEEPING!   "
     "  PRESS BUTTON TO   "
     "     WAKE ME...     ",
 
-    // CONFIRM=6
-    // 01234567890123456789
-    "####################"
-    "    ARE YOU SURE?   "
-    "                    "
-    "       ###    [TURN]",
-
-    // WIFI=7
+    // WIFI=4
     // 01234567890123456789
     " WIFI CONNECTING... "
     " ################## "
     " ################## "
     "  [PRESS] to cancel ",
-    // SAVED=8
+    // SAVED=5
     // 01234567890123456789
     "                    "
     "   SETTINGS SAVED   "
     "                    "
     "                    ",
-    // STATE=9
+    // STATE=6
     // 01234567890123456789
     "####### ############"
     "B: ################ "
     "E: ################ "
     "R: ################ ",
 
-    // COMMISSIONING=10
+    // COMMISSIONING=7
     // 01234567890123456789
     "___COMMISSIONING___ "
     " ################## "
     " ################## "
     " Weight ##### gram  ",
 
-    // WARNING_ALMOST_EMPTY=11
+    // WARNING_ALMOST_EMPTY=8
   // 01234567890123456789
     "       Warning!     "
     "     Almost empty   "
@@ -166,9 +101,6 @@ const char *menus[] = {
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
 
-const char *get_string_item(const char *items, int index);
-int get_item_count(const char *items);
-double add_value(int n, double delta);
 
 // Main menu
 bool menu_main()
@@ -271,159 +203,6 @@ bool menu_warning_almost_empty()
  
   display.show(menus[MENU_WARNING_ALMOST_EMPTY], arg);
   return false;
-}
-
-// Settings menu (blocking)
-/* Returns 0 if the settings menu should continue running, 1 if a save action was performed and the menu should be exited,
- * and 2 if an exit action was performed and the menu should be exited.
- */
-int menu_settings(bool button_pressed)
-{
-  static char buf[32], bufs[10][32];
-  static char *arg[10];
-  static bool modify = false;
-  static int idx = 0;
-  static long pos = 0, prev_pos = 0, loop = 0;
-  static double set_val = 0;
-
-  for (int i = 0; i < 10; i++)
-    arg[i] = bufs[i];
-  format_float(arg[1], num_settings, 0);
-
-  pos = display.encoder_value();
-  if (modify)
-  {
-    setting_t set = settings_list[idx];
-    int val_idx = set.val - settings_vals;
-    set_val = add_value(val_idx, set.delta * (pos - prev_pos));
-  }
-  else
-  {
-    idx += pos - prev_pos;
-    idx %= num_settings;
-    if (idx < 0)
-      idx += num_settings;
-    int val_idx = settings_list[idx].val - settings_vals;
-    set_val = add_value(val_idx, 0.0);
-  }
-
-  setting_t set = settings_list[idx];
-
-  if (button_pressed)
-  {
-    if (set.delta == EXECUTE_FUNCTION)
-    {
-      switch (set.decimals)
-      {
-      case FUNCTION_EXIT:
-        return 2;
-      case FUNCTION_SAVE:
-        settings.save();
-        break;
-      case FUNCTION_TARE:
-        reservoir.tare();
-        settings.tareWeight(reservoir.get_tare());
-        settings.save();
-        break;
-      case FUNCTION_ZERO:
-        settings.zeroShotCounter();
-        settings.save();
-        break;
-      case FUNCTION_DEFAULTS:
-        settings.defaults();
-        settings.save();
-        break;
-      }
-      return 1;
-    }
-    else
-    {
-      if (set.delta != READ_ONLY)
-        modify = !modify;
-    }
-  }
-
-  if (modify && set.delta == EXECUTE_FUNCTION && set.decimals == FUNCTION_SAVE)
-    return 1;
-
-  arg[2] = set.name;
-  arg[4] = set.unit;
-
-  switch ((int)set.delta)
-  {
-  case EXECUTE_FUNCTION:
-    *arg[3] = 0;
-    break; // A function to execute: no value to display
-  case SELECT_ITEM:
-    strcpy(arg[3], get_string_item(set.unit, set_val));
-    arg[4] = "";
-    break;
-  default:
-    format_float(arg[3], set_val, set.decimals, 10);
-    break; // Show the value
-  }
-
-  format_float(arg[0], idx + 1, 0, 2); // the item number
-  display.show(menus[modify ? MENU_MODIFY : MENU_SETTING], arg);
-  prev_pos = pos;
-
-  return 0;
-}
-
-// add a value to a setting
-double add_value(int n, double delta)
-{
-  double result;
-  // if (delta != 0)
-  //   Serial.print("delta:");
-  // Serial.print(delta);
-
-  switch (n)
-  {
-  case 0:
-    return settings.temperature(settings.temperature() + delta);
-  case 1:
-    return settings.preInfusionTime(settings.preInfusionTime() + delta);
-  case 2:
-    return settings.infusionTime(settings.infusionTime() + delta);
-  case 3:
-    return settings.extractionTime(settings.extractionTime() + delta);
-  case 4:
-    return settings.extractionWeight(settings.extractionWeight() + delta);
-  case 5:
-    return settings.P(settings.P() + delta);
-  case 6:
-    return settings.I(settings.I() + delta);
-  case 7:
-    return settings.D(settings.D() + delta);
-  case 8:
-    return settings.dffFactorPct(settings.dffFactorPct() + delta);
-  case 9:
-    return settings.ffHeat(settings.ffHeat() + delta);
-  case 10:
-    return settings.ffReady(settings.ffReady() + delta);
-  case 11:
-    return settings.shotCounter();
-  case 12:
-    return settings.wifiMode(settings.wifiMode() - (delta / 2.0));
-  case 13:
-    return settings.trimWeight(settings.trimWeight() + delta);
-  case 14:
-    return settings.commissioningDone(settings.commissioningDone() + (delta / 2.0));
-  case 15:
-    return settings.steamTemperature(settings.steamTemperature() + delta);
-  case 16:
-    return settings.steamP(settings.steamP() + delta);
-  case 17:
-    return settings.steamI(settings.steamI() + delta);
-  case 18:
-    return settings.steamD(settings.steamD() + delta);
-  case 19:
-    return settings.steamPumpPower(settings.steamPumpPower() + delta);
-
-  default:
-    return 0;
-  }
 }
 
 bool menu_commissioning()
@@ -571,38 +350,12 @@ char reservoir_level_indicator()
   return spinner_chars[min(max(0, level_index), sizeof(spinner_chars) - 1)];
 }
 
-/// @brief Get a string from a list of strings
-/// @param a pointer to list of ASCIZ terminated strings, where the last item has zero length
-/// @param index the index in the list (0 ..[n-items])
-/// @return pointer to ASCIZ string from list. If index is larger than items, return zero length item
-const char *get_string_item(const char *items, int index)
-{
-  const char *ptr = items;
-  while (index && strlen(ptr))
-  {
-    ptr += strlen(ptr) + 1;
-    index--;
-  }
-  return ptr;
-}
-
-int get_item_count(const char *items)
-{
-  const char *ptr = items;
-  int count = 0;
-  while (strlen(ptr))
-  {
-    ptr += strlen(ptr) + 1;
-    count++;
-  }
-  return count;
-}
-
-typedef enum { MAIN, SETTINGS, SAVED, INFO, WARNING } ready_menu_t;
+typedef enum { MAIN, SETTINGS, SAVED, WARNING } ready_menu_t;
 static ready_menu_t ready_menu = MAIN;
 
 void menu_ready_reset()
 {
+  settingsMenu.close(); // discard unsaved changes
   ready_menu = MAIN;
 }
 
@@ -611,7 +364,10 @@ bool menu_ready(bool button_pressed)
   static Timer saved_timer = Timer(MILLIS);
 
   if (brewProcess.is_warning_almost_empty() && ready_menu != WARNING)
+  {
+    settingsMenu.close();
     ready_menu = WARNING;
+  }
 
   switch (ready_menu)
   {
@@ -624,51 +380,40 @@ bool menu_ready(bool button_pressed)
   case MAIN:
     menu_main();
     if (button_pressed)
+    {
+      settingsMenu.open();
       ready_menu = SETTINGS;
-    else if (display.encoder_changed())
-      ready_menu = INFO;
+    }
     break;
 
   case SETTINGS:
     if (brewProcess.is_busy()) {
+      settingsMenu.close(); // discard unsaved changes
       ready_menu = MAIN;
       break;
     }
+    switch (settingsMenu.update(button_pressed))
     {
-      int result = menu_settings(button_pressed);
-      if (result == 1) {
-        boilerController.clear_error();
-        reservoir.clear_error();
-        settings.apply();
-        display.button_pressed();
-        ready_menu = SAVED;
-      } else if (result == 2) {
-        dpSerial.send("Cancel!");
-        display.button_pressed();
-        display.encoder_changed();
-        ready_menu = MAIN;
-      }
+    case SettingsMenu::RESULT_SAVED:
+      ready_menu = SAVED;
+      break;
+    case SettingsMenu::RESULT_EXIT:
+      ready_menu = MAIN;
+      break;
+    default:
+      break;
     }
     break;
 
   case SAVED:
     menu_saved();
     display.button_pressed();
-    display.encoder_changed();
     if (saved_timer.state() != status_t::RUNNING) {
       saved_timer.start();
     } else if (saved_timer.read() > 1000) {
       saved_timer.stop();
       ready_menu = MAIN;
     }
-    break;
-
-  case INFO:
-    menu_state();
-    if (button_pressed)
-      ready_menu = SETTINGS;
-    if (display.encoder_changed())
-      ready_menu = MAIN;
     break;
 
   default:
