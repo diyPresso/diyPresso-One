@@ -103,8 +103,6 @@ void setup()
 
   dpSerial.send_settings();
 
-  display.custom_chars(custom_chars_spinner);
-
   boilerController.init(); // moved this out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
   if(hardware.has_steam_group()) 
   { 
@@ -115,6 +113,11 @@ void setup()
 
 
   settings.apply();
+
+  // Replace the logo characters only now, so the logo stays on screen during the inits above.
+  // Loading new custom characters changes the characters on screen at once: clear it first.
+  display.clear();
+  display.custom_chars(custom_chars_spinner);
 
   dpSerial.send("INIT DONE");
 

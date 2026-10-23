@@ -106,6 +106,11 @@ void format_float(char *dest, double f, int digits, int len)
   }
 }
 
+void Display::clear()
+{
+  lcd.clear();
+}
+
 // Load custom characters
 void Display::custom_chars(const unsigned char *chars)
 {
@@ -182,10 +187,16 @@ void Display::logo()
     { 4, "\4\5\2\2\1 \1" },
     { 4, "\1\3\3\3\1 \1" },
   };
+  const int textDelay = 20; // [msec] per character
+  unsigned long start = millis();
   for (int i = 0; i < 4; i++)
   {
     lcd.setCursor(rows[i].col, i);
-    lcd.print(rows[i].chars);
+    for (const char *c = rows[i].chars; *c; c++)
+    {
+      lcd.write(*c);
+      delay(textDelay);
+    }
   }
 
 #if defined(SIMULATE) || !defined(WATCHDOG_ENABLED)
@@ -193,5 +204,5 @@ void Display::logo()
   lcd.print("!!! TESTING !!!");
 #endif
 
-  delay(2000);
+  delay(2000 - min(2000UL, millis() - start)); // show the logo for 2.5 s in total
 }
