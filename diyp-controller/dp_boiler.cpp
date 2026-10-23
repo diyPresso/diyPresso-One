@@ -91,13 +91,11 @@ void BoilerStateMachine::state_error()
     next(&BoilerStateMachine::state_off);
 }
 
-/// @brief Set the PID feed forward for the current state, so changed ffHeat / ffReady settings take effect immediately
+/// @brief Set the PID feed forward for the current state, so a changed ffReady setting takes effect immediately
 void BoilerStateMachine::apply_feed_forward()
 {
-  if (in_state(&BoilerStateMachine::state_heating))
-    _pid.setFeedForward(_ffHeat, false);
-  else if (in_state(&BoilerStateMachine::state_ready))
-    _pid.setFeedForward(_ffReady, false);
+  if (in_state(&BoilerStateMachine::state_heating) || in_state(&BoilerStateMachine::state_ready))
+    _pid.setFeedForward(_ffReady, false); // also while heating: P gives enough power far below setpoint
   else if (in_state(&BoilerStateMachine::state_brew))
     _pid.setFeedForward(_ffReady, true); // dynamic feed forward stays enabled while brewing
 }
@@ -119,8 +117,8 @@ void BoilerStateMachine::init()
 {
   _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ffReady(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
-  _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
-  _pid.setConditionalIntegration(true, INTEGRATION_BAND); // hold the integral term when saturated or far from setpoint
+  _pid.setWindUpLimits(settings.windupMin(), settings.windupMax()); // set bounds for the integral term to prevent integral wind-up
+  _pid.setConditionalIntegration(settings.conditionalIntegration(), settings.integrationBand()); // hold the integral term when saturated or far from setpoint
   _pid.start();
 
   begin();  // start the thermistor.

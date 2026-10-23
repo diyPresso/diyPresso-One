@@ -22,10 +22,6 @@
 #define TEMP_LIMIT_LOW 1.0    // < is TOO LOW
 #define TEMP_MIN_BREW 10.0    // do not brew under this temp
 
-#define WINDUP_LIMIT_MIN -15.0 // windup limits in %
-#define WINDUP_LIMIT_MAX 8.0   // 
-#define INTEGRATION_BAND 4.0   // only integrate when error is within this band [degC]
-
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes
 #define TIMEOUT_BREW (60 * 3)    // maximum brew on time: 3 minutes
@@ -72,8 +68,6 @@ public:
   }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
-  double set_ffHeat(double ff) { _ffHeat = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffHeat; }
-  double get_ffHeat(void) { return _ffHeat; }
   double set_ffReady(double ff) { _ffReady = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffReady; }
   double get_ffReady(void) { return _ffReady; }
   void set_dffFactorPct(double factorPct) { _pid.setDynamicFeedForwardFactorPct(factorPct); } 
@@ -130,7 +124,7 @@ public:
 
 private:
   DpPID _pid;
-  double _act_temp = 0, _set_temp = 0, _ffHeat = 0, _ffReady = 0, _power = 0;
+  double _act_temp = 0, _set_temp = 0, _ffReady = 0, _power = 0;
   bool _on = false, _brew = false;
   power_control_mode_t _power_control_mode = POWER_CONTROL_PID;
   double _power_static = 0.0;

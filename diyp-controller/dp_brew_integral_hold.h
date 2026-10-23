@@ -29,8 +29,6 @@
 #include <Arduino.h>
 #include "dp_fsm.h"
 
-#define BREW_HOLD_TIMEOUT_SEC 180   // release the hold this long after the brew ended [sec]
-#define BREW_HOLD_DIP_WINDOW_SEC 60 // the hold can only activate until this long after the brew ended [sec]
 #define BREW_HOLD_DIP_BAND 0.2      // temperature must drop this far below setpoint to count as the post-brew dip [degC]
 
 class BrewIntegralHold : public StateMachine<BrewIntegralHold>
@@ -49,8 +47,8 @@ private:
   bool _brew = false;
   double _act_temp = 0, _set_temp = 0;
   unsigned long _brew_end_time = 0;
-  unsigned long _timeout_ms = BREW_HOLD_TIMEOUT_SEC * 1000UL;
-  unsigned long _dip_window_ms = BREW_HOLD_DIP_WINDOW_SEC * 1000UL;
+  unsigned long _timeout_ms = 0;    // release the hold this long after the brew ended, set by settings.apply()
+  unsigned long _dip_window_ms = 0; // the hold can only activate until this long after the brew ended, set by settings.apply()
 
   void brew_ended() { _brew_end_time = millis(); }
   bool timed_out() { return (millis() - _brew_end_time) > _timeout_ms; }

@@ -18,10 +18,6 @@
 #define STEAM_TEMP_LIMIT_LOW 1.0
 #define STEAM_TEMP_DEFAULT 165.0
 
-#define STEAM_WINDUP_LIMIT_MIN -5.0  // windup limits in %
-#define STEAM_WINDUP_LIMIT_MAX 100.0 //
-#define STEAM_INTEGRATION_BAND 5.0       // only integrate when error is within this band [degC], when conditional integration is enabled (0 = no band)
-#define STEAM_PUMP_INTEGRATION_BAND 0.0  // same, while the steam pump runs: no band, as large pump errors need integration
 
 // Steam timeouts in [sec]
 #define STEAM_TIMEOUT_HEATING (60 * 5)
@@ -89,7 +85,7 @@ private:
   double _p = 0, _i = 0, _d = 0, _pump_p = 0, _pump_i = 0, _pump_d = 0;
   bool _pump_was_on = false;
   bool _cond_int = false;
-  double _band = STEAM_INTEGRATION_BAND, _pump_band = STEAM_PUMP_INTEGRATION_BAND;
+  double _band = 0, _pump_band = 0; // integration bands with the pump off / on, set by settings.apply()
 
   static constexpr double TEMP_FILTER_ALPHA = 0.15;
   bool _temp_initialized = false;
