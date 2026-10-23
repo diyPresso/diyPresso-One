@@ -80,7 +80,7 @@ void setup()
 
   encoder.start();
   display.init();
-  display.logo(__DATE__, __TIME__);
+  display.logo();
 
   if ((result = settings.load()) < 0)
   {
