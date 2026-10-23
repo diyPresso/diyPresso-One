@@ -34,7 +34,10 @@ const int num_errors = sizeof(errors_list) / sizeof(char *);
 #define CELSIUS_STR "\337"
 
 // const char spinner_chars[] = "/-\|";
-const char spinner_chars[] = "\0\1\2\3\4\5\6\7";
+// Custom characters 0..7. Character 0 is written as \10: code 0 ends a string, the display shows
+// custom characters 0..7 also at codes 8..15.
+const char spinner_chars[] = "\10\1\2\3\4\5\6\7";
+const int num_spinner_chars = sizeof(spinner_chars) - 1; // without the string terminator
 
 const char *menus[] = {
     // MAIN_ONE=0
@@ -42,14 +45,14 @@ const char *menus[] = {
     "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
     "Power    ### % ## # "    // [2:percentage] [3:ON_OFF] [4:PUMP]
     "############# #####s"    // [5:state] [6:time]
-    "Weight ##### gram # ",   // [7:Weight] [8:level]
+    "Weight  ##### gram #",   // [7:Weight] [8:level]
 
     // MAIN_TWO=1
     // 01234567890123456789
     "Boiler #####/#####\337C" // [0:actual] / [1:set_temp]
     "Steam #### ###/###\337C" // [2:steam_state] [3:steam_temp]/[4:steam_set_temp]
     "############# #####s"    // [5:state] [6:time]
-    "Weight ##### gram # ",   // [7:Weight] [8:level]
+    "Weight  ##### gram #",   // [7:Weight] [8:level]
 
     // ERROR=2
     // 01234567890123456789
@@ -96,7 +99,7 @@ const char *menus[] = {
     "       Warning!     "
     "     Almost empty   "
     " Push to start brew "
-    "Weight ##### gram # " // [0:Weight] [1:level]
+    "Weight  ##### gram #" // [0:Weight] [1:level]
 
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
@@ -143,8 +146,8 @@ bool menu_main()
   else
   {
     level_spinner[0] = reservoir_level_indicator();
-    level_spinner[1] = 0;
   }
+  level_spinner[1] = 0;
 
   for (int i = 0; i < 10; i++)
     arg[i] = bufs[i];
@@ -200,6 +203,7 @@ bool menu_warning_almost_empty()
 
   // [1:level]
   bufs[1][0] = reservoir_level_indicator();
+  bufs[1][1] = 0;
  
   display.show(menus[MENU_WARNING_ALMOST_EMPTY], arg);
   return false;
@@ -346,8 +350,8 @@ bool menu_state()
 
 char reservoir_level_indicator()
 {
-  int level_index =  (sizeof(spinner_chars) * reservoir.level()) / 100.0;
-  return spinner_chars[min(max(0, level_index), sizeof(spinner_chars) - 1)];
+  int level_index = (num_spinner_chars * reservoir.level()) / 100.0;
+  return spinner_chars[min(max(0, level_index), num_spinner_chars - 1)];
 }
 
 typedef enum { MAIN, SETTINGS, SAVED, WARNING } ready_menu_t;
