@@ -18,6 +18,7 @@ class Encoder
         volatile bool button_state();
         volatile int button_time();
         volatile void reset();
+        void set_reverse(bool reverse);
         void start();
 };
 

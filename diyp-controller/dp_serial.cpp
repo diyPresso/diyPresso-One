@@ -22,6 +22,8 @@
               iDownFactor (1.0-5.0, integration rate factor above setpoint)
       steam:  steamWindupMin, steamWindupMax, steamIntegrationBand (pump off), steamPumpIntegrationBand (pump on),
               steamConditionalIntegration (0/1), steamIDownFactor (1.0-5.0, both gain sets)
+    other settings (serial only, not in the menu):
+      encoderReverse (0/1, reverse the rotary encoder direction)
     e.g. PUT settings windupMin=-15.00,windupMax=15.00,integrationBand=5.00,brewIntegralHold=1
     - GET serialOutputConfig
     - PUT serialOutputConfig DP_PID_STATE=1,DP_STEAM_STATE=1
