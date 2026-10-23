@@ -57,7 +57,8 @@ void MachineController::state_ready()
   steamProcess.run(steamMsg);
 
   // Reset auto-sleep timer on user activity
-  if (_message == MSG_BUTTON || brewProcess.is_busy())
+  if (_message == MSG_BUTTON || _message == MSG_STEAM_BUTTON || _message == MSG_STEAM_LONG_PRESS
+      || brewProcess.is_busy() || steamProcess.is_busy())
     reset_timeout();
 
   if (brewProcess.is_error() || boilerController.is_error())
