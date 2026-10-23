@@ -204,5 +204,5 @@ void Display::logo()
   lcd.print("!!! TESTING !!!");
 #endif
 
-  delay(2000 - min(2000UL, millis() - start)); // show the logo for 2.5 s in total
+  delay(2000 - min(2000UL, millis() - start)); // show the logo for 2.0 s in total
 }
