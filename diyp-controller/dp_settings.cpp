@@ -189,7 +189,6 @@ int DpSettings::save()
 void DpSettings::apply()
 {
   boilerController.set_temp(temperature());
-
   boilerController.set_pid(P(), I(), D());
   boilerController.set_ffHeat(ffHeat());
   boilerController.set_ffReady(ffReady());
@@ -202,6 +201,7 @@ void DpSettings::apply()
 
   reservoir.set_trim(trimWeight());
   reservoir.set_tare(tareWeight());
+
   brewProcess.preInfuseTime = preInfusionTime();
   brewProcess.infuseTime = infusionTime();
   brewProcess.extractTime = extractionTime();
