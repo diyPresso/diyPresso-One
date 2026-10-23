@@ -261,6 +261,7 @@ void DpSettings::apply()
   steamThermoblock.set_pid(steamP(), steamI(), steamD());
   steamThermoblock.set_pump_pid(steamPumpP(), steamPumpI(), steamPumpD());
   steamThermoblock.set_iDownFactor(steamIDownFactor());
+  steamThermoblock.set_ff(steamFF());
   steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
   steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand(), steamPumpIntegrationBand());
   steamPump.power(steamPumpPower());
