@@ -26,6 +26,7 @@ class Display
         Display(void);
         void init();
         void logo();
+        void clear();
         void show(const char *screen, char *args[]);
         bool button_pressed();
         bool button_long_pressed();
