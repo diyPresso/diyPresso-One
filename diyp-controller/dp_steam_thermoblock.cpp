@@ -16,7 +16,7 @@ void SteamThermoblock::init()
 {
   steamHeater.init();
 
-  _pid.begin(&_act_temp, &_power, &_set_temp, 0.0, 0.0, 0.0, 3.0, false, 1000, nullptr); // overridden by settings.apply()
+  _pid.begin(&_act_temp, &_power, &_set_temp, 0.0, 0.0, 0.0, settings.steamFF(), false, 1000, nullptr); // overridden by settings.apply()
   _pid.setOutputLimits(0, 100);
   _pid.setWindUpLimits(settings.steamWindupMin(), settings.steamWindupMax()); // overridden by settings.apply()
   _pid.setSerialLabel("DP_STEAM_STATE");

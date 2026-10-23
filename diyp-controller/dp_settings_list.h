@@ -60,7 +60,8 @@
   X(double, steamPumpIntegrationBand,    "steamPumpIntegrationBand",    0.0,    0.0,     30.0,     1) \
   X(double, iDownFactor,                 "iDownFactor",                 1.0,    1.0,     5.0,      1) \
   X(double, steamIDownFactor,            "steamIDownFactor",            3.0,    1.0,     5.0,      1) \
-  X(int,    encoderReverse,              "encoderReverse",              0,      0,       1,        0)
+  X(int,    encoderReverse,              "encoderReverse",              0,      0,       1,        0) \
+  X(double, steamFF,                     "steamFF",                     3.0,    0.0,     100.0,    1)
 
 /*
   Old key names, still accepted by PUT settings. After a firmware upgrade the update client

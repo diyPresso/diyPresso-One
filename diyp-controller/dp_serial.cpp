@@ -15,7 +15,8 @@
     - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
     steam settings (Model Two): steamTemperature, steamP, steamI, steamD, steamPumpPower,
-      steamPumpP, steamPumpI, steamPumpD (steam PID gains while the steam pump runs)
+      steamPumpP, steamPumpI, steamPumpD (steam PID gains while the steam pump runs),
+      steamFF (static feed forward, default 3.0 %)
     PID tuning settings (menu: Boiler PID, Steam PID):
       boiler: windupMin, windupMax, integrationBand, conditionalIntegration (0/1), dffDecay (0.90-1.0),
               brewIntegralHold (0/1), brewHoldTimeoutSec (10-600), brewHoldDipWindowSec (10-180),
