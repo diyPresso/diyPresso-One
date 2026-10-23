@@ -12,6 +12,7 @@
 #include "dp_steam_pump.h"
 #include "dp_reservoir.h"
 #include "dp_brew.h"
+#include "dp_encoder.h"
 
 
 DpSettings settings = DpSettings();
@@ -104,6 +105,7 @@ void DpSettings::defaults()
     settings.brewHoldTimeoutSec = BREW_HOLD_TIMEOUT_SEC;
     settings.brewHoldDipWindowSec = BREW_HOLD_DIP_WINDOW_SEC;
     settings.dffDecay = DFF_ENERGY_STOCK_PILE_DECAY;
+    settings.encoderReverse = 0;
     update_crc();
 }
 
@@ -211,6 +213,8 @@ void DpSettings::apply()
   steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
   steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand(), steamPumpIntegrationBand());
   steamPump.power(steamPumpPower());
+
+  encoder.set_reverse(encoderReverse());
 }
 
 String DpSettings::serialize() {
@@ -256,6 +260,7 @@ String DpSettings::serialize() {
     result += "brewHoldTimeoutSec=" + String(settings.brewHoldTimeoutSec) + "\n";
     result += "brewHoldDipWindowSec=" + String(settings.brewHoldDipWindowSec) + "\n";
     result += "dffDecay=" + String(settings.dffDecay, 3) + "\n";
+    result += "encoderReverse=" + String(settings.encoderReverse) + "\n";
     return result;
 }
 
@@ -380,6 +385,8 @@ int DpSettings::deserialize(String serialized_settings) {
             brewHoldDipWindowSec(value.toInt());
         } else if (key == "dffDecay") {
             dffDecay(value.toDouble());
+        } else if (key == "encoderReverse") {
+            encoderReverse(value.toInt());
         } else {
             Serial.println("Unknown key: " + key);
             error = -2; //unknown key

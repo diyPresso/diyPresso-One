@@ -45,6 +45,7 @@ class DpSettings
             double steamPumpP, steamPumpI, steamPumpD;
             double steamPumpIntegrationBand;
             double iDownFactor, steamIDownFactor;
+            int encoderReverse;
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -143,6 +144,8 @@ class DpSettings
         int brewHoldDipWindowSec(int t) { return settings.brewHoldDipWindowSec = min(180, max(t, 10)); }
         double dffDecay() { return settings.dffDecay; }
         double dffDecay(double d) { return settings.dffDecay = min(1.0, max(d, 0.90)); }
+        int encoderReverse() { return settings.encoderReverse; }
+        int encoderReverse(int state) { return settings.encoderReverse = min(1, max(state, 0)); }
 };
 
 extern DpSettings settings;
