@@ -72,15 +72,16 @@ void setup()
 {
   int result = 0;
 
-  delay(1000);
+  display.init();
+  display.logo();
+  
   hardware.detect_model();
   dpSerial.send(__DATE__ " " __TIME__);
   dpSerial.send("diyPresso " + String(hardware.model_name()) + " starting up...");
   statusLed.color(ColorLed::WHITE);
 
   encoder.start();
-  display.init();
-  display.logo();
+
 
   if ((result = settings.load()) < 0)
   {

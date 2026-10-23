@@ -204,5 +204,5 @@ void Display::logo()
   lcd.print("!!! TESTING !!!");
 #endif
 
-  delay(2000 - min(2000UL, millis() - start)); // show the logo for 2.0 s in total
+  delay(2000 - min(2000UL, millis() - start)); // show the logo for 2.0 s in total - !!! needs to be atleast 1 second for the update client to be able to read the serial output correctly. (I think)
 }
