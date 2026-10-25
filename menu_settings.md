@@ -7,7 +7,7 @@ This text replaces the sections "Menu structure and instructions" (last paragrap
 - diyPresso One quick installation & user guide V1.1.3
 - diyPresso Two quick installation & user guide V1.1.2
 
-It is written for both guides. Parts marked **[Two only]** are only for the diyPresso Two guide: leave them out of the One guide. The menu of the One simply does not show these items.
+It is written for both guides. Parts marked **[diyPresso Two only]** are only for the diyPresso Two guide: leave them out of the One guide. The menu of the One simply does not show these items.
 
 ## What changes compared to the current guides
 
@@ -28,7 +28,7 @@ It is written for both guides. Parts marked **[Two only]** are only for the diyP
 
 ## Settings menu
 
-Push the button right of the screen to enter the menu (One: "Push the button next to the screen"). The main menu shows the submenus. On the top right, you can see your position in the menu.
+Push the button right of the screen to enter the menu. The main menu shows the submenus. On the top right, you can see your position in the menu.
 
 ```
 SETTINGS         1/7
@@ -73,10 +73,10 @@ The menu has these submenus:
 | Submenu    | Contents                                                      |
 |------------|---------------------------------------------------------------|
 | Brew       | brew settings and shot counter                                |
-| Steam      | steam settings **[Two only]**                                 |
+| Steam      | steam settings **[diyPresso Two only]**                                 |
 | Reservoir  | tare and weight trim of the reservoir                         |
 | Boiler PID | temperature controller of the boiler (advanced)               |
-| Steam PID  | temperature controller of the steamer (advanced) **[Two only]** |
+| Steam PID  | temperature controller of the steamer (advanced) **[diyPresso Two only]** |
 | System     | status, WiFi, knob direction, commissioning, reset and version |
 
 ## Brew
@@ -85,7 +85,7 @@ The menu has these submenus:
 2. **Pre-infusion:** This is the pre-infusion time, the period that the pump is on to wet the puck. Default is 3.0 s.
 3. **Infusion:** Infusion time indicates the time the pump is off and the puck can settle. Default is 1.0 s.
 4. **Extraction:** Extraction time or shot time is the time the pump is on again after pre-infusion and infusion, actually extracting the espresso. Default is 25.0 s.
-5. **Shot counter:** Counts the shots that have been made. Push the button to reset the counter to 0. The screen shows the current count and asks "Reset counter?".
+5. **Shot counter:** Counts the number of shots that have been made. Push the button to reset the counter to 0. The screen shows the current count and asks "Reset counter?".
 
    ```
    Shot counter    1234
@@ -94,7 +94,7 @@ The menu has these submenus:
       [NO]   YES
    ```
 
-## Steam [Two only]
+## Steam [diyPresso Two only]
 
 1. **Temperature:** This is the value for the temperature setpoint of the thermoblock. Default is 165.0°C.
 2. **Pump power:** Adjust the power for the steam pump. Standard is 100%.
@@ -106,37 +106,37 @@ The menu has these submenus:
 
 ## Boiler PID
 
-These are the settings of the temperature controller (PID controller) of the boiler. See https://pidexplained.com/how-to-tune-a-pid-controller/ for an explanation and tuning instructions. We have pretuned your machine, so normally you should not have to change these settings. If needed, you can always go back with System > Reset defaults.
+These are the settings of the temperature controller (PID controller) of the boiler. The controller sets the heating power from three parts: the proportional part (P), the integral part (I) and the derivative part (D). We have pretuned your machine, so normally you should not have to change these settings. If needed, you can always go back with System > Reset defaults.
 
-1. **P-Gain:** P-Gain setting of the PID temperature controller. Default is 6.0.
-2. **I-Gain:** I-Gain, see setting 1. Default is 0.05.
-3. **D-Gain:** D-Gain, see setting 1. Default is 150.
+1. **P-Gain:** Proportional gain of the PID temperature controller. The proportional part gives more power the further the temperature is below the setpoint. A higher value reacts stronger, but can make the temperature swing. Default is 6.0.
+2. **I-Gain:** Integral gain. The integral part slowly builds up as long as the temperature is not at the setpoint, so the setpoint is reached exactly. A higher value builds up faster, but can cause overshoot. Default is 0.05.
+3. **D-Gain:** Derivative gain. The derivative part reacts to how fast the temperature changes and dampens the swing. Default is 150.
 4. **DFF factor:** The Dynamic Feed Forward Factor used for tuning the aggressiveness of the DFF. The DFF adds heating power during a shot, to compensate for the cold water that enters the boiler. Default is 70%, range: 0%-150%.
 5. **DFF decay:** How fast the extra power of the DFF fades out after the shot. A lower value fades out faster. Default is 0.970, range: 0.900-1.000.
 6. **Feedforward:** This is the feed forward setting for the PID controller. This is the amount of power that is needed to float the temperature. Because the diyPresso is hotter than its environment, a small portion of heat is always lost to the surroundings. This setting should compensate for this loss. Using a feed forward value instead of relying merely on the PID settings helps lowering the temperature swing of the boiler. It is used while heating up and when the temperature is reached. Default is 5.5%.
-7. **Windup min:** The lowest value of the I-part of the controller. This prevents the I-part from building up too far (wind-up). Default is -15%.
-8. **Windup max:** The highest value of the I-part of the controller, see setting 7. Default is 8%.
-9. **Integr. band:** The I-part of the controller only builds up when the temperature is within this band around the setpoint. Far from the setpoint, for example while heating up, the P-part does the work. Only used when Cond. integr is ON. 0 = no band. Default is 4.0°C.
-10. **Cond. integr:** Conditional integration. When ON, the I-part does not build up when the heater is already at full or zero power, or when the temperature is outside the Integr. band. This prevents overshoot. Default is ON.
-11. **I-down fact.:** Above the setpoint, the I-part goes down this many times faster than it builds up. A higher value reduces overshoot. Default is 1.0 (same speed), range: 1.0-5.0.
-12. **Brew I-hold:** When ON, the I-part is held during the temperature dip after a shot. This prevents overshoot after each shot. Default is ON.
+7. **Windup min:** The lowest value of the integral part of the controller. This prevents the integral part from building up too far (wind-up). Default is -15%.
+8. **Windup max:** The highest value of the integral part of the controller, see setting 7. Default is 8%.
+9. **Integr. band:** The integral part of the controller only builds up when the temperature is within this band around the setpoint. Far from the setpoint, for example while heating up, the proportional part does the work. Only used when Cond. integr is ON. 0 = no band. Default is 4.0°C.
+10. **Cond. integr:** Conditional integration. When ON, the integral part does not build up when the heater is already at full or zero power, or when the temperature is outside the Integr. band. This prevents overshoot. Default is ON.
+11. **I-down fact.:** Above the setpoint, the integral part goes down this many times faster than it builds up. A higher value reduces overshoot. Default is 1.0 (same speed), range: 1.0-5.0.
+12. **Brew I-hold:** When ON, the integral part is held during the temperature dip after a shot. This prevents overshoot after each shot. Default is ON.
 13. **Hold timeout:** The Brew I-hold ends at the latest this long after the shot. Default is 180 s.
 14. **Dip window:** The Brew I-hold only starts when the temperature drops below the setpoint within this time after the shot. Default is 60 s.
 
-## Steam PID [Two only]
+## Steam PID [diyPresso Two only]
 
 These are the settings of the temperature controller of the thermoblock of the steamer. Like the boiler, we have pretuned your machine, so normally you should not have to change these settings. The steamer uses two sets of gains: one while the steam pump is off (heating up and ready) and one while the steam pump runs (steaming).
 
-1. **P-Gain:** P-Gain while the steam pump is off. See Boiler PID, setting 1. Default is 3.5.
-2. **I-Gain:** I-Gain while the steam pump is off. Default is 0.05.
-3. **D-Gain:** D-Gain while the steam pump is off. Default is 50.
+1. **P-Gain:** Proportional gain while the steam pump is off. See Boiler PID, setting 1. Default is 3.5.
+2. **I-Gain:** Integral gain while the steam pump is off. Default is 0.05.
+3. **D-Gain:** Derivative gain while the steam pump is off. Default is 50.
 4. **Feedforward:** The feed forward for the thermoblock, see Boiler PID, setting 6. Default is 3.0%.
-5. **Pump P-Gain:** P-Gain while the steam pump runs. Default is 5.0.
-6. **Pump I-Gain:** I-Gain while the steam pump runs. Default is 0.10.
-7. **Pump D-Gain:** D-Gain while the steam pump runs. Default is 50.
-8. **Windup min:** The lowest value of the I-part, see Boiler PID, setting 7. Default is -5%.
-9. **Windup max:** The highest value of the I-part. Default is 100%.
-10. **Integr. band:** The band around the setpoint in which the I-part builds up, while the steam pump is off. See Boiler PID, setting 9. Default is 5.0°C.
+5. **Pump P-Gain:** Proportional gain while the steam pump runs. Default is 5.0.
+6. **Pump I-Gain:** Integral gain while the steam pump runs. Default is 0.10.
+7. **Pump D-Gain:** Derivative gain while the steam pump runs. Default is 50.
+8. **Windup min:** The lowest value of the integral part, see Boiler PID, setting 7. Default is -5%.
+9. **Windup max:** The highest value of the integral part. Default is 100%.
+10. **Integr. band:** The band around the setpoint in which the integral part builds up, while the steam pump is off. See Boiler PID, setting 9. Default is 5.0°C.
 11. **Pump band:** The same, while the steam pump runs. 0 = no band. Default is 0.0°C.
 12. **Cond. integr:** Conditional integration, see Boiler PID, setting 10. Default is ON.
 13. **I-down fact.:** See Boiler PID, setting 11. Default is 3.0.
@@ -159,3 +159,4 @@ These are the settings of the temperature controller of the thermoblock of the s
 - Default values are those of firmware 2.0.0. If you would rather not print defaults for the advanced (PID) settings, they can be left out.
 - "Extraction weight" is removed from the menu. It can be removed from the guide.
 - The WiFi text "(setting not yet activated)" is kept from the current guides. Please check if this is still correct for this release.
+- The link https://pidexplained.com/how-to-tune-a-pid-controller/ in the current guides no longer works. It is removed and replaced by a short explanation of the proportional, integral and derivative part.
