@@ -6,6 +6,9 @@
     "Save changes?" is asked (default NO). Only on YES the settings are saved and applied.
   - Actions (tare, reset shot counter, commissioning, reset to defaults) ask for
     confirmation (default NO) and are saved right away.
+  - The last item of a submenu ("Set brew defs", ...) sets the values of that submenu to
+    their defaults after confirmation (default NO). This is a change in the working copy,
+    saved with "Save changes?". The tare and the shot counter are kept.
 */
 #ifndef DP_SETTINGS_MENU_H
 #define DP_SETTINGS_MENU_H

@@ -54,6 +54,7 @@ class DpSettings
         double get(setting_id_t id);
         double set(setting_id_t id, double value);
         static int decimals(setting_id_t id);
+        static double default_value(setting_id_t id);
         bool same_values(const DpSettings &other);
 
         // Getter and clamped setter for each setting, e.g. temperature() and temperature(98.0)

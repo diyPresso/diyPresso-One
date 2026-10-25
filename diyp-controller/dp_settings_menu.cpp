@@ -37,7 +37,7 @@ typedef struct menu
 } menu_t;
 
 // Actions, all ask for confirmation first (default NO)
-enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS };
+enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS, ACTION_MENU_DEFAULTS };
 
 // Read-only texts
 enum { TEXT_VERSION, TEXT_HARDWARE };
@@ -47,6 +47,7 @@ enum { TEXT_VERSION, TEXT_HARDWARE };
 #define SELECT(label, setting, options)           { ITEM_SELECT, label, SETTING_##setting, options, 1, 0 }
 #define ACTION(label, action)                     { ITEM_ACTION, label, action, "", 0, 0, nullptr, -1, "Are you sure?" }
 #define VALUE_ACTION(label, setting, action, question) { ITEM_ACTION, label, action, "", 0, 0, nullptr, SETTING_##setting, question }
+#define MENU_DEFAULTS(label, question)            { ITEM_ACTION, label, ACTION_MENU_DEFAULTS, "", 0, 0, nullptr, -1, question }
 #define TEXT(label, text)                         { ITEM_TEXT, label, text, "", 0, 0 }
 #define STATUS(label)                             { ITEM_STATUS, label, 0, "", 0, 0 }
 #define BACK()                                    { ITEM_BACK, " < Back", 0, "", 0, 0 }
@@ -62,6 +63,7 @@ static const menu_item_t brew_items[] = {
     VALUE("Infusion", infusionTime, "s", 0.1),
     VALUE("Extraction", extractionTime, "s", 0.5),
     VALUE_ACTION("Shot counter", shotCounter, ACTION_ZERO_COUNTER, "Reset counter?"),
+    MENU_DEFAULTS("Set brew defs", "Set brew defs?"),
     BACK(),
 };
 static const menu_t brew_menu = MENU("BREW", brew_items);
@@ -69,6 +71,7 @@ static const menu_t brew_menu = MENU("BREW", brew_items);
 static const menu_item_t steam_items[] = {
     VALUE("Temperature", steamTemperature, "\337C", 0.5),
     VALUE("Pump power", steamPumpPower, "%", 10),
+    MENU_DEFAULTS("Set steam defs", "Set steam defs?"),
     BACK(),
 };
 static const menu_t steam_menu = MENU("STEAM", steam_items);
@@ -76,6 +79,7 @@ static const menu_t steam_menu = MENU("STEAM", steam_items);
 static const menu_item_t reservoir_items[] = {
     ACTION("Tare (full)", ACTION_TARE),
     VALUE("Weight trim", trimWeight, "%", 0.05),
+    MENU_DEFAULTS("Set reservoir defs", "Set reservoir defs?"),
     BACK(),
 };
 static const menu_t reservoir_menu = MENU("RESERVOIR", reservoir_items);
@@ -95,6 +99,7 @@ static const menu_item_t boiler_pid_items[] = {
     SELECT("Brew I-hold", brewIntegralHold, OFF_ON),
     VALUE("Hold timeout", brewHoldTimeoutSec, "s", 10),
     VALUE("Dip window", brewHoldDipWindowSec, "s", 10),
+    MENU_DEFAULTS("Set boiler PID defs", "Set boiler PID defs?"),
     BACK(),
 };
 static const menu_t boiler_pid_menu = MENU("BOILER PID", boiler_pid_items);
@@ -113,6 +118,7 @@ static const menu_item_t steam_pid_items[] = {
     VALUE("Pump band", steamPumpIntegrationBand, "\337C", 0.5),
     SELECT("Cond. integr", steamConditionalIntegration, OFF_ON),
     VALUE("I-down fact.", steamIDownFactor, "", 0.5),
+    MENU_DEFAULTS("Set steam PID defs", "Set steam PID defs?"),
     BACK(),
 };
 static const menu_t steam_pid_menu = MENU("STEAM PID", steam_pid_items);
@@ -336,7 +342,7 @@ SettingsMenu::result_t SettingsMenu::update(bool button_pressed)
   {
     char value[24];
     format_value(value, _edit, _item, 19 - strlen(_item->label));
-    draw_choice(_item->label, _item->question, value);
+    draw_choice(_item->id == ACTION_MENU_DEFAULTS ? _menu->title : _item->label, _item->question, value);
     break;
   }
   case STATE_SAVE: draw_choice("SETTINGS", "Save changes?"); break;
@@ -404,6 +410,8 @@ void SettingsMenu::select(const menu_item_t *item)
 
 /// @brief Run a confirmed action. Actions change the stored settings directly and save them,
 /// the working copy is updated so the unsaved changes are kept.
+/// Except ACTION_MENU_DEFAULTS: it only sets the values of the current menu to their defaults
+/// in the working copy, they are saved with "Save changes?" like edited values.
 void SettingsMenu::run_action(int action)
 {
   switch (action)
@@ -429,6 +437,14 @@ void SettingsMenu::run_action(int action)
     settings.save();
     settings.apply();
     _edit = settings;
+    break;
+  case ACTION_MENU_DEFAULTS:
+    for (int i = 0; i < _menu->count; i++)
+    {
+      const menu_item_t *item = &_menu->items[i];
+      if (item->type == ITEM_VALUE || item->type == ITEM_SELECT) // not the actions: tare and shot counter are kept
+        _edit.set((setting_id_t)item->id, DpSettings::default_value((setting_id_t)item->id));
+    }
     break;
   }
 }

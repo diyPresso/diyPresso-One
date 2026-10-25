@@ -16,6 +16,7 @@ It is written for both guides. Parts marked **[diyPresso Two only]** are only fo
 - Removed from the menu: FF-heat Value (the feed forward is now one setting, "Feedforward"), Extraction weight, Zero Counter (now done from the Shot counter), Commissioning status (now "Commissioning" in System), `<EXIT>` and `<SAVE>`.
 - New in the menu: Knob direction, Status, Firmware, Hardware, and the advanced settings in Boiler PID and Steam PID.
 - Tare, resetting the shot counter, commissioning and reset to defaults now ask "Are you sure?" first.
+- New: each submenu ends with an item to set only the settings of that submenu back to their defaults ("Set brew defs", "Set steam defs", "Set reservoir defs", "Set boiler PID defs", "Set steam PID defs").
 - Main screen: turning the button no longer opens the 'machine status' page. This page is now in the menu: System > Status.
   Remove the sentence "Turning the (right) button in the main screen will bring you to the 'machine status' page."
 - Main screen: weight and water level indicator are one position further to the right. The screen pictures can stay as they are.
@@ -68,6 +69,15 @@ Your changes are only used after saving. If you start a shot while you are in th
 
 Some items carry out an action, like taring the reservoir. These ask "Are you sure?" first. NO is selected first: turn the button to YES and push the button to carry out the action. An action is saved immediately.
 
+The last item of each submenu (before "< Back") sets the settings of that submenu back to their defaults, for example "Set brew defs" in Brew. The screen asks for confirmation; NO is selected first. Like a changed setting, this is only saved when you leave the menu and choose YES at "Save changes?". The tare of the reservoir and the shot counter are not changed.
+
+```
+BREW
+Set brew defs?
+
+   [NO]   YES
+```
+
 The menu has these submenus:
 
 | Submenu    | Contents                                                      |
@@ -93,20 +103,23 @@ The menu has these submenus:
 
       [NO]   YES
    ```
+6. **Set brew defs:** Sets settings 1-4 back to their defaults. The shot counter is not changed.
 
 ## Steam [diyPresso Two only]
 
 1. **Temperature:** This is the value for the temperature setpoint of the thermoblock. Default is 165.0°C.
 2. **Pump power:** Adjust the power for the steam pump. Standard is 100%.
+3. **Set steam defs:** Sets settings 1-2 back to their defaults.
 
 ## Reservoir
 
 1. **Tare (full):** Here you can tare the balance of the reservoir. Fill up the reservoir, looking on the side of the diyPresso so you can make sure not to overflow the reservoir. When the reservoir is full, push the button on this item and confirm with YES. The diyPresso will know the reservoir is tared and will after this stop automatically when the water runs out.
 2. **Weight trim:** Here you can compensate the balance below the reservoir. If the balance (load cell) is slightly inaccurate, you can compensate for this with this setting. Default is 0.00%.
+3. **Set reservoir defs:** Sets the weight trim back to 0.00%. The tare is not changed.
 
 ## Boiler PID
 
-These are the settings of the temperature controller (PID controller) of the boiler. The controller sets the heating power from three parts: the proportional part (P), the integral part (I) and the derivative part (D). We have pretuned your machine, so normally you should not have to change these settings. If needed, you can always go back with System > Reset defaults.
+These are the settings of the temperature controller (PID controller) of the boiler. The controller sets the heating power from three parts: the proportional part (P), the integral part (I) and the derivative part (D). We have pretuned your machine, so normally you should not have to change these settings. If needed, you can always go back with Set boiler PID defs at the end of this submenu, or System > Reset defaults.
 
 1. **P-Gain:** Proportional gain of the PID temperature controller. The proportional part gives more power the further the temperature is below the setpoint. A higher value reacts stronger, but can make the temperature swing. Default is 6.0.
 2. **I-Gain:** Integral gain. The integral part slowly builds up as long as the temperature is not at the setpoint, so the setpoint is reached exactly. A higher value builds up faster, but can cause overshoot. Default is 0.05.
@@ -122,6 +135,7 @@ These are the settings of the temperature controller (PID controller) of the boi
 12. **Brew I-hold:** When ON, the integral part is held during the temperature dip after a shot. This prevents overshoot after each shot. Default is ON.
 13. **Hold timeout:** The Brew I-hold ends at the latest this long after the shot. Default is 180 s.
 14. **Dip window:** The Brew I-hold only starts when the temperature drops below the setpoint within this time after the shot. Default is 60 s.
+15. **Set boiler PID defs:** Sets settings 1-14 back to their defaults.
 
 ## Steam PID [diyPresso Two only]
 
@@ -140,6 +154,7 @@ These are the settings of the temperature controller of the thermoblock of the s
 11. **Pump band:** The same, while the steam pump runs. 0 = no band. Default is 0.0°C.
 12. **Cond. integr:** Conditional integration, see Boiler PID, setting 10. Default is ON.
 13. **I-down fact.:** See Boiler PID, setting 11. Default is 3.0.
+14. **Set steam PID defs:** Sets settings 1-13 back to their defaults.
 
 ## System
 
