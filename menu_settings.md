@@ -124,11 +124,11 @@ These are the settings of the temperature controller (PID controller) of the boi
 1. **P-Gain:** Proportional gain of the PID temperature controller. The proportional part gives more power the further the temperature is below the setpoint. A higher value reacts stronger, but can make the temperature swing. Default is 6.0.
 2. **I-Gain:** Integral gain. The integral part slowly builds up as long as the temperature is not at the setpoint, so the setpoint is reached exactly. A higher value builds up faster, but can cause overshoot. Default is 0.05.
 3. **D-Gain:** Derivative gain. The derivative part reacts to how fast the temperature changes and dampens the swing. Default is 150.
-4. **DFF factor:** The Dynamic Feed Forward Factor used for tuning the aggressiveness of the DFF. The DFF adds heating power during a shot, to compensate for the cold water that enters the boiler. Default is 70%, range: 0%-150%.
+4. **DFF factor:** The Dynamic Feed Forward (DFF) Factor used for tuning the aggressiveness of the DFF. The DFF adds heating power during a shot based on the reservoir outflow, to compensate for the cold water that enters the boiler. Default is 70%, range: 0%-150%.
 5. **DFF decay:** How fast the extra power of the DFF fades out after the shot. A lower value fades out faster. Default is 0.970, range: 0.900-1.000.
-6. **Feedforward:** This is the feed forward setting for the PID controller. This is the amount of power that is needed to float the temperature. Because the diyPresso is hotter than its environment, a small portion of heat is always lost to the surroundings. This setting should compensate for this loss. Using a feed forward value instead of relying merely on the PID settings helps lowering the temperature swing of the boiler. It is used while heating up and when the temperature is reached. Default is 5.5%.
-7. **Windup min:** The lowest value of the integral part of the controller. This prevents the integral part from building up too far (wind-up). Default is -15%.
-8. **Windup max:** The highest value of the integral part of the controller, see setting 7. Default is 8%.
+6. **Feedforward:** This is the static feed forward setting for the PID controller. This is the amount of power that is needed to float the temperature. This setting compensates for heat loss towards the environment. Default is 5.5%.
+7. **Windup min:** The low limit of the integral part of the controller. This prevents the integral part from building up too far (wind-up). Default is -15%.
+8. **Windup max:** The high limit of the integral part of the controller, see setting 7. Default is 8%.
 9. **Integr. band:** The integral part of the controller only builds up when the temperature is within this band around the setpoint. Far from the setpoint, for example while heating up, the proportional part does the work. Only used when Cond. integr is ON. 0 = no band. Default is 4.0°C.
 10. **Cond. integr:** Conditional integration. When ON, the integral part does not build up when the heater is already at full or zero power, or when the temperature is outside the Integr. band. This prevents overshoot. Default is ON.
 11. **I-down fact.:** Above the setpoint, the integral part goes down this many times faster than it builds up. A higher value reduces overshoot. Default is 1.0 (same speed), range: 1.0-5.0.
@@ -144,14 +144,14 @@ These are the settings of the temperature controller of the thermoblock of the s
 1. **P-Gain:** Proportional gain while the steam pump is off. See Boiler PID, setting 1. Default is 3.5.
 2. **I-Gain:** Integral gain while the steam pump is off. Default is 0.05.
 3. **D-Gain:** Derivative gain while the steam pump is off. Default is 50.
-4. **Feedforward:** The feed forward for the thermoblock, see Boiler PID, setting 6. Default is 3.0%.
+4. **Feedforward:** The feed forward for the thermoblock. Default is 3.0%.
 5. **Pump P-Gain:** Proportional gain while the steam pump runs. Default is 5.0.
 6. **Pump I-Gain:** Integral gain while the steam pump runs. Default is 0.10.
 7. **Pump D-Gain:** Derivative gain while the steam pump runs. Default is 50.
-8. **Windup min:** The lowest value of the integral part, see Boiler PID, setting 7. Default is -5%.
-9. **Windup max:** The highest value of the integral part. Default is 100%.
+8. **Windup min:** The low limit of the integral part, see Boiler PID, setting 7. Default is -5%.
+9. **Windup max:** The high limit of the integral part. Default is 100%.
 10. **Integr. band:** The band around the setpoint in which the integral part builds up, while the steam pump is off. See Boiler PID, setting 9. Default is 5.0°C.
-11. **Pump band:** The same, while the steam pump runs. 0 = no band. Default is 0.0°C.
+11. **Pump I band:** The same, while the steam pump runs. 0 = no band. Default is 0.0°C.
 12. **Cond. integr:** Conditional integration, see Boiler PID, setting 10. Default is ON.
 13. **I-down fact.:** See Boiler PID, setting 11. Default is 3.0.
 14. **Set steam PID defs:** Sets settings 1-13 back to their defaults.

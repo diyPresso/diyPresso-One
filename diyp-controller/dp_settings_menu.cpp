@@ -115,7 +115,7 @@ static const menu_item_t steam_pid_items[] = {
     VALUE("Windup min", steamWindupMin, "%", 1),
     VALUE("Windup max", steamWindupMax, "%", 1),
     VALUE("Integr. band", steamIntegrationBand, "\337C", 0.5),
-    VALUE("Pump band", steamPumpIntegrationBand, "\337C", 0.5),
+    VALUE("Pump I band", steamPumpIntegrationBand, "\337C", 0.5),
     SELECT("Cond. integr", steamConditionalIntegration, OFF_ON),
     VALUE("I-down fact.", steamIDownFactor, "", 0.5),
     MENU_DEFAULTS("Set steam PID defs", "Set steam PID defs?"),
