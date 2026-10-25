@@ -26,7 +26,7 @@ typedef struct menu_item
   int flags;
   const struct menu *submenu; // ITEM_SUBMENU
   int setting;          // ITEM_ACTION: setting id to show as value, -1 = none
-  const char *question; // ITEM_ACTION: question of the confirmation screen
+  const char *question; // ITEM_ACTION: question of the confirmation screen, max 2 lines of 20 characters separated by "\n"
 } menu_item_t;
 
 typedef struct menu
@@ -63,7 +63,7 @@ static const menu_item_t brew_items[] = {
     VALUE("Infusion", infusionTime, "s", 0.1),
     VALUE("Extraction", extractionTime, "s", 0.5),
     VALUE_ACTION("Shot counter", shotCounter, ACTION_ZERO_COUNTER, "Reset counter?"),
-    MENU_DEFAULTS("Set brew defs", "Set brew defs?"),
+    MENU_DEFAULTS("Set brew defs", "Reset brew to\ndefault values?"),
     BACK(),
 };
 static const menu_t brew_menu = MENU("BREW", brew_items);
@@ -71,7 +71,7 @@ static const menu_t brew_menu = MENU("BREW", brew_items);
 static const menu_item_t steam_items[] = {
     VALUE("Temperature", steamTemperature, "\337C", 0.5),
     VALUE("Pump power", steamPumpPower, "%", 10),
-    MENU_DEFAULTS("Set steam defs", "Set steam defs?"),
+    MENU_DEFAULTS("Set steam defs", "Reset steam to\ndefault values?"),
     BACK(),
 };
 static const menu_t steam_menu = MENU("STEAM", steam_items);
@@ -79,7 +79,7 @@ static const menu_t steam_menu = MENU("STEAM", steam_items);
 static const menu_item_t reservoir_items[] = {
     ACTION("Tare (full)", ACTION_TARE),
     VALUE("Weight trim", trimWeight, "%", 0.05),
-    MENU_DEFAULTS("Set reservoir defs", "Set reservoir defs?"),
+    MENU_DEFAULTS("Set reservoir defs", "Reset reservoir to\ndefault values?"),
     BACK(),
 };
 static const menu_t reservoir_menu = MENU("RESERVOIR", reservoir_items);
@@ -99,7 +99,7 @@ static const menu_item_t boiler_pid_items[] = {
     SELECT("Brew I-hold", brewIntegralHold, OFF_ON),
     VALUE("Hold timeout", brewHoldTimeoutSec, "s", 10),
     VALUE("Dip window", brewHoldDipWindowSec, "s", 10),
-    MENU_DEFAULTS("Set boiler PID defs", "Set boiler PID defs?"),
+    MENU_DEFAULTS("Set boiler PID defs", "Reset boiler PID to\ndefault values?"),
     BACK(),
 };
 static const menu_t boiler_pid_menu = MENU("BOILER PID", boiler_pid_items);
@@ -118,7 +118,7 @@ static const menu_item_t steam_pid_items[] = {
     VALUE("Pump I band", steamPumpIntegrationBand, "\337C", 0.5),
     SELECT("Cond. integr", steamConditionalIntegration, OFF_ON),
     VALUE("I-down fact.", steamIDownFactor, "", 0.5),
-    MENU_DEFAULTS("Set steam PID defs", "Set steam PID defs?"),
+    MENU_DEFAULTS("Set steam PID defs", "Reset steam PID to\ndefault values?"),
     BACK(),
 };
 static const menu_t steam_pid_menu = MENU("STEAM PID", steam_pid_items);
@@ -496,7 +496,15 @@ void SettingsMenu::draw_choice(const char *title, const char *question, const ch
   clear(screen);
   put(screen, 0, title);
   put_right(screen, value);
-  put(screen + 20, 0, question);
+  const char *line2 = strchr(question, '\n');
+  if (line2)
+  {
+    for (int col = 0; question + col < line2 && col < 20; col++)
+      screen[20 + col] = question[col];
+    put(screen + 40, 0, line2 + 1);
+  }
+  else
+    put(screen + 20, 0, question);
   put(screen + 60, 3, _choice ? " NO   [YES]" : "[NO]   YES ");
   show(screen);
 }
