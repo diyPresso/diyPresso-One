@@ -73,8 +73,8 @@ The last item of each submenu (before "< Back") sets the settings of that submen
 
 ```
 BREW
-Set brew defs?
-
+Reset brew to
+default values?
    [NO]   YES
 ```
 
