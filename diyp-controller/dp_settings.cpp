@@ -154,6 +154,19 @@ int DpSettings::decimals(setting_id_t id)
 }
 
 
+/// @brief default value of a setting
+double DpSettings::default_value(setting_id_t id)
+{
+    switch (id)
+    {
+#define DP_SETTING_DEFAULT_VALUE(type, name, key, def, lo, hi, dec) case SETTING_##name: return def;
+    DP_SETTINGS_LIST(DP_SETTING_DEFAULT_VALUE)
+#undef DP_SETTING_DEFAULT_VALUE
+    default: return 0;
+    }
+}
+
+
 /// @brief true if all setting values are equal to the values of the other settings object
 bool DpSettings::same_values(const DpSettings &other)
 {
