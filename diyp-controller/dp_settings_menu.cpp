@@ -9,6 +9,7 @@
 #include "dp_hardware.h"
 #include "dp_boiler.h"
 #include "dp_reservoir.h"
+#include "dp_machine.h"
 
 SettingsMenu settingsMenu;
 
@@ -37,7 +38,7 @@ typedef struct menu
 } menu_t;
 
 // Actions, all ask for confirmation first (default NO)
-enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS, ACTION_MENU_DEFAULTS };
+enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS, ACTION_MENU_DEFAULTS, ACTION_CLEANING };
 
 // Read-only texts
 enum { TEXT_VERSION, TEXT_HARDWARE };
@@ -137,6 +138,7 @@ static const menu_t system_menu = MENU("SYSTEM", system_items);
 
 static const menu_item_t root_items[] = {
     SUBMENU("Brew", brew_menu, 0),
+    ACTION("Cleaning", ACTION_CLEANING),
     SUBMENU("Steam", steam_menu, ITEM_MODEL_TWO),
     SUBMENU("Reservoir", reservoir_menu, 0),
     SUBMENU("Boiler PID", boiler_pid_menu, 0),
@@ -412,10 +414,15 @@ void SettingsMenu::select(const menu_item_t *item)
 /// the working copy is updated so the unsaved changes are kept.
 /// Except ACTION_MENU_DEFAULTS: it only sets the values of the current menu to their defaults
 /// in the working copy, they are saved with "Save changes?" like edited values.
+/// ACTION_CLEANING opens a temporary mode without saving settings.
 void SettingsMenu::run_action(int action)
 {
   switch (action)
   {
+  case ACTION_CLEANING:
+    if (machineController.start_cleaning())
+      _state = STATE_CLOSED;
+    break;
   case ACTION_TARE:
     reservoir.tare();
     settings.tareWeight(reservoir.get_tare());

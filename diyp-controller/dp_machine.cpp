@@ -9,6 +9,7 @@
 #include "dp_hardware.h"
 #include "dp_commission.h"
 #include "dp_brew.h"
+#include "dp_brew_switch.h"
 #include "dp_boiler.h"
 #include "dp_reservoir.h"
 #include "dp_pump.h"
@@ -20,6 +21,26 @@
 
 
 MachineController machineController = MachineController();
+
+static const unsigned long CLEANING_PUMP_LIMIT_MS = 60000UL;
+
+bool MachineController::start_cleaning()
+{
+  if (!in_state(&MachineController::state_ready) || brewProcess.is_busy() || !brewSwitch.down()
+      || boilerController.is_error() || reservoir.is_error())
+    return false;
+  _cleaning_requested = true;
+  return true;
+}
+
+const char *MachineController::cleaning_status()
+{
+  if (_cleaning_exit) return "Lower lever to exit";
+  if (reservoir.is_almost_empty()) return "Refill reservoir";
+  if (_cleaning_pumping) return "Pump running";
+  if (!_cleaning_armed) return "Lower brew lever";
+  return "Raise lever to pump";
+}
 
 // Commissioning: run the commissioning process
 void MachineController::state_commissioning()
@@ -49,6 +70,18 @@ void MachineController::state_ready()
     }
   }
 
+  if (_cleaning_requested)
+  {
+    _cleaning_requested = false;
+    // Recheck: the lever or a fault may have changed since menu confirmation.
+    if (brewSwitch.down() && !brewProcess.is_busy() && !boilerController.is_error()
+        && !reservoir.is_error() && settings.commissioningDone())
+    {
+      next(&MachineController::state_cleaning);
+      return;
+    }
+  }
+
   brewProcess.run(_message == MSG_BUTTON ? BrewProcess::MSG_BUTTON : BrewProcess::MSG_NONE);
 
   int steamMsg = SteamProcess::MSG_NONE;
@@ -72,6 +105,85 @@ void MachineController::state_ready()
 
   ON_TIMEOUT_SEC(AUTOSLEEP_TIMEOUT)
     next(&MachineController::state_sleep);
+}
+
+// Manual cleaning: the brew lever drives the pump without running a shot recipe.
+void MachineController::state_cleaning()
+{
+  ON_ENTRY()
+  {
+    menu_ready_reset();
+    _cleaning_armed = false; // require lever down before the first run
+    _cleaning_exit = false;
+    _cleaning_pumping = false;
+    pumpDevice.off();
+    boilerController.stop_brew();
+  }
+
+  // Steam is unavailable while cleaning; normal boiler temperature control remains active.
+  steamThermoblock.off();
+  steamPump.off();
+
+  if (_message == MSG_BUTTON || _message == MSG_LONG_PRESS)
+    _cleaning_exit = true;
+
+  if (brewSwitch.down())
+  {
+    _cleaning_armed = true;
+    _cleaning_pumping = false;
+    pumpDevice.off();
+    if (_cleaning_exit)
+      next(&MachineController::state_ready);
+  }
+  else if (!_cleaning_exit && _cleaning_armed && !reservoir.is_almost_empty()
+           && !reservoir.is_error() && !boilerController.is_error())
+  {
+    if (!_cleaning_pumping)
+    {
+      _cleaning_pump_started = millis();
+      _cleaning_pumping = true;
+    }
+    if (millis() - _cleaning_pump_started >= CLEANING_PUMP_LIMIT_MS)
+    {
+      _cleaning_armed = false; // lower the lever before another run
+      _cleaning_pumping = false;
+      pumpDevice.off();
+    }
+    else
+      pumpDevice.on();
+  }
+  else
+  {
+    pumpDevice.off();
+    _cleaning_pumping = false;
+    _cleaning_armed = false;
+  }
+
+  if (reservoir.is_almost_empty())
+  {
+    pumpDevice.off();
+    _cleaning_pumping = false;
+    _cleaning_armed = false;
+  }
+
+  if (_message != MSG_NONE || _cleaning_pumping)
+    reset_timeout();
+  if (brewSwitch.down())
+  {
+    ON_TIMEOUT_SEC(AUTOSLEEP_TIMEOUT)
+      next(&MachineController::state_sleep);
+  }
+
+  if (boilerController.is_error() || reservoir.is_error())
+    next(&MachineController::state_error);
+
+  ON_EXIT()
+  {
+    pumpDevice.off();
+    _cleaning_pumping = false;
+    _cleaning_armed = false;
+    _cleaning_exit = false;
+  }
 }
 
 // Sleep: boiler off, pump off

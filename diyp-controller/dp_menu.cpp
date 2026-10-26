@@ -433,6 +433,14 @@ void update_display(bool button_pressed)
 
   if (strcmp(machine_state, "commissioning") == 0)
     menu_commissioning();
+  else if (machineController.is_cleaning())
+  {
+    char *args[] = { (char *)machineController.cleaning_status(), (char *)"" };
+    display.show("      CLEANING      "
+                 "####################"
+                 "Lever UP=ON DOWN=OFF"
+                 " Press knob to exit ", args);
+  }
   else if (strcmp(machine_state, "sleep") == 0)
     menu_sleep();
   else if (strcmp(machine_state, "error") == 0)

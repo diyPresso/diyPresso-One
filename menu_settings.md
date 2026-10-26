@@ -32,10 +32,10 @@ It is written for both guides. Parts marked **[diyPresso Two only]** are only fo
 Push the button right of the screen to enter the menu. The main menu shows the submenus. On the top right, you can see your position in the menu.
 
 ```
-SETTINGS         1/7
+SETTINGS         1/8
 >Brew             ->
+ Cleaning
  Steam            ->
- Reservoir        ->
 ```
 
 Turn the button to move the cursor (`>`) and push the button to open a submenu. In a submenu, each line shows a setting and its current value.
@@ -78,11 +78,12 @@ default values?
    [NO]   YES
 ```
 
-The menu has these submenus:
+The menu has these items:
 
-| Submenu    | Contents                                                      |
+| Item       | Contents                                                      |
 |------------|---------------------------------------------------------------|
 | Brew       | brew settings and shot counter                                |
+| Cleaning   | manual continuous pump mode, without pre-infusion              |
 | Steam      | steam settings **[diyPresso Two only]**                                 |
 | Reservoir  | tare and weight trim of the reservoir                         |
 | Boiler PID | temperature controller of the boiler (advanced)               |
@@ -104,6 +105,21 @@ The menu has these submenus:
       [NO]   YES
    ```
 6. **Set brew defs:** Sets settings 1-4 back to their defaults. The shot counter is not changed.
+
+## Cleaning
+
+From the main settings menu, select **Cleaning** and confirm **YES** with the brew
+lever down. Raise the lever to pump continuously, without pre-infusion or a timed
+shot recipe; lower it to stop. Each run is limited to 60 seconds, after which the
+lever must be lowered before another run. Cleaning does not count as a shot or
+change the saved brew settings. The boiler remains at the normal brew temperature;
+steam is disabled. Cleaning stops below the almost-empty threshold (12%, about
+180 g of water remaining), before the normal empty cutoff. Refill and lower the
+lever before restarting. Reservoir and boiler faults stop cleaning.
+
+Press the knob to stop and exit cleaning. With the lever raised, the display asks
+you to lower it before normal brewing resumes. Follow the cleaning product's
+instructions for dosing, contact time, and rinsing.
 
 ## Steam [diyPresso Two only]
 
@@ -170,7 +186,7 @@ These are the settings of the temperature controller of the thermoblock of the s
 
 # Notes for the editor (not for the guide)
 
-- The values in the screen examples (98.0°C, 1234 shots, 1/7) are examples. On the One, the main menu has 5 items (1/5): Brew, Reservoir, Boiler PID, System, < Exit.
+- The values in the screen examples (98.0°C, 1234 shots, 1/8) are examples. On the One, the main menu has 6 items (1/6): Brew, Cleaning, Reservoir, Boiler PID, System, < Exit.
 - Default values are those of firmware 2.0.0. If you would rather not print defaults for the advanced (PID) settings, they can be left out.
 - "Extraction weight" is removed from the menu. It can be removed from the guide.
 - The WiFi text "(setting not yet activated)" is kept from the current guides. Please check if this is still correct for this release.
