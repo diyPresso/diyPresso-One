@@ -99,8 +99,21 @@ const char *menus[] = {
     "       Warning!     "
     "     Almost empty   "
     " Push to start brew "
-    "Weight  ##### gram #" // [0:Weight] [1:level]
+    "Weight  ##### gram #", // [0:Weight] [1:level]
 
+    // CLEANING=9
+    // 01234567890123456789
+    "CLEANING ##### shots" // [0:shots since cleaning]
+    "####################" // [1:status]
+    "Lever UP=ON DOWN=OFF"
+    " Press knob to exit ",
+
+    // CLEANING_REMINDER=10
+    // 01234567890123456789
+    "  CLEANING ADVISED  "
+    " ##### shots since  " // [0:shots since cleaning]
+    "    last cleaning   "
+    " Push to continue   ",
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
 
@@ -207,6 +220,30 @@ bool menu_warning_almost_empty()
  
   display.show(menus[MENU_WARNING_ALMOST_EMPTY], arg);
   return false;
+}
+
+bool menu_cleaning()
+{
+  char shots[12];
+  char *args[] = { shots, (char *)machineController.cleaning_status(), (char *)"" };
+  sprintf(shots, "%5d", settings.shotCounterSinceCleaning());
+  display.show(menus[MENU_CLEANING], args);
+  return false;
+}
+
+bool menu_cleaning_reminder()
+{
+  char shots[12];
+  char *args[] = { shots, (char *)"" };
+  sprintf(shots, "%5d", settings.shotCounterSinceCleaning());
+  display.show(menus[MENU_CLEANING_REMINDER], args);
+  return false;
+}
+
+/// @brief true if the cleaning reminder is on and the shots since cleaning reached the limit
+static bool cleaning_due()
+{
+  return settings.cleaningReminder() && settings.shotCounterSinceCleaning() >= settings.cleaningReminderShots();
 }
 
 bool menu_commissioning()
@@ -354,8 +391,17 @@ char reservoir_level_indicator()
   return spinner_chars[min(max(0, level_index), num_spinner_chars - 1)];
 }
 
-typedef enum { MAIN, SETTINGS, SAVED, WARNING } ready_menu_t;
+typedef enum { MAIN, SETTINGS, SAVED, WARNING, CLEANING_REMINDER } ready_menu_t;
 static ready_menu_t ready_menu = MAIN;
+#define CLEANING_REMINDER_REPEAT 5 // shots after a dismissed cleaning reminder before it is shown again
+static int cleaning_reminder_dismissed = -1; // shots since cleaning when the reminder was dismissed, -1 = not dismissed
+
+static bool cleaning_reminder_pending()
+{
+  int shots = settings.shotCounterSinceCleaning();
+  return cleaning_reminder_dismissed < 0 || shots < cleaning_reminder_dismissed // not dismissed since the last cleaning
+         || shots >= cleaning_reminder_dismissed + CLEANING_REMINDER_REPEAT;
+}
 
 void menu_ready_reset()
 {
@@ -381,7 +427,22 @@ bool menu_ready(bool button_pressed)
       ready_menu = MAIN;
     break;
 
+  case CLEANING_REMINDER:
+    menu_cleaning_reminder();
+    if (button_pressed)
+      cleaning_reminder_dismissed = settings.shotCounterSinceCleaning();
+    if (button_pressed || brewProcess.is_busy() || !cleaning_due())
+      ready_menu = MAIN;
+    break;
+
   case MAIN:
+    if (cleaning_due() && cleaning_reminder_pending()
+        && !brewProcess.is_busy() && !brewProcess.is_finished() && !button_pressed)
+    {
+      ready_menu = CLEANING_REMINDER;
+      menu_cleaning_reminder();
+      break;
+    }
     menu_main();
     if (button_pressed)
     {
@@ -434,13 +495,7 @@ void update_display(bool button_pressed)
   if (strcmp(machine_state, "commissioning") == 0)
     menu_commissioning();
   else if (machineController.is_cleaning())
-  {
-    char *args[] = { (char *)machineController.cleaning_status(), (char *)"" };
-    display.show("      CLEANING      "
-                 "####################"
-                 "Lever UP=ON DOWN=OFF"
-                 " Press knob to exit ", args);
-  }
+    menu_cleaning();
   else if (strcmp(machine_state, "sleep") == 0)
     menu_sleep();
   else if (strcmp(machine_state, "error") == 0)

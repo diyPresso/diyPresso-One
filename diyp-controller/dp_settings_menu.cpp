@@ -38,7 +38,7 @@ typedef struct menu
 } menu_t;
 
 // Actions, all ask for confirmation first (default NO)
-enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS, ACTION_MENU_DEFAULTS, ACTION_CLEANING };
+enum { ACTION_TARE, ACTION_ZERO_COUNTER, ACTION_COMMISSIONING, ACTION_DEFAULTS, ACTION_MENU_DEFAULTS, ACTION_CLEANING, ACTION_ZERO_CLEANING_COUNTER };
 
 // Read-only texts
 enum { TEXT_VERSION, TEXT_HARDWARE };
@@ -68,6 +68,16 @@ static const menu_item_t brew_items[] = {
     BACK(),
 };
 static const menu_t brew_menu = MENU("BREW", brew_items);
+
+static const menu_item_t cleaning_items[] = {
+    ACTION("Start cleaning", ACTION_CLEANING),
+    VALUE_ACTION("Shots made since", shotCounterSinceCleaning, ACTION_ZERO_CLEANING_COUNTER, "Reset counter?"),
+    SELECT("Reminder", cleaningReminder, OFF_ON),
+    VALUE("Remind after", cleaningReminderShots, "", 10),
+    MENU_DEFAULTS("Set cleaning defs", "Reset cleaning to\ndefault values?"),
+    BACK(),
+};
+static const menu_t cleaning_menu = MENU("CLEANING", cleaning_items);
 
 static const menu_item_t steam_items[] = {
     VALUE("Temperature", steamTemperature, "\337C", 0.5),
@@ -138,7 +148,7 @@ static const menu_t system_menu = MENU("SYSTEM", system_items);
 
 static const menu_item_t root_items[] = {
     SUBMENU("Brew", brew_menu, 0),
-    ACTION("Cleaning", ACTION_CLEANING),
+    SUBMENU("Cleaning", cleaning_menu, 0),
     SUBMENU("Steam", steam_menu, ITEM_MODEL_TWO),
     SUBMENU("Reservoir", reservoir_menu, 0),
     SUBMENU("Boiler PID", boiler_pid_menu, 0),
@@ -433,6 +443,11 @@ void SettingsMenu::run_action(int action)
     settings.zeroShotCounter();
     settings.save();
     _edit.shotCounter(0);
+    break;
+  case ACTION_ZERO_CLEANING_COUNTER:
+    settings.shotCounterSinceCleaning(0);
+    settings.save();
+    _edit.shotCounterSinceCleaning(0);
     break;
   case ACTION_COMMISSIONING:
     settings.commissioningDone(0);

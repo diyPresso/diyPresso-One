@@ -26,6 +26,7 @@ protected:
   bool _cleaning_armed = false;
   bool _cleaning_exit = false;
   bool _cleaning_pumping = false;
+  bool _cleaning_done = false; // the pump ran: reset the shots since cleaning on exit
   unsigned long _cleaning_pump_started = 0;
 
   void state_commissioning();

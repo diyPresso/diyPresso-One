@@ -64,7 +64,7 @@ class DpSettings
         DP_SETTINGS_LIST(DP_SETTING_ACCESSORS)
 #undef DP_SETTING_ACCESSORS
 
-        int incShotCounter() { return settings.shotCounter += 1; }
+        int incShotCounter() { settings.shotCounterSinceCleaning += 1; return settings.shotCounter += 1; }
         void zeroShotCounter() { settings.shotCounter = 0; }
 };
 

@@ -4,12 +4,13 @@
   - Turn to move the cursor, press to open a submenu, edit a value or run an action.
   - Changes are made in a working copy of the settings. When leaving the menu with changes,
     "Save changes?" is asked (default NO). Only on YES the settings are saved and applied.
-  - Actions (tare, reset shot counter, commissioning, reset to defaults) ask for
+  - Actions (tare, reset shot counters, commissioning, reset to defaults) ask for
     confirmation (default NO) and are saved right away.
-  - Cleaning asks for confirmation, then opens a temporary manual pump mode.
+  - "Start cleaning" asks for confirmation, then opens a temporary manual pump mode.
+    Unsaved changes are discarded.
   - The last item of a submenu ("Set brew defs", ...) sets the values of that submenu to
     their defaults after confirmation (default NO). This is a change in the working copy,
-    saved with "Save changes?". The tare and the shot counter are kept.
+    saved with "Save changes?". The tare and the shot counters are kept.
 */
 #ifndef DP_SETTINGS_MENU_H
 #define DP_SETTINGS_MENU_H

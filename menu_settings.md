@@ -34,7 +34,7 @@ Push the button right of the screen to enter the menu. The main menu shows the s
 ```
 SETTINGS         1/8
 >Brew             ->
- Cleaning
+ Cleaning         ->
  Steam            ->
 ```
 
@@ -83,7 +83,7 @@ The menu has these items:
 | Item       | Contents                                                      |
 |------------|---------------------------------------------------------------|
 | Brew       | brew settings and shot counter                                |
-| Cleaning   | manual continuous pump mode, without pre-infusion              |
+| Cleaning   | manual cleaning mode, shots since cleaning and cleaning reminder |
 | Steam      | steam settings **[diyPresso Two only]**                                 |
 | Reservoir  | tare and weight trim of the reservoir                         |
 | Boiler PID | temperature controller of the boiler (advanced)               |
@@ -108,8 +108,27 @@ The menu has these items:
 
 ## Cleaning
 
-From the main settings menu, select **Cleaning** and confirm **YES** with the brew
-lever down. Raise the lever to pump continuously, without pre-infusion or a timed
+1. **Start cleaning:** Starts the cleaning mode, see below. Unsaved changes in the menu are discarded.
+2. **Shots made:** The number of shots made since the last cleaning. It is set to 0 when you
+   leave the cleaning mode after the pump has run. Push the button to reset it to 0 by hand,
+   for example after cleaning in another way.
+3. **Reminder:** When ON, the machine shows a message when the shots made since the last cleaning
+   reach the limit. Push the button to continue; the message comes back every 5 shots,
+   until you clean the machine. Set it to OFF to never show the message. Default is OFF.
+
+   ```
+     CLEANING ADVISED
+       100 shots since
+       last cleaning
+    Push to continue
+   ```
+4. **Remind after:** The number of shots after which the reminder is shown. Default is 100.
+5. **Set cleaning defs:** Sets settings 3-4 back to their defaults. The shot count is not changed.
+
+### Cleaning mode
+
+Select **Start cleaning** and confirm **YES** with the brew lever down. The top line
+of the screen shows the shots made since the last cleaning. Raise the lever to pump continuously, without pre-infusion or a timed
 shot recipe; lower it to stop. Each run is limited to 60 seconds, after which the
 lever must be lowered before another run. Cleaning does not count as a shot or
 change the saved brew settings. The boiler remains at the normal brew temperature;

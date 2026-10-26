@@ -36,6 +36,9 @@
   X(double, trimWeight,                  "trimWeight",                  0.0,    -90.0,   50.0,     2) \
   X(int,    commissioningDone,           "commissioningDone",           0,      0,       1,        0) \
   X(int,    shotCounter,                 "shotCounter",                 0,      0,       INT32_MAX, 0) \
+  X(int,    shotCounterSinceCleaning,    "shotCounterSinceCleaning",    0,      0,       INT32_MAX, 0) \
+  X(int,    cleaningReminder,            "cleaningReminder",            0,      0,       1,        0) \
+  X(int,    cleaningReminderShots,       "cleaningReminderShots",       100,    10,      1000,     0) \
   X(int,    wifiMode,                    "wifiMode",                    WIFI_MODE_OFF, 0, 2,       0) \
   X(double, steamTemperature,            "steamTemperature",            165.0,  0.0,     170.0,    1) \
   X(double, steamP,                      "steamP",                      3.5,    0.0,     50.0,     1) \

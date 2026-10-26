@@ -116,6 +116,7 @@ void MachineController::state_cleaning()
     _cleaning_armed = false; // require lever down before the first run
     _cleaning_exit = false;
     _cleaning_pumping = false;
+    _cleaning_done = false;
     pumpDevice.off();
     boilerController.stop_brew();
   }
@@ -142,6 +143,7 @@ void MachineController::state_cleaning()
     {
       _cleaning_pump_started = millis();
       _cleaning_pumping = true;
+      _cleaning_done = true;
     }
     if (millis() - _cleaning_pump_started >= CLEANING_PUMP_LIMIT_MS)
     {
@@ -183,6 +185,11 @@ void MachineController::state_cleaning()
     _cleaning_pumping = false;
     _cleaning_armed = false;
     _cleaning_exit = false;
+    if (_cleaning_done)
+    {
+      settings.shotCounterSinceCleaning(0);
+      settings.save();
+    }
   }
 }
 

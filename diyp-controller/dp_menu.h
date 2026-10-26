@@ -16,6 +16,8 @@ extern bool menu_wifi(char *msg);
 extern bool menu_saved();
 extern bool menu_error(const char *msg);
 extern bool menu_commissioning();
+extern bool menu_cleaning();
+extern bool menu_cleaning_reminder();
 extern bool menu_state();
 extern void update_display(bool button_pressed);
 extern void menu_ready_reset();
@@ -30,7 +32,9 @@ typedef enum
   MENU_SAVED = 5,
   MENU_STATE = 6,
   MENU_COMMISSIONING = 7,
-  MENU_WARNING_ALMOST_EMPTY = 8
+  MENU_WARNING_ALMOST_EMPTY = 8,
+  MENU_CLEANING = 9,
+  MENU_CLEANING_REMINDER = 10
 } menu_list_t;
 
 extern const char *menus[];
