@@ -3,6 +3,8 @@
   Loads and Saves the persistent settings.
   if no changes are made to the settings, nothing is saved
   If no valid data is present, default values are saved
+  The shot counters are saved in a separate log in flash (see dp_counter_log.h), so a shot does
+  not rewrite the settings and a power loss while saving the counters cannot corrupt the settings.
   the setters check the range of the values to save, to prevent incorrect data
 
   All settings are defined in dp_settings_list.h. From that list the struct fields, the
@@ -41,13 +43,15 @@ class DpSettings
         void read(settings_t *s);
         void update_crc(void);
         bool crc_is_valid(settings_t *s);
-        unsigned long crc32(const unsigned char *s, size_t n);
+        bool load_counters();
     public:
+        static unsigned long crc32(const unsigned char *s, size_t n);
         DpSettings();
         void defaults();
         void reset_to_defaults();
         int load();
         int save();
+        bool save_counters();
         void apply();
         String serialize();
         int deserialize(String input);

@@ -112,8 +112,8 @@ const char *menus[] = {
     // 01234567890123456789
     "  CLEANING ADVISED  "
     " ##### shots since  " // [0:shots since cleaning]
-    "    last cleaning   "
-    " Push to continue   ",
+    "   last cleaning    "
+    "  Push to continue  ",
 };
 const int num_menus = sizeof(menus) / sizeof(char *);
 

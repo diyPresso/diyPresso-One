@@ -118,9 +118,9 @@ The menu has these items:
 
    ```
      CLEANING ADVISED
-       100 shots since
-       last cleaning
-    Push to continue
+      100 shots since
+      last cleaning
+     Push to continue
    ```
 4. **Remind after:** The number of shots after which the reminder is shown. Default is 100.
 5. **Set cleaning defs:** Sets settings 3-4 back to their defaults. The shot count is not changed.

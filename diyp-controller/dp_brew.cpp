@@ -49,6 +49,7 @@ void BrewProcess::state_idle()
     boilerController.stop_brew();
     boilerController.on();
     boilerController.set_temp(settings.temperature());
+    settings.save_counters();
   }
   if (brewSwitch.up())
     if (reservoir.is_almost_empty())
