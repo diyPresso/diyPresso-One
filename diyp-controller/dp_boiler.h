@@ -6,12 +6,11 @@
 #define BOILER_H
 
 #include "dp_hardware.h"
-
-#define _DP_FSM_TYPE BoilerStateMachine // used for the state machine macro NEXT()
 #include "dp_fsm.h"
 #include "dp_pid.h"
 #include "dp_heater.h"
 #include "dp_reservoir.h"
+#include "dp_brew_integral_hold.h"
 #include <Arduino.h>
 
 #include <MAX31865_NonBlocking.h> 
@@ -22,9 +21,6 @@
 #define TEMP_LIMIT_HIGH 108.0 // > is TOO HGH
 #define TEMP_LIMIT_LOW 1.0    // < is TOO LOW
 #define TEMP_MIN_BREW 10.0    // do not brew under this temp
-
-#define WINDUP_LIMIT_MIN -2.0 // windup limits in %
-#define WINDUP_LIMIT_MAX 2.0  // 
 
 // Times in [msec]
 #define TIMEOUT_HEATING (600)    // maximum heater on time: 10 minutes
@@ -59,19 +55,36 @@ typedef enum
 class BoilerStateMachine : public StateMachine<BoilerStateMachine>
 {
 public:
-  BoilerStateMachine() : StateMachine(&BoilerStateMachine::state_off) {}; // moved intit() out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
+  BoilerStateMachine() : StateMachine(&BoilerStateMachine::state_off) {};
   int error() { return _error; }
   void clear_error() { _error = BOILER_ERROR_NONE; }
   double set_temp() { return _set_temp; }
-  double set_temp(double temp) { return _set_temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0)); }
+  double set_temp(double temp)
+  {
+    temp = min(TEMP_LIMIT_HIGH, max(temp, 0.0));
+    if (temp != _set_temp)
+      cancel_brew_hold();
+    return _set_temp = temp;
+  }
   double act_temp() { return _act_temp; }
   double act_power() { return _power; }
-  double set_ffHeat(double ff) { return _ffHeat = min(100.0, max(ff, 0.0)); }
-  double get_ffHeat(void) { return _ffHeat; }
-  double set_ffReady(double ff) { return _ffReady = min(100.0, max(ff, 0.0)); }
+  double set_ffReady(double ff) { _ffReady = min(100.0, max(ff, 0.0)); apply_feed_forward(); return _ffReady; }
   double get_ffReady(void) { return _ffReady; }
   void set_dffFactorPct(double factorPct) { _pid.setDynamicFeedForwardFactorPct(factorPct); } 
   void set_pid(double p, double i, double d) { _pid.setCoefficients(p, i, d); }
+  void set_windup_limits(double min, double max) { _pid.setWindUpLimits(min, max); }
+  void set_conditional_integration(bool enabled, double bandDegC) { _pid.setConditionalIntegration(enabled, bandDegC); }
+  void set_dffDecay(double decay) { _pid.setDynamicFeedForwardDecay(decay); }
+  void set_iDownFactor(double factor) { _pid.setIntegralDownFactor(factor); }
+  void set_brew_integral_hold(bool enabled, unsigned long timeoutSec, unsigned long dipWindowSec)
+  {
+    _brew_hold_enabled = enabled;
+    _brew_hold.set_timeout_sec(timeoutSec);
+    _brew_hold.set_dip_window_sec(dipWindowSec);
+    if (!enabled)
+      cancel_brew_hold();
+  }
+  const char *get_brew_hold_state_name() { return _brew_hold.get_state_name(); }
   bool get_serial_output() const { return _pid.getSerialOutput(); }
   void set_serial_output(const bool& enabled) { _pid.setSerialOutput(enabled); }
 
@@ -95,39 +108,46 @@ public:
   {
     _on = false;
     heaterDevice.power(0);
+    cancel_brew_hold();
   }
   void start_brew() { _brew = true; }
   void stop_brew() { _brew = false; }
   bool is_on() { return _on; }
-  bool is_ready() { return _cur_state == &BoilerStateMachine::state_ready; }
-  bool is_error() { return _cur_state == &BoilerStateMachine::state_error; }
+  bool is_ready() { return in_state(&BoilerStateMachine::state_ready); }
+  bool is_error() { return in_state(&BoilerStateMachine::state_error); }
   const char *get_error_text();
-  const char *get_state_name();
-  void control();
+  void read_sensor();
+  void run();
   void begin();
   void init(); 
 
 
 private:
   DpPID _pid;
-  double _act_temp = 0, _set_temp = 0, _ffHeat = 0, _ffReady = 0, _power = 0;
+  double _act_temp = 0, _set_temp = 0, _ffReady = 0, _power = 0;
   bool _on = false, _brew = false;
   power_control_mode_t _power_control_mode = POWER_CONTROL_PID;
   double _power_static = 0.0;
   unsigned long _last_control_time = 0;
   boiler_error_t _error = BOILER_ERROR_NONE;
+
+  // Brew integral hold: freeze the PID integral term during the post-brew dip
+  BrewIntegralHold _brew_hold;
+  bool _brew_hold_enabled = true;
+  void cancel_brew_hold();
   int _rtd_error = 0;   // current RTD errors
   
   // Temperature filter (EMA)
   static constexpr double TEMP_FILTER_ALPHA = 0.15; // 0-1, lower = more filtering
   bool _temp_initialized = false;
+  void goto_error(boiler_error_t err);
+  void apply_feed_forward(); // set the PID feed forward for the current state
+  MAX31865 thermistor = MAX31865(PIN_THERM_CS);
   void state_off();     // SSR is forced OFF
   void state_heating(); // Temperature control, but not yet on target temperature
   void state_ready();   // temperature control, within range of target temperature
   void state_brew();    // temperature control in brewing mode with feed-forward active
   void state_error();   // heater is forced OFF, error code is set, set state to OFF to clear error
-  void goto_error(boiler_error_t err);
-  MAX31865 thermistor = MAX31865(PIN_THERM_CS);
 };
 
 extern BoilerStateMachine boilerController;

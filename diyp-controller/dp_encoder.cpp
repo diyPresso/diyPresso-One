@@ -13,6 +13,7 @@ Encoder encoder(PIN_ENC_A,  PIN_ENC_B, PIN_ENC_S);
 
 volatile static int enc_value=0, enc_button=0, enc_button_count=0, enc_button_time=0;
 volatile static int timer_count = 0;
+volatile static int enc_direction = 1; // -1 reverses the rotation direction
 static int _pin_a, _pin_b, _pin_s;
 
 
@@ -60,7 +61,7 @@ void encoder_timer_function()
 
     if ( ((prev & 1) == 1) && ((cur & 1) == 0)  )
     {
-      enc_value += ( cur & 2 ? -1 : 1 );
+      enc_value += ( cur & 2 ? -1 : 1 ) * enc_direction;
     }
     prev = cur;
 }
@@ -108,6 +109,12 @@ volatile void Encoder::reset()
     _button_count = 0;
     _encoder_count = 0;
     timer_count = 0;
+}
+
+/// @brief Reverse the rotation direction (left = right, right = left)
+void Encoder::set_reverse(bool reverse)
+{
+  enc_direction = reverse ? -1 : 1;
 }
 
 volatile void Encoder::set(int value)

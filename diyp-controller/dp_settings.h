@@ -4,6 +4,9 @@
   if no changes are made to the settings, nothing is saved
   If no valid data is present, default values are saved
   the setters check the range of the values to save, to prevent incorrect data
+
+  All settings are defined in dp_settings_list.h. From that list the struct fields, the
+  clamped getters/setters, defaults(), serialize() and deserialize() are generated.
 */
 
 #ifndef DpSettings_h
@@ -11,8 +14,18 @@
 
 #include "Arduino.h"
 #include "dp_serial.h"
+#include "dp_settings_list.h"
 
-typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP };
+typedef enum wifi_modes { WIFI_MODE_OFF, WIFI_MODE_ON, WIFI_MODE_AP } wifi_mode_t;
+
+// Setting ids: SETTING_temperature, SETTING_P, ...
+typedef enum
+{
+#define DP_SETTING_ID(type, name, key, def, lo, hi, dec) SETTING_##name,
+    DP_SETTINGS_LIST(DP_SETTING_ID)
+#undef DP_SETTING_ID
+    SETTING_COUNT
+} setting_id_t;
 
 class DpSettings
 {
@@ -20,17 +33,9 @@ class DpSettings
         typedef struct __attribute__ ((packed)) settings_struct { // a packed struct has no alignment of fields
             unsigned long int crc; // crc of all the the fields after the crc
             unsigned long int version; // settings struct version
-            double temperature;
-            double preInfusionTime;
-            double infusionTime;
-            double extractionTime;
-            double extractionWeight;
-            double p, i, d, dffFactorPct, ffHeat, ffReady;
-            double tareWeight;
-            double trimWeight;
-            int commissioningDone;
-            int shotCounter;
-            int wifiMode;
+#define DP_SETTING_FIELD(type, name, key, def, lo, hi, dec) type name;
+            DP_SETTINGS_LIST(DP_SETTING_FIELD)
+#undef DP_SETTING_FIELD
         } settings_t;
         settings_t settings;
         void read(settings_t *s);
@@ -40,44 +45,25 @@ class DpSettings
     public:
         DpSettings();
         void defaults();
+        void reset_to_defaults();
         int load();
         int save();
         void apply();
         String serialize();
         int deserialize(String input);
-        double temperature() { return settings.temperature; }
-        double temperature(double t) { return settings.temperature = min(104.0, max(t, 0.0)); }
-        double preInfusionTime() { return settings.preInfusionTime; }
-        double preInfusionTime(double t) { return settings.preInfusionTime = min(60.0, max(t, 0.0)); }
-        double infusionTime() { return settings.infusionTime; }
-        double infusionTime(double t) { return settings.infusionTime = min(60.0, max(t, 0.0)); }
-        double extractionTime() { return settings.extractionTime; }
-        double extractionTime(double t) { return settings.extractionTime = min(60.0, max(t, 0.0)); }
-        double extractionWeight() { return settings.extractionWeight; }
-        double extractionWeight(double w) { return settings.extractionWeight = min(500.0, max(w, 1.0)); }
-        double P() { return settings.p; }
-        double P(double p) { return settings.p = min(10.0, max(p, 0.0)); }
-        double I() { return settings.i; }
-        double I(double i) { return settings.i = min(20.0, max(i, 0.00)); }
-        double D() { return settings.d; }
-        double D(double d) { return settings.d = min(999.0, max(d, 0.0)); }
-        double ffHeat() { return settings.ffHeat; }
-        double ffHeat(double ff) { return settings.ffHeat = min(100.0, max(ff, 0.0)); }
-        double ffReady() { return settings.ffReady; }
-        double ffReady(double ff) { return settings.ffReady = min(100.0, max(ff, 0.0)); }
-        double dffFactorPct() { return settings.dffFactorPct; }
-        double dffFactorPct(double dff) { return settings.dffFactorPct = min(150.0, max(dff, 0.0)); }
+        double get(setting_id_t id);
+        double set(setting_id_t id, double value);
+        static int decimals(setting_id_t id);
+        static double default_value(setting_id_t id);
+        bool same_values(const DpSettings &other);
 
-        double tareWeight() { return settings.tareWeight; }
-        double tareWeight(double t) { return settings.tareWeight = min(2000.0, max(t, -2000.0)); }
-        double trimWeight() { return settings.trimWeight; }
-        double trimWeight(double t) { return settings.trimWeight = min(50.0, max(t, -90.0)); }
-        int wifiMode() { return settings.wifiMode; }
-        int wifiMode(int state) { return settings.wifiMode = min(2, max(state, 0)); }
-        int shotCounter() { return settings.shotCounter; }
-        int shotCounter(int count) { return settings.shotCounter = min(INT32_MAX, max(count, 0)); }
-        int commissioningDone() { return settings.commissioningDone; }
-        int commissioningDone(int state) { return settings.commissioningDone = min(1, max(state, 0)); }
+        // Getter and clamped setter for each setting, e.g. temperature() and temperature(98.0)
+#define DP_SETTING_ACCESSORS(type, name, key, def, lo, hi, dec) \
+        type name() { return settings.name; } \
+        type name(type v) { return settings.name = min((type)(hi), max(v, (type)(lo))); }
+        DP_SETTINGS_LIST(DP_SETTING_ACCESSORS)
+#undef DP_SETTING_ACCESSORS
+
         int incShotCounter() { return settings.shotCounter += 1; }
         void zeroShotCounter() { settings.shotCounter = 0; }
 };

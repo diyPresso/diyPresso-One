@@ -15,28 +15,27 @@
 #include <wdt_samd21.h>
 #endif
 
-#define _DP_FSM_TYPE BoilerStateMachine
 BoilerStateMachine boilerController = BoilerStateMachine();
 
 void BoilerStateMachine::state_off()
 {
-  ;
+  ON_ENTRY() {}
   if (_on)
-    NEXT(state_heating);
+    next(&BoilerStateMachine::state_heating);
 }
 
 void BoilerStateMachine::state_heating()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffHeat, false);
+    apply_feed_forward();
   }
   if (!_on)
-    NEXT(state_off);
+    next(&BoilerStateMachine::state_off);
   if (_brew)
-    NEXT(state_brew);
+    next(&BoilerStateMachine::state_brew);
   if (abs(_set_temp - _act_temp) < TEMP_WINDOW)
-    NEXT(state_ready);
+    next(&BoilerStateMachine::state_ready);
   ON_TIMEOUT_SEC(TIMEOUT_HEATING)
   goto_error(BOILER_ERROR_TIMEOUT_HEATING);
   ON_EXIT()
@@ -49,14 +48,14 @@ void BoilerStateMachine::state_ready()
 {
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffReady, false);
+    apply_feed_forward();
   }
   if (!_on)
-    NEXT(state_off);
+    next(&BoilerStateMachine::state_off);
   if (_brew)
-    NEXT(state_brew);
+    next(&BoilerStateMachine::state_brew);
   if (abs(_set_temp - _act_temp) > TEMP_WINDOW)
-    NEXT(state_heating);
+    next(&BoilerStateMachine::state_heating);
   ON_TIMEOUT_SEC(TIMEOUT_READY)
   goto_error(BOILER_ERROR_READY_TIMEOUT);
 }
@@ -64,12 +63,12 @@ void BoilerStateMachine::state_ready()
 void BoilerStateMachine::state_brew()
 {
   if (!_on)
-    NEXT(state_off);
+    next(&BoilerStateMachine::state_off);
   if (!_brew)
-    NEXT(state_heating);
+    next(&BoilerStateMachine::state_heating);
   ON_ENTRY()
   {
-    _pid.setFeedForward(_ffReady, true);
+    apply_feed_forward();
   }
 
   // if ( (_set_temp - _act_temp ) > TEMP_WINDOW) goto_error(BOILER_ERROR_UNDER_TEMP);
@@ -84,24 +83,42 @@ void BoilerStateMachine::state_brew()
 
 void BoilerStateMachine::state_error()
 {
+  ON_ENTRY() {}
   off();
   _power = 0;
   _set_temp = 0;
   if (_error == BOILER_ERROR_NONE)
-    NEXT(state_off);
+    next(&BoilerStateMachine::state_off);
+}
+
+/// @brief Set the PID feed forward for the current state, so a changed ffReady setting takes effect immediately
+void BoilerStateMachine::apply_feed_forward()
+{
+  if (in_state(&BoilerStateMachine::state_heating) || in_state(&BoilerStateMachine::state_ready))
+    _pid.setFeedForward(_ffReady, false); // also while heating: P gives enough power far below setpoint
+  else if (in_state(&BoilerStateMachine::state_brew))
+    _pid.setFeedForward(_ffReady, true); // dynamic feed forward stays enabled while brewing
+}
+
+void BoilerStateMachine::cancel_brew_hold()
+{
+  _brew_hold.reset();
+  _pid.setIntegralHold(false, _brew_hold.get_state_name());
 }
 
 void BoilerStateMachine::goto_error(boiler_error_t error)
 {
+  cancel_brew_hold();
   _error = error;
-  NEXT(state_error);
+  next(&BoilerStateMachine::state_error);
 }
 
 void BoilerStateMachine::init()
 {
   _pid.begin(&_act_temp, &_power, &_set_temp, settings.P(), settings.I(), settings.D(), settings.ffReady(), false, 1000, &reservoir); // get defaults from setting and set PID sample time to 1s (same as HeaterDevice)
   _pid.setOutputLimits(0, 100);
-  _pid.setWindUpLimits(WINDUP_LIMIT_MIN, WINDUP_LIMIT_MAX); // set bounds for the integral term to prevent integral wind-up
+  _pid.setWindUpLimits(settings.windupMin(), settings.windupMax()); // set bounds for the integral term to prevent integral wind-up
+  _pid.setConditionalIntegration(settings.conditionalIntegration(), settings.integrationBand()); // hold the integral term when saturated or far from setpoint
   _pid.start();
 
   begin();  // start the thermistor.
@@ -122,7 +139,7 @@ void BoilerStateMachine::begin()
 
 
 
-void BoilerStateMachine::control(void)
+void BoilerStateMachine::read_sensor(void)
 {
   double raw_temp = thermistor.getTemperature(RNOMINAL, RREF);
 
@@ -138,10 +155,6 @@ void BoilerStateMachine::control(void)
     _act_temp = (TEMP_FILTER_ALPHA * raw_temp) + ((1.0 - TEMP_FILTER_ALPHA) * _act_temp);
   }
 
-  // Serial.print("Raw Temp: "); Serial.print(raw_temp);
-  // Serial.print(" °C, Filtered Temp: "); Serial.print(_act_temp); Serial.println(" °C");
-
-  //_rtd_error = thermistor.readFault();
   _rtd_error = thermistor.getFault();
   if (_rtd_error)
   {
@@ -155,13 +168,22 @@ void BoilerStateMachine::control(void)
     if (_act_temp < TEMP_LIMIT_LOW)
       goto_error(BOILER_ERROR_RTD);
   }
+}
 
+void BoilerStateMachine::run(void)
+{
   if (_on && _last_control_time + TIMEOUT_CONTROL_MSEC < millis())
     goto_error(BOILER_ERROR_CONTROL_TIMEOUT);
   _last_control_time = millis();
 
-  run();
+  StateMachine::run();
 
+  if (_brew_hold_enabled && _on)
+    _brew_hold.update(_brew, _act_temp, _set_temp);
+  else
+    _brew_hold.reset();
+  _pid.setIntegralHold(_brew_hold.is_holding(), _brew_hold.get_state_name());
+  _pid.setOutputEnabled(_on && _power_control_mode == POWER_CONTROL_PID); // PID not in control (boiler off / sleep, static power mode): integral kept at 0
   _pid.compute();
 
   if (_power_control_mode == POWER_CONTROL_STATIC) {
@@ -203,17 +225,6 @@ const char *BoilerStateMachine::get_error_text()
   default:
     return "UNKNOWN";
   }
-}
-
-const char *BoilerStateMachine::get_state_name()
-{
-  RETURN_STATE_NAME(off);
-  RETURN_STATE_NAME(heating);
-  RETURN_STATE_NAME(ready);
-  RETURN_STATE_NAME(brew);
-  RETURN_STATE_NAME(error);
-  RETURN_NONE_STATE_NAME()
-  RETURN_UNKNOWN_STATE_NAME();
 }
 
 bool BoilerStateMachine::set_power_control_mode_str(String mode)

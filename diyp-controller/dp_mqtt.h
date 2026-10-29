@@ -12,9 +12,9 @@ class MqttDevice
 {
     private:
       bool _on=false;
-      typedef enum  mqtt_state_t { MSG_START, MSG_NEXT };
+      enum mqtt_state_t { MSG_START, MSG_NEXT };
       mqtt_state_t _state = MSG_START;
-      void prepare(char *measurement);
+      void prepare(const char *measurement);
     public:
       MqttDevice() { off(); }
       void on(void) { _on=true;  }
@@ -22,10 +22,11 @@ class MqttDevice
       bool is_on(void) { return _on; }
       void init();
       void run();
-      void write(char *measurement, long value);
-      void write(char *measurement, double value);
-      void write(char *measurement, char *value);
+      void write(const char *measurement, long value);
+      void write(const char *measurement, double value);
+      void write(const char *measurement, const char *value);
       void send();
+      void send_state();
 
 };
 

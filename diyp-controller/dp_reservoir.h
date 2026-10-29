@@ -29,11 +29,11 @@ class Reservoir
       int _deglitched = -1;      // number of deglitched readings, -1 to indicate first reading
       double _outflow_temp = 29.0; // temperature of the water leaving the reservoir in °C
       reservoir_error_t _error = RESERVOIR_ERROR_NONE;
-      void read();  // update the internal state, based on weight measurement
     public:
       Reservoir();
-      double level() { return max(0, min(100.0 * ( weight() / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
-      double weight() { read(); return _weight_net; } // net weight
+      void read();  // read weight sensor, call once per loop
+      double level() { return max(0, min(100.0 * ( _weight_net / RESERVOIR_CAPACITY), 100.0)); } // level [in %]
+      double weight() { return _weight_net; } // net weight (cached)
       double get_tare() { return _tare; }
       void set_tare(double t) { _tare = t; clear_error(); }
       void set_trim(double t) { _trim = t; }

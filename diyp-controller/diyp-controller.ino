@@ -51,11 +51,18 @@
 #include "dp_brew.h"
 #include "dp_heater.h"
 #include "dp_pump.h"
+#include "dp_machine.h"
 
 #include "dp_serial.h"
 #include "dp_wifi.h"
 #include "dp_mqtt.h"
+#include "dp_commission.h"
 
+#include "dp_steam_process.h"
+#include "dp_steam_thermoblock.h"
+#include "dp_steam_switch.h"
+#include "dp_steam_heater.h"
+#include "dp_steam_pump.h"
 
 /**
  * @brief setup code
@@ -64,14 +71,15 @@
 void setup()
 {
   int result = 0;
-  
-  delay(1000);
-  dpSerial.send(__DATE__ " " __TIME__);
-  statusLed.color(ColorLed::WHITE);
 
-  encoder.start();
+  encoder.start(); // before the logo: button presses during the logo count for the factory reset below
   display.init();
-  display.logo(__DATE__, __TIME__);
+  display.logo();
+  
+  hardware.detect_model();
+  dpSerial.send(__DATE__ " " __TIME__);
+  dpSerial.send("diyPresso " + String(hardware.model_name()) + " starting up...");
+  statusLed.color(ColorLed::WHITE);
 
   if ((result = settings.load()) < 0)
   {
@@ -82,7 +90,7 @@ void setup()
   }
   else
     dpSerial.send("Load settings OK, result=");
-  dpSerial.send(result); 
+  dpSerial.send(result);
 
   dpSerial.send(encoder.button_count());
   if (encoder.button_count() > 3)
@@ -94,152 +102,69 @@ void setup()
 
   dpSerial.send_settings();
 
-  display.custom_chars(custom_chars_spinner);
-
   boilerController.init(); // moved this out of the constructor, because the arduino just bricked if called earlier. Not sure why though...
+  if(hardware.has_steam_group()) 
+  { 
+    steamThermoblock.init();
+    steamPump.init();
+    steamProcess.init();
+  }
+
 
   settings.apply();
 
+  // Replace the logo characters only now, so the logo stays on screen during the inits above.
+  // Loading new custom characters changes the characters on screen at once: clear it first.
+  display.clear();
+  display.custom_chars(custom_chars_spinner);
+
   dpSerial.send("INIT DONE");
-  
+
   heaterDevice.pwm_period(1.0); // [sec]
   boilerController.off();
 
   if (settings.wifiMode() != WIFI_MODE_OFF)
   {
-    if (settings.wifiMode() == WIFI_MODE_AP)
+    bool config_ap = settings.wifiMode() == WIFI_MODE_AP;
+    if (config_ap)
     {
-      wifi_erase();
-      settings.wifiMode(WIFI_MODE_ON);
+      // Save OFF until connected, so a cancelled or interrupted setup does not return on the next boot
+      settings.wifiMode(WIFI_MODE_OFF);
       settings.save();
     }
     menu_wifi("starting");
     wifi_setup();
-    wifi_loop();
-    delay(1000);
+    if (wifi_loop(config_ap))
+    {
+      if (config_ap)
+      {
+        settings.wifiMode(WIFI_MODE_ON);
+        settings.save();
+      }
+      delay(1000); // keep the IP address on the display for a moment
+    }
+    display.button_pressed(); // consume a button press that cancelled Wifi, so it does not open the settings menu
   }
   mqttDevice.init();
 }
 
-// Output the state to serial port
-void print_state()
+void loop_count()
 {
-  static unsigned long prev_time = millis();
-  if (time_since(prev_time) > 500)
-  {
-    Serial.print("setpoint:");
-    Serial.print(boilerController.set_temp());
-    Serial.print(", power:");
-    Serial.print(heaterDevice.power());
-    Serial.print(", average:");
-    Serial.print(heaterDevice.average());
-    Serial.print(", act_temp:");
-    Serial.print(boilerController.act_temp());
-    Serial.print(", boiler-state:");
-    Serial.print(boilerController.get_state_name());
-    Serial.print(", boiler-error:");
-    Serial.print(boilerController.get_error_text());
-    Serial.print(", brew-state:");
-    Serial.print(brewProcess.get_state_name());
-    Serial.print(", weight:");
-    Serial.print(brewProcess.weight());
-    Serial.print(", end_weight:");
-    Serial.print(brewProcess.end_weight());
-    Serial.print(", reservoir_level:");
-    Serial.print(reservoir.level());
-    Serial.print(", reservoir_weight:");
-    Serial.print(reservoir.weight());
+  static unsigned long loopCounter = 0;
+  static unsigned long lastTime = millis();
+  unsigned long now = millis();
 
-    Serial.println("");
-    prev_time = millis();
+  loopCounter++;
+  if (now - lastTime > 1000)
+  {
+    dpSerial.send("Loop counter: " + String(loopCounter) + " time elapsed: " + String(now - lastTime) + "ms");
+    loopCounter = 0;
+    lastTime = now;
   }
 }
 
-// Send the state to MQTT
-void send_state()
+void simulate_heater()
 {
-  static unsigned long prev_time = millis();
-  if (time_since(prev_time) > 5000)
-  {
-    mqttDevice.write("t_set", boilerController.set_temp());
-    mqttDevice.write("t_act", boilerController.act_temp());
-    mqttDevice.write("h_pwr", heaterDevice.power());
-    mqttDevice.write("h_avg", heaterDevice.average());
-    mqttDevice.write("r_lvl", reservoir.level());
-    mqttDevice.write("r_wgt", reservoir.weight());
-    mqttDevice.write("w_cur", brewProcess.weight());
-    mqttDevice.write("w_end", brewProcess.end_weight());
-    mqttDevice.write("shots", (long)settings.shotCounter());
-
-    mqttDevice.write("boil", (char *)boilerController.get_state_name());
-    if (boilerController.is_error())
-      mqttDevice.write("boil_err", (char *)boilerController.get_error_text());
-
-    mqttDevice.write("brew", (char *)brewProcess.get_state_name());
-    if (brewProcess.is_error())
-      mqttDevice.write("brew_err", (char *)brewProcess.get_error_text());
-
-    if (reservoir.is_error())
-      mqttDevice.write("res_err", (char *)reservoir.get_error_text());
-
-    mqttDevice.write("msec", (long)millis());
-    mqttDevice.send();
-
-    prev_time = millis();
-  }
-}
-
-typedef enum
-{
-  COMMISSIONING,
-  MAIN,
-  SETTINGS,
-  SLEEP,
-  SAVED,
-  ERROR,
-  INFO,
-  WARNING_ALMOST_EMPTY
-} menus_t;
-
-
-
-// #define LOOP_COUNT_TEST
-// #define LOOP_TIMERS // To monitor the performance of the main loop
-
-/**
- * @brief main process loop
- */
-void loop()
-{
-  #ifdef LOOP_COUNT_TEST
-    static unsigned long loopCounter = 0;
-    static unsigned long lastTime = millis();
-    unsigned long now = millis();
-
-    loopCounter++;
-    if (now - lastTime > 1000)
-    {
-      dpSerial.send("Loop counter: " + String(loopCounter) + " time elapsed: " + String(now - lastTime) + "ms");
-      loopCounter = 0;
-      lastTime = now;
-    }
-  #endif
-  
-  #ifdef LOOP_TIMERS
-    unsigned long tstart = millis();
-
-    unsigned long t1, t2, t3, t4;
-  #endif
-
-  static Timer menu_saved_timer = Timer(MILLIS);
-  static menus_t menu = COMMISSIONING;
-
-  bool button_pressed = display.button_pressed();
-
-
-
-/// BEGIN Test code to simulate heater
-#ifdef SIMULATE
   static unsigned long timer = 0;
   timer += 1;
   if (timer < 150)
@@ -248,160 +173,54 @@ void loop()
     boilerController.set_temp(20.0);
   if (timer > 300)
     timer = 0;
-#endif
-  /// END Test code to simulate heater
+}
 
-
-
-  heaterDevice.control();
-  boilerController.control(); 
-
-  brewProcess.run((button_pressed ? BrewProcess::MSG_BUTTON : BrewProcess::MSG_NONE));
-  int menuSettings;
-
-  dpSerial.receive(); // check for incoming serial commands
-
-  send_state();
-  mqttDevice.run();
-
-  #ifdef LOOP_TIMERS
-    t1 = millis();
+/**
+ * @brief main process loop
+ * Structured as: 1) Read inputs  2) Run FSMs  3) Update outputs
+ */
+void loop()
+{
+  #ifdef LOOP_COUNT
+    loop_count();
   #endif
+
+// --- 1. READ INPUTS --- //
+  bool button_pressed = display.button_pressed();
+  bool long_pressed = display.button_long_pressed();
+  if (hardware.has_steam_group()) steamSwitch.read();  
+  // if (steamSwitch.pressed()) dpSerial.send("Steam button pressed, steam process state: " + String(steamProcess.get_state_name())); 
+  // if (steamSwitch.long_pressed()) dpSerial.send("Steam button long pressed");
   
+  dpSerial.receive();
 
-  if (true)
-    print_state();
+  boilerController.read_sensor(); // read boiler temperature sensor
+  if (hardware.has_steam_group()) steamThermoblock.read_sensor(); // read steam thermoblock temperature sensor
+  
+  reservoir.read();               // read load cell
 
-
-  if (brewProcess.is_error())
-    menu = ERROR; // error menu
-
-  switch (menu)
-  {
-  case COMMISSIONING:
-    if (settings.commissioningDone())
-      menu = MAIN;
-    else
-      menu_commissioning();
-    break;
-  case MAIN: // main menu
-    if (!settings.commissioningDone()) {
-      menu = COMMISSIONING;
-      break;
-    } else if (brewProcess.is_warning_almost_empty()) {
-      menu = WARNING_ALMOST_EMPTY;
-    }
-
-#ifdef LOOP_TIMERS
-    t2 = millis();
-#endif
-    menu_main();
-#ifdef LOOP_TIMERS
-    t3 = millis();
-#endif
-
-    if (button_pressed) {
-      menu = SETTINGS;
-    } else if (display.encoder_changed()) {
-      menu = INFO;
-    }
-    break;
-  case SETTINGS: // settings menu
-    if (!settings.commissioningDone())
-      menu = COMMISSIONING;
-
-    if (brewProcess.is_busy())
-      menu = MAIN; // When brewing: Always show main menu
-
-    menuSettings = menu_settings(button_pressed);
-    if (menuSettings == 1)
-    {
-      boilerController.clear_error();
-      reservoir.clear_error();
-      settings.apply();
-      display.button_pressed(); // prevent entering settings again
-      menu = SAVED;
-    }
-    else if (menuSettings == 2)
-    {
-      dpSerial.send("Cancel!");
-      display.button_pressed();
-      display.encoder_changed();
-      menu = MAIN;
-    }
-    break;
-  case SLEEP: // sleep menu
-    menu_sleep();
-    if (!brewProcess.is_awake())
-    {
-      menu = MAIN;
-      display.button_pressed(); // consume button pressed event, prevent jump to settings menu
-      display.encoder_changed();
-    }
-    break;
-  case SAVED: // saved menu
-    menu_saved();
-    display.button_pressed();
-    display.encoder_changed();
-
-    if (menu_saved_timer.state() != status_t::RUNNING) {
-      menu_saved_timer.start(); // start timer if not running
-    } else if (menu_saved_timer.read() > 1000) {
-      menu_saved_timer.stop(); // stop timer when time is up (1s) and go back to main menu
-      menu = MAIN;
-    }
-    break;
-  case ERROR: // error menu
-    menu_error("ERROR");
-    boilerController.off();
-    pumpDevice.off();
-    if (button_pressed)
-    {
-      boilerController.clear_error();
-      reservoir.clear_error();
-      brewProcess.clear_error();
-      menu = MAIN;
-    }
-    break;
-  case INFO: // state info menu
-    menu_state();
-    if (button_pressed)
-      menu = SETTINGS;
-    if (display.encoder_changed())
-      menu = MAIN;
-    break;
-  case WARNING_ALMOST_EMPTY: // warning menu
-
-    if (brewProcess.is_warning_almost_empty())
-      menu_warning_almost_empty();
-    else
-      menu = MAIN; // go back to main menu if not almost empty anymore
-    break;
-  default:
-    menu = MAIN;
-  }
-
-#ifdef LOOP_TIMERS
-  t4 = millis();
-#endif
-
-
-  // sleep (de)activation and menu selection (note: sleep can be activated automatically)
-  if (display.button_long_pressed())
-  {
-    if (brewProcess.is_awake())
-      brewProcess.sleep();
-    else
-      brewProcess.wakeup();
-  }
-  if (!brewProcess.is_awake())
-    menu = SLEEP;
-
-  #ifdef LOOP_TIMERS
-    unsigned long tend = millis();
-
-    dpSerial.send("loop: " + String(tend - tstart) + "ms, t0: " + String(t1 - tstart) + "ms, t1: " + String(t2 - t1) + "ms, t2: " + String(t3 - t2) + "ms, t3: " + String(t4 - t3) + "ms, t4: " + String(tend - t4) + "ms");
+  #ifdef SIMULATE
+    simulate_heater();
   #endif
+
+// --- 2. RUN FSMs --- //
+  machineController.run(long_pressed ? MachineController::MSG_LONG_PRESS
+                      : button_pressed ? MachineController::MSG_BUTTON
+                      : steamSwitch.long_pressed() ? MachineController::MSG_STEAM_LONG_PRESS
+                      : steamSwitch.pressed() ? MachineController::MSG_STEAM_BUTTON
+                      : MachineController::MSG_NONE);
+  
+  boilerController.run();
+  if (hardware.has_steam_group()) steamThermoblock.run();
+
+// --- 3. UPDATE OUTPUTS --- //
+  heaterDevice.control(); // drive heater PWM
+  if (hardware.has_steam_group()) steamHeater.control();
+  if (hardware.has_steam_group()) steamPump.control();
+  update_display(button_pressed);
+  dpSerial.print_state();
+  mqttDevice.send_state();
+  mqttDevice.run();
 }
 
 #ifdef TEST_CODE

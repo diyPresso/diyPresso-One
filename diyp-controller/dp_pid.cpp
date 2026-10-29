@@ -78,6 +78,9 @@ void DpPID::compute()
         if (autotuneState == AUTOTUNE_RUNNING) {
             processAutoTune();
             lastTime = now; // Update lastTime to avoid large jumps after autotune
+            termI = 0; // start without integral after auto-tune
+            lastInput = *input; // no derivative kick after auto-tune
+            lastError = *setpoint - *input;
             return;
         }
 
@@ -88,15 +91,31 @@ void DpPID::compute()
         termP = Kp * curError; // Kp time the error in temperature.
 
         // integral term
-        termI = termI + Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
-        termI = constrain(termI, windUpMin, windUpMax); // prevent integral wind-up
+        double termI_increment = Ki * (curSampleTimeMs / 1000.0) * (curError + lastError) / 2.0; // trapezoidal integration: sum of the error over time.
+        if (termI_increment < 0)
+            termI_increment *= iDownFactor; // above setpoint: unwind faster, the integral is still sized for a load that has disappeared
+        double termI_new = termI + termI_increment;
+        termI_new = constrain(termI_new, windUpMin, windUpMax); // prevent integral wind-up
 
         // derivative term
         termD = Kd * -1 * dInput * 1000.0 / curSampleTimeMs;
 
+        double feedForward = calculateFeedForward(); // call once per cycle, updates the DFF stock pile and reservoir weight
 
+        integrationHeld = false;
+        if (conditionalIntegration) {
+            double out = feedForward + termP + termI_new; // without D: the derivative is a short transient, it should not block integration
+            bool saturated = (out > outputMax && curError > 0) || (out < outputMin && curError < 0); // don't integrate further into saturation
+            bool outsideBand = integrationBand > 0 && fabs(curError) > integrationBand;
+            integrationHeld = saturated || outsideBand; // hold the previous integral term, don't reset
+        }
+        if (!outputEnabled) {
+            termI = 0; // PID not in control (e.g. heater off): start from 0 when taking control, the feed forward covers the base load
+        } else if (!integrationHeld && !integralHold) {
+            termI = termI_new;
+        }
 
-        unconstrainedOutput = calculateFeedForward() + termP + termI + termD;
+        unconstrainedOutput = feedForward + termP + termI + termD;
         *output = constrain(unconstrainedOutput, outputMin, outputMax);
 
         lastInput = *input;
@@ -119,14 +138,14 @@ double DpPID::calculateFeedForward()
     // Reduce the energy stock pile with previous dynamic feed forward and actual time passed, decay the stock pile as well.
     dffEnergyStockPile -= dynamicFeedForward * curSampleTimeMs * boilerPowerKiloWatt / 100.0; // in Joules
     dffEnergyStockPile = max(dffEnergyStockPile, 0.0); // don't allow negative stock pile
-    dffEnergyStockPile = dffEnergyStockPile * DFF_ENERGY_STOCK_PILE_DECAY; // decay the energy stock pile
+    dffEnergyStockPile = dffEnergyStockPile * dffDecay; // decay the energy stock pile
 
     if (curSampleTimeMs < 1 || *setpoint <= reservoir->outflowTemp()) {
         dynamicFeedForward = 0;
     } else {
         double deltaWeight = previousReservoirWeight - currentWeight; // Reservoir weight decreases when water is flowing in the boiler
 
-        if(this->dynamicFeedForwardEnabled || (long)(this->lastTime - this->lastDynamicFeedForwardTime < 0)) { // only increase stock pile when dynamic feed forward is enabled (typically when pump is on) or was enabled during last cycle
+        if(this->dynamicFeedForwardEnabled || (long)(this->lastTime - this->lastDynamicFeedForwardTime) < 0) { // only increase stock pile when dynamic feed forward is enabled (typically when pump is on) or was enabled during last cycle
 
             // delta weight is limited to the maximum flow rate and should be > 0
             deltaWeight = constrain(deltaWeight, 0, MAX_FLOW_RATE_G_PER_MS * curSampleTimeMs);
@@ -170,6 +189,7 @@ void DpPID::setWindUpLimits(const double &min, const double &max)
     {
         windUpMax = max;
         windUpMin = min;
+        termI = constrain(termI, windUpMin, windUpMax); // keep a held integral term within the new limits
     }
 }
 
@@ -212,10 +232,26 @@ void DpPID::setSampleTime(const unsigned int &minSamplePeriodMs)
     this->minSamplePeriodMs = max(minSamplePeriodMs, 1); // make sure it is at least 1ms
 }
 
+void DpPID::setConditionalIntegration(bool enabled, double bandDegC)
+{
+    conditionalIntegration = enabled;
+    integrationBand = max(bandDegC, 0.0);
+}
+
+void DpPID::setIntegralDownFactor(const double &factor)
+{
+    iDownFactor = constrain(factor, 1.0, 5.0);
+}
+
+void DpPID::setDynamicFeedForwardDecay(const double &decay)
+{
+    dffDecay = constrain(decay, 0.90, 1.0);
+}
+
 void DpPID::printToSerial()
 {
-    Serial.print("DP_PID_STATE ");
-    Serial.print("input: ");
+    Serial.print(serialLabel);
+    Serial.print(" input: ");
     Serial.print(*input);
     Serial.print(", setpoint: ");
     Serial.print(*setpoint);
@@ -246,7 +282,17 @@ void DpPID::printToSerial()
     Serial.print(", stockPileKJ): ");
     Serial.print(dffEnergyStockPile / 1000.0, 2);
     Serial.print(", prevWeight: ");
-    Serial.println(previousReservoirWeight);
+    Serial.print(previousReservoirWeight);
+    Serial.print(", condInt: ");
+    Serial.print(conditionalIntegration);
+    Serial.print(", iHeld: ");
+    Serial.print(integrationHeld);
+    Serial.print(", brewIHold: ");
+    Serial.print(integralHoldState);
+    Serial.print(", offIHold: ");
+    Serial.print(!outputEnabled);
+    Serial.print(", gains: ");
+    Serial.println(gainSet);
     
 }
 
@@ -348,6 +394,7 @@ void DpPID::processAutoTune()
     Serial.print(", risingEdge: ");
     Serial.println(atRisingEdge);
 
+    if(serialOutput) printToSerial();
 
     if (inSettlingTime) { // during initial settling time, just update last value
         atLastValue = inputValue;

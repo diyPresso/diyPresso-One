@@ -12,10 +12,22 @@
     supported commands:
     - GET info
     - GET settings
-    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffHeat=3.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
+    - PUT settings temperature=98.50,P=7.00,I=0.30,D=80.00,dffFactorPct=90.00,ffReady=10.00,tareWeight=0.00,trimWeight=0.00,preInfusionTime=3.00,infusionTime=1.00,extractionTime=25.00,extractionWeight=0.00,commissioningDone=1,shotCounter=5,wifiMode=0
     or e.g. PUT settings temperature=98.00,commissioningDone=1
+    steam settings (Model Two): steamTemperature, steamP, steamI, steamD, steamPumpPower,
+      steamPumpP, steamPumpI, steamPumpD (steam PID gains while the steam pump runs),
+      steamFF (static feed forward, default 3.0 %)
+    PID tuning settings (menu: Boiler PID, Steam PID):
+      boiler: windupMin, windupMax, integrationBand, conditionalIntegration (0/1), dffDecay (0.90-1.0),
+              brewIntegralHold (0/1), brewHoldTimeoutSec (10-600), brewHoldDipWindowSec (10-180),
+              iDownFactor (1.0-5.0, integration rate factor above setpoint)
+      steam:  steamWindupMin, steamWindupMax, steamIntegrationBand (pump off), steamPumpIntegrationBand (pump on),
+              steamConditionalIntegration (0/1), steamIDownFactor (1.0-5.0, both gain sets)
+    other settings: encoderReverse (0/1, reverse the rotary encoder direction, menu: Machine > Knob dir)
+    all settings with their ranges and defaults: see dp_settings_list.h
+    e.g. PUT settings windupMin=-15.00,windupMax=15.00,integrationBand=5.00,brewIntegralHold=1
     - GET serialOutputConfig
-    - PUT serialOutputConfig DP_PID_STATE=1
+    - PUT serialOutputConfig DP_PID_STATE=1,DP_STEAM_STATE=1
     - GET boiler
     - PUT boiler powerControlMode=STATIC,staticPower=5.0
     - PUT boiler powerControlMode=PID
@@ -23,6 +35,10 @@
     - PUT boilerPidAutotune start
     - PUT boilerPidAutotune cancel
     - PUT boilerPidAutotune apply
+    - GET steamPidAutotune
+    - PUT steamPidAutotune start
+    - PUT steamPidAutotune cancel
+    - PUT steamPidAutotune apply
 
 
 */
@@ -34,6 +50,11 @@
 #include "dp_boiler.h"
 #include "dp_reservoir.h"
 #include "dp_pid.h"
+#include "dp_heater.h"
+#include "dp_machine.h"
+#include "dp_commission.h"
+#include "dp_steam_process.h"
+#include "dp_steam_thermoblock.h"
 
 //initialize the class
 DpSerial dpSerial(115200);
@@ -104,6 +125,10 @@ void DpSerial::receive() {
         get_boiler_pid_autotune();
     } else if (receivedData.startsWith("PUT boilerPidAutotune ")) {
         put_boiler_pid_autotune(receivedData.substring(String("PUT boilerPidAutotune ").length()));
+    } else if (receivedData.startsWith("GET steamPidAutotune")) {
+        get_steam_pid_autotune();
+    } else if (receivedData.startsWith("PUT steamPidAutotune ")) {
+        put_steam_pid_autotune(receivedData.substring(String("PUT steamPidAutotune ").length()));
     } else if (receivedData.startsWith("GET boiler")) {
         get_boiler();
     } else if (receivedData.startsWith("PUT boiler ")) {
@@ -114,15 +139,24 @@ void DpSerial::receive() {
 }
 
 void DpSerial::send_info() {
-    send("diyPresso");
+    send("diyPresso " + String(hardware.model_name()));
+    send("model=" + String(hardware.model_name()));
     send("firmwareVersion=" + String(SOFTWARE_VERSION));
     send("hardwareVersion=" + String(HARDWARE_REVISION));
     send("buildDate=" + String(BUILD_DATE));
+    send("machineState=" + String(machineController.get_state_name()));
+    send("commissioningState=" + String(commissioningProcess.get_state_name()));
+    send("commissioningError=" + String(commissioningProcess.get_error_text()));
     send("brewProcessState=" + String(brewProcess.get_state_name()));
     send("brewProcessError=" + String(brewProcess.get_error_text()));
     send("boilerControllerState=" + String(boilerController.get_state_name()));
+    send("brewIntegralHoldState=" + String(boilerController.get_brew_hold_state_name()));
     send("boilerControllerError=" + String(boilerController.get_error_text()));
     send("reservoirError=" + String(reservoir.get_error_text()));
+    send("steamProcessState=" + String(steamProcess.get_state_name()));
+    send("steamProcessError=" + String(steamProcess.get_error_text()));
+    send("steamThermoblockState=" + String(steamThermoblock.get_state_name()));
+    send("steamThermoblockError=" + String(steamThermoblock.get_error_text()));
     send("GET info OK");
 }
 
@@ -137,13 +171,12 @@ void DpSerial::put_settings(String value) {
 
     if (res_deserialize == 0) {
 
-        send(settings.temperature());
         int res_save = settings.save(); // all good, save the settings
 
-        if (res_save = 1) {
+        if (res_save == 1) {
             send("PUT settings OK, settings saved.");
             settings.apply();
-        } else if (res_save = 0) {
+        } else if (res_save == 0) {
             send("PUT settings OK, no changes.");
         } else {
             send("PUT settings NOK, unknown return code when saving settings: " + String(res_save));
@@ -159,25 +192,45 @@ void DpSerial::put_settings(String value) {
 
 void DpSerial::get_serial_output_config() {
     send("DP_PID_STATE=" + String(boilerController.get_serial_output() ? "1" : "0"));
+    send("DP_STEAM_STATE=" + String(steamThermoblock.get_serial_output() ? "1" : "0"));
     send("GET serialOutputConfig OK");
 }
 
 void DpSerial::put_serial_output_config(String value) {
-    // Expecting a string like "DP_PID_STATE=1" or "DP_PID_STATE=0"
-    if (value.startsWith("DP_PID_STATE=")) {
-        String stateStr = value.substring(String("DP_PID_STATE=").length());
-        if (stateStr == "1") {
-            boilerController.set_serial_output(true);
-            send("PUT serialOutputConfig OK");
-        } else if (stateStr == "0") {
-            boilerController.set_serial_output(false);
-            send("PUT serialOutputConfig OK");
-        } else {
-            send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + stateStr);
+    value.trim();
+    int startPos = 0;
+    while (startPos < (int)value.length()) {
+        int commaPos = value.indexOf(',', startPos);
+        if (commaPos == -1) commaPos = value.length();
+
+        String pair = value.substring(startPos, commaPos);
+        pair.trim();
+
+        int eqPos = pair.indexOf('=');
+        if (eqPos == -1) {
+            send("PUT serialOutputConfig NOK, invalid format: " + pair);
+            return;
         }
-    } else {
-        send("PUT serialOutputConfig NOK, unknown key: " + value);
+        String key = pair.substring(0, eqPos);
+        String val = pair.substring(eqPos + 1);
+        key.trim();
+        val.trim();
+
+        if (key == "DP_PID_STATE") {
+            if (val == "1") boilerController.set_serial_output(true);
+            else if (val == "0") boilerController.set_serial_output(false);
+            else { send("PUT serialOutputConfig NOK, invalid value for DP_PID_STATE: " + val); return; }
+        } else if (key == "DP_STEAM_STATE") {
+            if (val == "1") steamThermoblock.set_serial_output(true);
+            else if (val == "0") steamThermoblock.set_serial_output(false);
+            else { send("PUT serialOutputConfig NOK, invalid value for DP_STEAM_STATE: " + val); return; }
+        } else {
+            send("PUT serialOutputConfig NOK, unknown key: " + key);
+            return;
+        }
+        startPos = commaPos + 1;
     }
+    send("PUT serialOutputConfig OK");
 }
 
 void DpSerial::get_boiler() {
@@ -302,4 +355,91 @@ void DpSerial::put_boiler_pid_autotune(String value) {
     } else {
         send("PUT boilerPidAutotune NOK, Unknown command (use: start/cancel/apply)");
     }
+}
+
+void DpSerial::get_steam_pid_autotune() {
+    autotune_state_t state = steamThermoblock.getAutoTuneState();
+    String stateStr;
+    
+    switch(state) {
+        case AUTOTUNE_IDLE: stateStr = "IDLE"; break;
+        case AUTOTUNE_RUNNING: stateStr = "RUNNING"; break;
+        case AUTOTUNE_SUCCESS: stateStr = "SUCCESS"; break;
+        case AUTOTUNE_FAILED_TIMEOUT: stateStr = "FAILED_TIMEOUT"; break;
+        case AUTOTUNE_FAILED_NO_OSCILLATION: stateStr = "FAILED_NO_OSCILLATION"; break;
+        default: stateStr = "UNKNOWN"; break;
+    }
+    
+    send("state=" + stateStr);
+    
+    if (state == AUTOTUNE_SUCCESS) {
+        AutoTuneResults results = steamThermoblock.getAutoTuneResults();
+        if (results.isValid) {
+            send("Kp=" + String(results.Kp, 3));
+            send("Ki=" + String(results.Ki, 3));
+            send("Kd=" + String(results.Kd, 3));
+            send("Ku=" + String(results.Ku, 3));
+            send("Pu=" + String(results.Pu, 3));
+        } else {
+            send("isValid=false");
+        }
+    }
+    
+    send("GET steamPidAutotune OK");
+}
+
+void DpSerial::put_steam_pid_autotune(String value) {
+    value.trim();
+    value.toLowerCase();
+    
+    if (value == "start") {
+        steamThermoblock.startAutoTune();
+        send("PUT steamPidAutotune OK, Auto-tune started");
+    } else if (value == "cancel") {
+        steamThermoblock.cancelAutoTune();
+        send("PUT steamPidAutotune OK, Auto-tune cancelled");
+    } else if (value == "apply") {
+        AutoTuneResults results = steamThermoblock.getAutoTuneResults();
+        if (results.isValid) {
+            steamThermoblock.set_pid(results.Kp, results.Ki, results.Kd);
+            send("PUT steamPidAutotune OK, Applied Kp=" + String(results.Kp, 3) + 
+                 " Ki=" + String(results.Ki, 3) + " Kd=" + String(results.Kd, 3));
+        } else {
+            send("PUT steamPidAutotune NOK, No valid results to apply");
+        }
+    } else {
+        send("PUT steamPidAutotune NOK, Unknown command (use: start/cancel/apply)");
+    }
+}
+
+void DpSerial::print_state() //legacy data stream, keep for now for compatibility with web cliet and update client.
+{
+  static unsigned long prev_time = millis();
+  if (millis() - prev_time > 500)
+  {
+    Serial.print("setpoint:");
+    Serial.print(boilerController.set_temp());
+    Serial.print(", power:");
+    Serial.print(heaterDevice.power());
+    Serial.print(", average:");
+    Serial.print(heaterDevice.average());
+    Serial.print(", act_temp:");
+    Serial.print(boilerController.act_temp());
+    Serial.print(", boiler-state:");
+    Serial.print(boilerController.get_state_name());
+    Serial.print(", boiler-error:");
+    Serial.print(boilerController.get_error_text());
+    Serial.print(", brew-state:");
+    Serial.print(brewProcess.get_state_name());
+    Serial.print(", weight:");
+    Serial.print(brewProcess.weight());
+    Serial.print(", end_weight:");
+    Serial.print(brewProcess.end_weight());
+    Serial.print(", reservoir_level:");
+    Serial.print(reservoir.level());
+    Serial.print(", reservoir_weight:");
+    Serial.print(reservoir.weight());
+    Serial.println("");
+    prev_time = millis();
+  }
 }

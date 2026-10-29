@@ -13,6 +13,8 @@
  *  RED: Not connected / Can't connect, wifi.start is stopped, return to program
  *
  * Released into the public domain on github: https://github.com/javos65/EasyWifi-for-MKR1010
+ *
+ * CUSTOMIZED FOR DIYPRESSO - see EasyWiFi.h for the changes compared to upstream.
  */
 
 #include "dp.h"
@@ -23,6 +25,7 @@
 #endif
 
 extern void menu_wifi(char *msg);
+extern bool wifi_cancel_requested();
 
 #define DBGON // Debug option  -serial print
 // #define DBGON_X   // Debug option - incl packets
@@ -74,16 +77,32 @@ EasyWiFi::EasyWiFi()
 {
 }
 
-// Login to local network  //
-void EasyWiFi::start()
+// Connected with a usable signal
+bool EasyWiFi::isConnected(int status)
+{
+  return (status == WL_CONNECTED) && (WiFi.RSSI() > -90) && (WiFi.RSSI() != 0);
+}
+
+// Close the AP, its DNS and web server
+void EasyWiFi::APStop()
+{
+  G_UDPAP_DNS.stop(); // Close UDP connection
+  WiFi.end();
+  WiFi.disconnect();
+}
+
+// Login to local network. With forceAP the stored credentials are not tried first, the AP is opened directly.
+// Returns true when connected. Returns false when the user cancelled, the AP timed out or connecting failed too often.
+// Credentials entered on the AP are only written to flash after they connected, so the stored ones survive a cancel.
+bool EasyWiFi::start(bool forceAP)
 {
   int noconnect = 0, totalconnect = 0;
-  ;
+  bool newCredentials = false; // G_ssid/G_pass were entered on the AP and are not stored yet
   WiFi.disconnect();
   delay(2000);
   NINAled(BLUE); // Starting to connect: Set Blue
   int G_Wifistatus = WiFi.status();
-  if ((G_Wifistatus != WL_CONNECTED) || (WiFi.RSSI() <= -90) || (WiFi.RSSI() == 0))
+  if (!isConnected(G_Wifistatus))
   { // check if connected
     // Read SSId File
     if (Read_Credentials(G_ssid, G_pass) == 0)
@@ -93,94 +112,116 @@ void EasyWiFi::start()
       Serial.println("* Using old credentials");
 #endif
     }
-    while ((G_Wifistatus != WL_CONNECTED) || (WiFi.RSSI() <= -90) || (WiFi.RSSI() == 0))
+    while (!isConnected(G_Wifistatus))
     { // attempt to connect to WiFi network:
-      noconnect = 0;
-      menu_wifi("connecting");
-      while (((G_Wifistatus != WL_CONNECTED) || (WiFi.RSSI() <= -90) || (WiFi.RSSI() == 0)) && noconnect < MAXCONNECT)
-      { // attempt to connect to WiFi network 3 times
-        menu_wifi(G_ssid);
-
-#ifdef WATCHDOG_ENABLED
-        wdt_reset();
-#endif
-
-#ifdef DBGON
-        Serial.print("* Attempt#");
-        Serial.print(noconnect);
-        Serial.print(" to connect to Network: ");
-        Serial.println(G_ssid); // print the network name (SSID);
-#endif
-        G_Wifistatus = WiFi.begin(G_ssid, G_pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-        delay(2000);                               // wait 2 seconds for connection:
-        noconnect++;                               // try-counter
-      }
-      totalconnect = totalconnect + noconnect; // count total failed connects
-      if (G_Wifistatus == WL_CONNECTED)
+      if (!forceAP)
       {
-        NINAled(GREEN); // Set Green
-#ifdef DBGON
-        printWiFiStatus(); // you're connected now, so print out the status anmd break while loop
-#endif
-        break;
-      }
-      else if ((totalconnect > ESCAPECONNECT) || (G_useAP == false))
-      {               // quite login service ?
-        NINAled(RED); // Set red
-#ifdef DBGON
-        Serial.println("* Connection not possible after too many retries, quit wifi.start process");
-#endif
-        break;
-      }
-      else
-      { // no connection possible : exit without server started
-#ifdef DBGON
-        Serial.println("* Connection not possible after several retries, opening Access Point");
-#endif
-        // start direct-Wifi connect to manualy input Wifi credentials
-        NINAled(PURPLE); // no network, : RED
-        listNetworks();  // load avaialble networks in a list
-        APSetup();
-        NINAled(PURPLE); // start AP, : Purple
-        G_APInputflag = 0;
-        while (!G_APInputflag)
-        { // Keep AP open till input is received or till 30 seconds are over
-          // Check AP status - new client on or of ?
-          menu_wifi("CONFIG-AP mode");
+        noconnect = 0;
+        menu_wifi("connecting");
+        while (!isConnected(G_Wifistatus) && noconnect < MAXCONNECT)
+        { // attempt to connect to WiFi network 3 times
+          menu_wifi(G_ssid);
+
 #ifdef WATCHDOG_ENABLED
           wdt_reset();
 #endif
-
-          if (G_APStatus != WiFi.status())
+          if (wifi_cancel_requested())
           {
-            G_APStatus = WiFi.status(); // it has changed update the variable
-            if (G_APStatus == WL_AP_CONNECTED)
-            { // a device has connected to the AP
+            NINAled(RED);
 #ifdef DBGON
-              Serial.println("Device connected to AP\n");
+            Serial.println("* Cancelled by user, quit wifi.start process");
 #endif
-              NINAled(CYAN);        // Client on AP : purple
-              G_DNSRqstcounter = 0; // reset DNS counter
-            }
-            else
-            { // a device has disconnected from the AP, and we are back in listening mode
-#ifdef DBGON
-              Serial.println("Device disconnected from AP\n");
-#endif
-            }
-          } // end if loop changed G_APStatus
-          if (G_APStatus == WL_AP_CONNECTED) // IF client connected to AP, start DNS and check Webserver
-          {
-            APDNSScan();         // check DNS requests
-            APWiFiClientCheck(); // check HTTP server Client
+            WiFi.disconnect();
+            return false;
           }
+
+#ifdef DBGON
+          Serial.print("* Attempt#");
+          Serial.print(noconnect);
+          Serial.print(" to connect to Network: ");
+          Serial.println(G_ssid); // print the network name (SSID);
+#endif
+          G_Wifistatus = WiFi.begin(G_ssid, G_pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+          delay(2000);                               // wait 2 seconds for connection:
+          noconnect++;                               // try-counter
         }
-        G_UDPAP_DNS.stop(); // Close UDP connection
-        WiFi.end();
-        WiFi.disconnect();
-        NINAled(BLUE); // new credentials : BLUE
-        delay(1000);
+        totalconnect = totalconnect + noconnect; // count total failed connects
+        if (G_Wifistatus == WL_CONNECTED)
+        {
+          NINAled(GREEN); // Set Green
+          if (newCredentials)
+            Write_Credentials(G_ssid, sizeof(G_ssid), G_pass, sizeof(G_pass)); // they work: write credentials to flash
+#ifdef DBGON
+          printWiFiStatus(); // you're connected now, so print out the status anmd break while loop
+#endif
+          break;
+        }
+        else if ((totalconnect > ESCAPECONNECT) || (G_useAP == false))
+        {               // quite login service ?
+          NINAled(RED); // Set red
+#ifdef DBGON
+          Serial.println("* Connection not possible after too many retries, quit wifi.start process");
+#endif
+          return false;
+        }
       }
+      forceAP = false;
+
+      // no connection possible (or forced): open the AP to manually input Wifi credentials
+#ifdef DBGON
+      Serial.println("* Opening Access Point");
+#endif
+      NINAled(PURPLE); // no network, : RED
+      listNetworks();  // load avaialble networks in a list
+      APSetup();
+      NINAled(PURPLE); // start AP, : Purple
+      G_APInputflag = 0;
+      unsigned long apStart = millis();
+      while (!G_APInputflag)
+      { // Keep AP open till input is received, the user cancels or APTIMEOUT_MS is over
+        // Check AP status - new client on or of ?
+        menu_wifi("CONFIG-AP mode");
+#ifdef WATCHDOG_ENABLED
+        wdt_reset();
+#endif
+        if (wifi_cancel_requested() || (millis() - apStart > APTIMEOUT_MS))
+        {
+          APStop();
+          NINAled(RED);
+#ifdef DBGON
+          Serial.println("* No AP input: cancelled by user or timed out, quit wifi.start process");
+#endif
+          return false;
+        }
+
+        if (G_APStatus != WiFi.status())
+        {
+          G_APStatus = WiFi.status(); // it has changed update the variable
+          if (G_APStatus == WL_AP_CONNECTED)
+          { // a device has connected to the AP
+#ifdef DBGON
+            Serial.println("Device connected to AP\n");
+#endif
+            NINAled(CYAN);        // Client on AP : purple
+            G_DNSRqstcounter = 0; // reset DNS counter
+          }
+          else
+          { // a device has disconnected from the AP, and we are back in listening mode
+#ifdef DBGON
+            Serial.println("Device disconnected from AP\n");
+#endif
+          }
+        } // end if loop changed G_APStatus
+        if (G_APStatus == WL_AP_CONNECTED) // IF client connected to AP, start DNS and check Webserver
+        {
+          APDNSScan();         // check DNS requests
+          APWiFiClientCheck(); // check HTTP server Client
+        }
+      }
+      APStop();
+      newCredentials = true;
+      NINAled(BLUE); // new credentials : BLUE
+      delay(1000);
     } // ever while loop till connected
   } // end if not connected
   else
@@ -191,6 +232,7 @@ void EasyWiFi::start()
     printWiFiStatus();
 #endif
   }
+  return true;
 }
 
 // SERIALPRINT Wifi Status - only for debug
@@ -548,7 +590,7 @@ void EasyWiFi::APWiFiClientCheck()
                   for (v = pos2; v < (t - 7); v++)
                     G_pass[u++] = currentLine[v];
                   G_pass[u] = 0;
-                  Write_Credentials(G_ssid, sizeof(G_ssid), G_pass, sizeof(G_pass)); // write credentials to flash
+                  // not written to flash here: start() does that after they connected successfully
                 }
                 else
                 {

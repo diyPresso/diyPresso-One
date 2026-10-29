@@ -48,13 +48,12 @@ E_ff = E_ff - (P_ff * Δt_actual)
 #define MAX_FLOW_RATE_G_PER_MS 0.012 // maximum flow rate in grams per millisecond for dynamic feed forward calculation (12 g/s)
 #define SPECIFIC_HEAT_CAPACITY_WATER 4.21 // specific heat capacity of water in J/g°C, 95 °C
 #define DFF_ENERGY_STOCK_PILE_MAX_MS 60000 // maximum energy stock pile in milliseconds (times boiler power)
-#define DFF_ENERGY_STOCK_PILE_DECAY 0.97 // decay factor for energy stock pile per cycle
 
 // Auto-tune parameters
 #define AUTOTUNE_RELAY_OUTPUT 10.0 // Relay output amplitude (% of max power)
 #define AUTOTUNE_MIN_CYCLES 3 // Minimum number of oscillation cycles to measure
 #define AUTOTUNE_TIMEOUT_MS 1800000 // Auto-tune timeout (30 minutes)
-#define AUTOTUNE_SETPOINT_BAND 0.3 // Band around setpoint for relay switching (+/- degC)
+#define AUTOTUNE_SETPOINT_BAND 0.5 // Band around setpoint for relay switching (+/- degC)
 #define AUTOTUNE_PEAK_NOISE_BAND 0.08 // Noise band for peak detection (+/- degC)
 #define AUTOTUNE_SETTLING_TIME_MS 25000 // Initial settling time before peak detection (25 seconds)
 
@@ -92,12 +91,20 @@ public:
     void setOutputLimits(const double& min, const double& max);
     void setWindUpLimits(const double& min, const double& max);
     void setCoefficients(const double& p, const double& i, const double& d);
+    void setGainSetLabel(const char* label) { gainSet = label; } // name of the active gain set, for serial output
+    void resetIntegral() { termI = 0; }
+    void setIntegralDownFactor(const double& factor); // integration rate factor when the error is negative (above setpoint), 1.0 - 5.0
     void setFeedForward(const double& feedForward, const bool& dynamicFeedForwardEnabled = false);
     void setDynamicFeedForwardFactorPct(const double& factor); // In percentage (0.0 - 100.0%)
     void setSampleTime(const unsigned int& minSamplePeriodMs);
+    void setConditionalIntegration(bool enabled, double bandDegC); // anti-windup: hold the integral term when saturated or outside the band (0 = no band)
+    void setIntegralHold(bool hold, const char* state = "idle") { integralHold = hold; integralHoldState = state; } // freeze the integral term (e.g. after a brew), resumes bumpless
+    void setOutputEnabled(bool enabled) { outputEnabled = enabled; } // false when the output is not used (e.g. heater off): integral term kept at 0
+    void setDynamicFeedForwardDecay(const double& decay); // decay factor of the DFF energy stock pile per cycle (0.90 - 1.0)
     
     void setSerialOutput(const bool& enabled) { serialOutput = enabled; }
     bool getSerialOutput() const { return serialOutput; }
+    void setSerialLabel(const char* label) { serialLabel = label; }
 
     // Auto-tune functions
     void startAutoTune();
@@ -117,16 +124,25 @@ protected:
     void processAutoTune();
 
     bool serialOutput = false; // enable/disable serial debug output
+    const char* serialLabel = "DP_PID_STATE"; // prefix for serial output lines
 
     double* input;
     double* output;
     double* setpoint;
     double Kp, Ki, Kd; // the coefficients for the proportional, integral, and derivative terms 
+    const char* gainSet = "normal"; // name of the active gain set, for serial output
+    double iDownFactor = 1.0; // integration rate factor when the error is negative, unwinds the integral faster when a load disappears
     double termP, termI, termD; // the calculated PID terms
     double unconstrainedOutput;
     double curError = 0, curInput = 0;
     double lastError = 0, lastSetpoint = 0, lastInput = 0;
     double windUpMin = -100, windUpMax = 5;
+    bool conditionalIntegration = false; // only integrate when not saturated and within integrationBand
+    double integrationBand = 0; // in degC, 0 = no band
+    bool integrationHeld = false; // true when the integral term was held during the last cycle
+    bool integralHold = false; // externally requested hold of the integral term
+    const char* integralHoldState = "idle"; // state of the hold logic, for serial output
+    bool outputEnabled = true; // output is used; when false the integral term is kept at 0
     double outputMin = 0, outputMax = 100;
     unsigned int minSamplePeriodMs = 1;
     unsigned long lastTime = 0;
@@ -142,6 +158,7 @@ protected:
     double boilerPowerKiloWatt = 1.250; // boiler power (in kilowatt as it will be multiplied with sample time in ms)
     double dffFactor = 0.70; // Adjustable factor for dynamic feed forward
     double dffEnergyStockPile = 0; // Energy stock pile for dynamic feed forward in Joules
+    double dffDecay = 1.0; // decay factor for the energy stock pile per cycle, set with setDffDecay()
 
     // Auto-tune variables
     autotune_state_t autotuneState = AUTOTUNE_IDLE;

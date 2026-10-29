@@ -15,6 +15,7 @@ class DpSerial {
         void send(char data);
         void send(const char *data);
         void receive();
+        void print_state();
         void send_info();
         void send_settings();
 
@@ -27,6 +28,8 @@ class DpSerial {
         void put_boiler(String value);
         void get_boiler_pid_autotune();
         void put_boiler_pid_autotune(String value);
+        void get_steam_pid_autotune();
+        void put_steam_pid_autotune(String value);
 };
 
 extern DpSerial dpSerial;

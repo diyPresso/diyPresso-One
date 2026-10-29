@@ -8,11 +8,40 @@
 #include "dp_settings.h"
 #include <FlashAsEEPROM.h>
 #include "dp_boiler.h"
+#include "dp_steam_thermoblock.h"
+#include "dp_steam_pump.h"
 #include "dp_reservoir.h"
 #include "dp_brew.h"
+#include "dp_encoder.h"
 
 
 DpSettings settings = DpSettings();
+
+template<typename T> static T to_type(double v) { return (T)v; }
+template<> int to_type<int>(double v) { return (int)lround(v); }
+
+static String to_string(double v, int decimals) { return String(v, max(2, decimals)); } // at least 2 decimals in the serial output
+static String to_string(int v, int decimals) { return String(v); }
+
+// Old key names and keys of removed settings, accepted by deserialize(), see dp_settings_list.h
+static const struct { const char *alias; setting_id_t id; } key_aliases[] = {
+#define DP_SETTING_ALIAS(alias, name) { alias, SETTING_##name },
+    DP_SETTINGS_ALIASES(DP_SETTING_ALIAS)
+#undef DP_SETTING_ALIAS
+};
+
+static const char *removed_keys[] = {
+#define DP_SETTING_REMOVED(key) key,
+    DP_SETTINGS_REMOVED(DP_SETTING_REMOVED)
+#undef DP_SETTING_REMOVED
+};
+
+// Setting keys in the serial interface, indexed by setting id
+static const char *setting_keys[] = {
+#define DP_SETTING_KEY(type, name, key, def, lo, hi, dec) key,
+    DP_SETTINGS_LIST(DP_SETTING_KEY)
+#undef DP_SETTING_KEY
+};
 
 DpSettings::DpSettings()
 {
@@ -63,23 +92,86 @@ bool DpSettings::crc_is_valid(settings_t *s)
 /// @brief set all values to default in settings stuct
 void DpSettings::defaults()
 {
-    settings.version = 2;  // bumped: ff_brew removed, dff_factor added to struct
-    settings.temperature = 98.0;
-    settings.preInfusionTime = 3;
-    settings.infusionTime = 1;
-    settings.extractionTime = 25;
-    settings.p = 6.2;
-    settings.i = 0.08;
-    settings.d = 70.0;
-    settings.ffHeat = 6.0;
-    settings.ffReady = 6.0;
-    settings.dffFactorPct = 70.0;  // 70%
-    settings.tareWeight = 0.0;
-    settings.trimWeight = 0.0;
-    settings.wifiMode = 0; // off=0
-    settings.shotCounter = 0;
-    settings.commissioningDone = 0; // default is 0 (not done)
+    settings.version = 4;  // bumped: added PID windup and conditional integration settings
+#define DP_SETTING_DEFAULT(type, name, key, def, lo, hi, dec) settings.name = def;
+    DP_SETTINGS_LIST(DP_SETTING_DEFAULT)
+#undef DP_SETTING_DEFAULT
     update_crc();
+}
+
+
+/// @brief set all values to default, except the commissioning state and the reservoir calibration (tare and trim)
+void DpSettings::reset_to_defaults()
+{
+    int commissioning_done = commissioningDone();
+    double tare_weight = tareWeight();
+    double trim_weight = trimWeight();
+    defaults();
+    commissioningDone(commissioning_done);
+    tareWeight(tare_weight);
+    trimWeight(trim_weight);
+    update_crc();
+}
+
+
+/// @brief get a setting by id
+double DpSettings::get(setting_id_t id)
+{
+    switch (id)
+    {
+#define DP_SETTING_GET(type, name, key, def, lo, hi, dec) case SETTING_##name: return name();
+    DP_SETTINGS_LIST(DP_SETTING_GET)
+#undef DP_SETTING_GET
+    default: return 0;
+    }
+}
+
+
+/// @brief set a setting by id, clamped to its range. Integer settings are rounded.
+/// @return the new value
+double DpSettings::set(setting_id_t id, double value)
+{
+    switch (id)
+    {
+#define DP_SETTING_SET(type, name, key, def, lo, hi, dec) case SETTING_##name: return name(to_type<type>(value));
+    DP_SETTINGS_LIST(DP_SETTING_SET)
+#undef DP_SETTING_SET
+    default: return 0;
+    }
+}
+
+
+/// @brief number of decimals of a setting, as shown in the menu
+int DpSettings::decimals(setting_id_t id)
+{
+    switch (id)
+    {
+#define DP_SETTING_DECIMALS(type, name, key, def, lo, hi, dec) case SETTING_##name: return dec;
+    DP_SETTINGS_LIST(DP_SETTING_DECIMALS)
+#undef DP_SETTING_DECIMALS
+    default: return 0;
+    }
+}
+
+
+/// @brief default value of a setting
+double DpSettings::default_value(setting_id_t id)
+{
+    switch (id)
+    {
+#define DP_SETTING_DEFAULT_VALUE(type, name, key, def, lo, hi, dec) case SETTING_##name: return def;
+    DP_SETTINGS_LIST(DP_SETTING_DEFAULT_VALUE)
+#undef DP_SETTING_DEFAULT_VALUE
+    default: return 0;
+    }
+}
+
+
+/// @brief true if all setting values are equal to the values of the other settings object
+bool DpSettings::same_values(const DpSettings &other)
+{
+    // skip the crc, compare the version and all values
+    return memcmp(((const unsigned char*)&settings) + 4, ((const unsigned char*)&other.settings) + 4, sizeof(settings_t) - 4) == 0;
 }
 
 
@@ -162,39 +254,41 @@ int DpSettings::save()
 void DpSettings::apply()
 {
   boilerController.set_temp(temperature());
-
   boilerController.set_pid(P(), I(), D());
-  boilerController.set_ffHeat(ffHeat());
   boilerController.set_ffReady(ffReady());
   boilerController.set_dffFactorPct(dffFactorPct());
+  boilerController.set_windup_limits(windupMin(), windupMax());
+  boilerController.set_conditional_integration(conditionalIntegration(), integrationBand());
+  boilerController.set_brew_integral_hold(brewIntegralHold(), brewHoldTimeoutSec(), brewHoldDipWindowSec());
+  boilerController.set_dffDecay(dffDecay());
+  boilerController.set_iDownFactor(iDownFactor());
 
   reservoir.set_trim(trimWeight());
   reservoir.set_tare(tareWeight());
+
   brewProcess.preInfuseTime = preInfusionTime();
   brewProcess.infuseTime = infusionTime();
   brewProcess.extractTime = extractionTime();
+
+  steamThermoblock.set_temp(steamTemperature());
+  steamThermoblock.set_pid(steamP(), steamI(), steamD());
+  steamThermoblock.set_pump_pid(steamPumpP(), steamPumpI(), steamPumpD());
+  steamThermoblock.set_iDownFactor(steamIDownFactor());
+  steamThermoblock.set_ff(steamFF());
+  steamThermoblock.set_windup_limits(steamWindupMin(), steamWindupMax());
+  steamThermoblock.set_conditional_integration(steamConditionalIntegration(), steamIntegrationBand(), steamPumpIntegrationBand());
+  steamPump.power(steamPumpPower());
+
+  encoder.set_reverse(encoderReverse());
 }
 
 String DpSettings::serialize() {
     String result = "";
     result += "version=" + String(settings.version) + "\n";
     result += "crc=" + String(settings.crc) + "\n";
-    result += "temperature=" + String(settings.temperature) + "\n";
-    result += "preInfusionTime=" + String(settings.preInfusionTime) + "\n";
-    result += "infusionTime=" + String(settings.infusionTime) + "\n";
-    result += "extractionTime=" + String(settings.extractionTime) + "\n";
-    result += "extractionWeight=" + String(settings.extractionWeight) + "\n";
-    result += "p=" + String(settings.p) + "\n";
-    result += "i=" + String(settings.i) + "\n";
-    result += "d=" + String(settings.d) + "\n";
-    result += "dffFactorPct=" + String(settings.dffFactorPct) + "\n";
-    result += "ffHeat=" + String(settings.ffHeat) + "\n";
-    result += "ffReady=" + String(settings.ffReady) + "\n";
-    result += "tareWeight=" + String(settings.tareWeight) + "\n";
-    result += "trimWeight=" + String(settings.trimWeight) + "\n";
-    result += "commissioningDone=" + String(settings.commissioningDone) + "\n";
-    result += "shotCounter=" + String(settings.shotCounter) + "\n";
-    result += "wifiMode=" + String(settings.wifiMode) + "\n";    
+#define DP_SETTING_SERIALIZE(type, name, key, def, lo, hi, dec) result += key "=" + to_string(settings.name, dec) + "\n";
+    DP_SETTINGS_LIST(DP_SETTING_SERIALIZE)
+#undef DP_SETTING_SERIALIZE
     return result;
 }
 
@@ -238,41 +332,19 @@ int DpSettings::deserialize(String serialized_settings) {
         Serial.println("key: " + key + ", value: " + value);
 
         // Process the key-value pairs
-        if (key == "temperature") {
-            temperature(value.toDouble());
-        } else if (key == "p" || key == "P") {
-            P(value.toDouble());
-        } else if (key == "i" || key == "I") {
-            I(value.toDouble());
-        } else if (key == "d" || key == "D") {
-            D(value.toDouble());
-        } else if (key == "dffFactorPct") {
-            dffFactorPct(value.toDouble());
-        } else if (key == "ffHeat" || key == "ff_heat") {
-            ffHeat(value.toDouble());
-        } else if (key == "ffReady" || key == "ff_ready") {
-            ffReady(value.toDouble());
-        } else if (key == "ffBrew" || key == "ff_brew") {
-            // Deprecated: ignored
-            Serial.println("WARNING: ff_brew / ffBrew is deprecated and will be ignored.");
-        } else if (key == "tareWeight") {
-            tareWeight(value.toDouble());
-        } else if (key == "trimWeight") {
-            trimWeight(value.toDouble());
-        } else if (key == "preInfusionTime") {
-            preInfusionTime(value.toDouble());
-        } else if (key == "infusionTime" || key == "infuseTime") { // infuseTime is a deprecated alias for infusionTime
-            infusionTime(value.toDouble());
-        } else if (key == "extractionTime" || key == "extractTime") { // extractTime is a deprecated alias for extractionTime
-            extractionTime(value.toDouble());
-        } else if (key == "extractionWeight") {
-            extractionWeight(value.toDouble());
-        } else if (key == "commissioningDone") {
-            commissioningDone(value.toInt());
-        } else if (key == "shotCounter") {
-             shotCounter(value.toInt());
-        } else if (key == "wifiMode") {
-            wifiMode(value.toInt());
+        int id = -1;
+        for (int n = 0; n < SETTING_COUNT; n++)
+            if (key == setting_keys[n]) id = n;
+        for (auto &a : key_aliases)
+            if (key == a.alias) id = a.id;
+        bool removed = false;
+        for (auto r : removed_keys)
+            if (key == r) removed = true;
+
+        if (id >= 0) {
+            set((setting_id_t)id, value.toDouble());
+        } else if (removed) {
+            Serial.println("WARNING: " + key + " is deprecated and will be ignored.");
         } else {
             Serial.println("Unknown key: " + key);
             error = -2; //unknown key
