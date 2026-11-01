@@ -39,6 +39,7 @@ correct and safe functioning of this software. **You** are responsible for the s
 * Commissioning (initial filling of boiler)
 * Settings (with EEPROM retention)
 * Basic brewing
+* Manual cleaning (continuous pump)
 * Wifi setup
 * MQTT communication
 

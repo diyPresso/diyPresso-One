@@ -6,6 +6,7 @@
 */
 
 #include "dp_settings.h"
+#include "dp_counter_log.h"
 #include <FlashAsEEPROM.h>
 #include "dp_boiler.h"
 #include "dp_steam_thermoblock.h"
@@ -195,33 +196,36 @@ void DpSettings::read(settings_t *s)
  * -1 = No valid EEPROM values
  * -2 = CRC incorrect
  * -3 = Settings struct version incorrect
+ * The shot counters are loaded from the counter log when it has a valid record, also on an error.
  */
 int DpSettings::load()
 {
+    int result = 0;
     settings_t set;
     if ( !EEPROM.isValid() )
+        result = -1;
+    else
     {
-        defaults();
-        return -1;
+        read( &set);
+        if ( !crc_is_valid(&set) )
+            result = -2;
+        else if ( set.version != settings.version )
+            result = -3;
     }
-    read( &set);
-    if ( !crc_is_valid(&set) )
-    {
+    if ( result < 0 )
         defaults();
-        return -2;
-    }
-    if ( set.version != settings.version )
-    {
-        defaults();
-        return -3;
-    }
-    read( &settings );
-    return 0;
+    else
+        read( &settings );
+    if ( load_counters() )
+        update_crc();
+    return result;
 }
 
 
 /*
  * save()
+ * The shot counters are saved in the counter log. The settings keep the stored counter values,
+ * so a changed counter does not rewrite the settings.
  * return value:
  * 0 = No change
  * 1 = Changed values saved
@@ -232,7 +236,15 @@ int DpSettings::save()
     update_crc();
     read( &old_settings );
 
-    unsigned char *s = (unsigned char*) &settings;
+    settings_t new_settings = settings;
+    if ( EEPROM.isValid() && crc_is_valid(&old_settings) )
+    {
+        new_settings.shotCounter = old_settings.shotCounter;
+        new_settings.shotCounterSinceCleaning = old_settings.shotCounterSinceCleaning;
+        new_settings.crc = crc32( ((unsigned char*)&new_settings) + 4, sizeof(settings_t) - 4 );
+    }
+
+    unsigned char *s = (unsigned char*) &new_settings;
     unsigned char *d = (unsigned char*) &old_settings;
     bool changed = false;
     for (int i=0; i<sizeof(settings_t); i++, s+=1, d+=1 )
@@ -247,7 +259,30 @@ int DpSettings::save()
     {
         EEPROM.commit();
     }
+    if ( save_counters() )
+        changed = true;
     return changed ? 1 : 0;
+}
+
+
+/// @brief set the shot counters from the counter log
+/// @return true if the log has a valid record
+bool DpSettings::load_counters()
+{
+    int shots, shots_since_cleaning;
+    if ( !counterLog.load(shots, shots_since_cleaning) )
+        return false;
+    shotCounter(shots);
+    shotCounterSinceCleaning(shots_since_cleaning);
+    return true;
+}
+
+
+/// @brief save the shot counters in the counter log, only writes the flash if they changed
+/// @return true if the counters were written
+bool DpSettings::save_counters()
+{
+    return counterLog.save(shotCounter(), shotCounterSinceCleaning());
 }
 
 
