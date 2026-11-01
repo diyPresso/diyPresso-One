@@ -109,7 +109,7 @@ The menu has these items:
 ## Cleaning
 
 1. **Start cleaning:** Starts the cleaning mode, see below. Unsaved changes in the menu are discarded.
-2. **Shots made:** The number of shots made since the last cleaning. It is set to 0 when you
+2. **Since cleaning:** The number of shots made since the last cleaning. It is set to 0 when you
    leave the cleaning mode after the pump has run. Push the button to reset it to 0 by hand,
    for example after cleaning in another way.
 3. **Reminder:** When ON, the machine shows a message when the shots made since the last cleaning
@@ -137,7 +137,9 @@ steam is disabled. Cleaning stops below the almost-empty threshold (12%, about
 lever before restarting. Reservoir and boiler faults stop cleaning.
 
 Press the knob to stop and exit cleaning. With the lever raised, the display asks
-you to lower it before normal brewing resumes. Follow the cleaning product's
+you to lower it before normal brewing resumes. After an hour without pumping, the
+machine goes to sleep. If the lever is up at that moment, the boiler is switched off
+and the machine goes to sleep when you lower the lever. Follow the cleaning product's
 instructions for dosing, contact time, and rinsing.
 
 ## Steam [diyPresso Two only]

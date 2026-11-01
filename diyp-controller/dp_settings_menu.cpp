@@ -71,7 +71,7 @@ static const menu_t brew_menu = MENU("BREW", brew_items);
 
 static const menu_item_t cleaning_items[] = {
     ACTION("Start cleaning", ACTION_CLEANING),
-    VALUE_ACTION("Shots made since", shotCounterSinceCleaning, ACTION_ZERO_CLEANING_COUNTER, "Reset counter?"),
+    VALUE_ACTION("Since cleaning", shotCounterSinceCleaning, ACTION_ZERO_CLEANING_COUNTER, "Reset counter?"),
     SELECT("Reminder", cleaningReminder, OFF_ON),
     VALUE("Remind after", cleaningReminderShots, "", 10),
     MENU_DEFAULTS("Set cleaning defs", "Reset cleaning to\ndefault values?"),
